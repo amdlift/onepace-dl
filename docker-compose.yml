@@ -1,0 +1,52 @@
+services:
+  pacerr:
+    image: ghcr.io/amdlift/pacerr:latest
+    container_name: pacerr
+    restart: unless-stopped
+
+    # Pacerr runs as uid 1000 and does not take PUID/PGID — see
+    # docs/adr/0007-run-as-a-fixed-uid.md. Change this if your media is owned by
+    # someone else, and make sure the bind mounts below are writable by whoever
+    # you pick.
+    user: "1000:1000"
+
+    environment:
+      TZ: Etc/UTC
+
+      # Authentication is off by default. Set both of these to turn it on and
+      # configure the single account from the environment instead of Settings.
+      # PACERR_AUTH_USERNAME: pacerr
+      # PACERR_AUTH_PASSWORD: change-me
+
+      # Every poll transfers the whole document, because One Pace serves no
+      # ETag and no Last-Modified. Defaults cost ~180 MB/day; doubling the feed
+      # interval halves it. See docs/adr/0005-poll-one-pace-without-conditional-requests.md
+      # PACERR_FEED_INTERVAL_MINUTES: "15"
+      # PACERR_CATALOGUE_INTERVAL_HOURS: "24"
+
+    ports:
+      - "8787:3000"
+
+    volumes:
+      # Everything Pacerr must not lose. Recreating the container loses nothing
+      # as long as this survives.
+      - pacerr-config:/config
+
+      # The Library a media server reads.
+      - /srv/media/one-pace:/library
+
+      # The download directory. This must resolve to the same files qBittorrent
+      # writes — mounting it at the same path in both containers is the simplest
+      # way. If you cannot, add a Remote Path Mapping in Settings.
+      - /srv/downloads:/downloads
+
+      # Hardlinking only works within one filesystem. If /library and /downloads
+      # are on different filesystems Pacerr copies instead, and each Part
+      # occupies disk twice while its Release seeds. It says so on System.
+
+volumes:
+  pacerr-config:
+
+# Pacerr does not ship a Download Client. It drives a qBittorrent you already
+# run, so your seeding, ratio and VPN configuration keeps applying — point it at
+# one in Settings -> Download Client. See docs/deployment.md.
