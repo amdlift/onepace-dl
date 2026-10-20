@@ -12,6 +12,10 @@ export function formatResolution(resolution: number | null): string {
 	return resolution === null ? 'unknown' : `${resolution}p`;
 }
 
+export function formatResolutionOrder(resolutions: number[]): string {
+	return resolutions.map(formatResolution).join(', then ');
+}
+
 export function formatVariant(variant: 'regular' | 'extended' | 'alternate'): string {
 	return { regular: 'Regular', extended: 'Extended', alternate: 'Alternate' }[variant];
 }

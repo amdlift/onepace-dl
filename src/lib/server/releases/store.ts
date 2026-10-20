@@ -227,3 +227,21 @@ const json = (value: unknown): string | null => (value === null ? null : JSON.st
 const parseCoverage = (value: string | null): Coverage | null =>
 	value === null ? null : (JSON.parse(value) as Coverage);
 const parseTime = (value: string | null): Date | null => (value === null ? null : new Date(value));
+
+export interface PublishedRelease {
+	title: string;
+	publishedAt: Date;
+}
+
+/** What the feed says about each Release the Catalogue explains: how Selection names and ranks it. */
+export function readPublishedReleases(db: Database): Map<string, PublishedRelease> {
+	const rows = db
+		.prepare(
+			`select r.infohash, r.title, r.published_at
+			from feed_release r join catalogue_release c on c.infohash = r.infohash`
+		)
+		.all() as { infohash: string; title: string; published_at: string }[];
+	return new Map(
+		rows.map((row) => [row.infohash, { title: row.title, publishedAt: new Date(row.published_at) }])
+	);
+}

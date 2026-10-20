@@ -1,5 +1,12 @@
 import type { Database } from 'better-sqlite3';
-import type { Catalogue } from './watch-page';
+import type {
+	Catalogue,
+	Coverage,
+	Part,
+	Resolution,
+	UnreleasedPart,
+	Variant
+} from './watch-page';
 import type { SourceValidators } from './source';
 
 export interface StoredSource extends SourceValidators {
@@ -211,3 +218,115 @@ export function readArcDetail(db: Database, slug: string): StoredArcDetail | nul
 		unreleasedPartNumbers: unreleased.map((row) => row.number)
 	};
 }
+
+interface FullArcRow {
+	slug: string;
+	title: string;
+	description: string | null;
+	special: number;
+	unfinished: number;
+	chapters: string | null;
+	episodes: string | null;
+	cover_image_url: string | null;
+}
+
+interface FullPartRow {
+	slug: string;
+	arc_slug: string;
+	number: number;
+	title: string;
+	description: string | null;
+	chapters: string | null;
+	episodes: string | null;
+	to_be_redone: number;
+}
+
+interface CatalogueReleaseRow {
+	infohash: string;
+	arc_slug: string;
+	resolution: number;
+	variant: string;
+	size_label: string | null;
+	batch_complete: number | null;
+	batch_part_count: number | null;
+	batch_part_range: string | null;
+}
+
+/** The Catalogue as `parseCatalogue` produced it, rebuilt from storage. */
+export function readCatalogue(db: Database): Catalogue {
+	const parts = new Map<string, Part[]>();
+	for (const row of db
+		.prepare('select * from part order by arc_slug, position')
+		.all() as FullPartRow[]) {
+		const arcParts = parts.get(row.arc_slug) ?? [];
+		arcParts.push({
+			slug: row.slug,
+			arcSlug: row.arc_slug,
+			number: row.number,
+			title: row.title,
+			description: row.description,
+			chapters: parseCoverage(row.chapters),
+			episodes: parseCoverage(row.episodes),
+			toBeRedone: row.to_be_redone === 1
+		});
+		parts.set(row.arc_slug, arcParts);
+	}
+
+	const unreleased = new Map<string, UnreleasedPart[]>();
+	for (const row of db.prepare('select * from unreleased_part order by number').all() as {
+		arc_slug: string;
+		number: number;
+	}[]) {
+		const arcUnreleased = unreleased.get(row.arc_slug) ?? [];
+		arcUnreleased.push({ arcSlug: row.arc_slug, number: row.number });
+		unreleased.set(row.arc_slug, arcUnreleased);
+	}
+
+	const partSlugs = new Map<string, string[]>();
+	for (const row of db
+		.prepare('select * from catalogue_release_part order by part_slug')
+		.all() as { infohash: string; part_slug: string }[]) {
+		const slugs = partSlugs.get(row.infohash) ?? [];
+		slugs.push(row.part_slug);
+		partSlugs.set(row.infohash, slugs);
+	}
+
+	const arcs = (
+		db.prepare('select * from arc order by position').all() as FullArcRow[]
+	).map((row) => ({
+		slug: row.slug,
+		title: row.title,
+		description: row.description,
+		special: row.special === 1,
+		unfinished: row.unfinished === 1,
+		chapters: parseCoverage(row.chapters),
+		episodes: parseCoverage(row.episodes),
+		coverImageUrl: row.cover_image_url,
+		parts: parts.get(row.slug) ?? [],
+		unreleasedParts: unreleased.get(row.slug) ?? []
+	}));
+
+	const releases = (
+		db.prepare('select * from catalogue_release').all() as CatalogueReleaseRow[]
+	).map((row) => ({
+		infohash: row.infohash,
+		arcSlug: row.arc_slug,
+		partSlugs: partSlugs.get(row.infohash) ?? [],
+		resolution: row.resolution as Resolution,
+		variant: row.variant as Variant,
+		sizeLabel: row.size_label,
+		batchScope:
+			row.batch_part_count === null
+				? null
+				: {
+						complete: row.batch_complete === 1,
+						partCount: row.batch_part_count,
+						partRange: row.batch_part_range
+					}
+	}));
+
+	return { arcs, releases };
+}
+
+const parseCoverage = (value: string | null): Coverage | null =>
+	value === null ? null : (JSON.parse(value) as Coverage);

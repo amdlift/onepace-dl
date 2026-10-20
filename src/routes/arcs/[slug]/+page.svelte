@@ -23,6 +23,7 @@
 		<tr>
 			<th class="numeric">Part</th>
 			<th>Title</th>
+			<th>Would grab</th>
 			<th>Releases</th>
 		</tr>
 	</thead>
@@ -34,6 +35,23 @@
 					<td>
 						{row.title}
 						{#if row.toBeRedone}<span class="badge redone">To Be Redone</span>{/if}
+					</td>
+					<td>
+						{#if row.grab.chosen}
+							<span class="grab">
+								<span>{row.grab.title}</span>
+								<span class="resolution">{formatResolution(row.grab.resolution)}</span>
+								<span>{formatVariant(row.grab.variant)}</span>
+							</span>
+							{#if row.grab.batch}
+								<span class="flag">
+									Batch, needed for {row.grab.neededPartCount} of {row.grab.coveredPartCount} Parts
+								</span>
+							{/if}
+							{#if row.grab.belowCutoff}<span class="flag">Below Cutoff</span>{/if}
+						{:else}
+							<span class="none">{row.grab.reason}</span>
+						{/if}
 					</td>
 					<td>
 						{#if row.releases.length === 0}
@@ -53,7 +71,7 @@
 						{/if}
 					</td>
 				{:else}
-					<td colspan="2"><span class="none">Not released yet</span></td>
+					<td colspan="3"><span class="none">Not released yet</span></td>
 				{/if}
 			</tr>
 		{/each}
@@ -77,6 +95,20 @@
 
 	.resolution {
 		color: var(--ink-bright);
+	}
+
+	.grab {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		color: var(--ink-dim);
+		font-size: 0.8rem;
+	}
+
+	.flag {
+		display: block;
+		color: var(--ink-dim);
+		font-size: 0.75rem;
 	}
 
 	.none {

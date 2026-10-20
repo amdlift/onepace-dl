@@ -95,6 +95,16 @@ const migrations = [
 		failure text
 	);
 	insert into feed_source (id) values (1);
+	`,
+	`
+	create table profile (
+		id integer primary key check (id = 1),
+		resolutions text not null,
+		variant text not null,
+		cutoff integer not null
+	);
+	insert into profile (id, resolutions, variant, cutoff)
+		values (1, '[1080,720,480]', 'regular', 1080);
 	`
 ];
 
