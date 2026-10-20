@@ -177,6 +177,23 @@ const migrations = [
 	insert into naming_template (id) values (1);
 	`,
 	`
+	-- Library index zero is the one index many Arcs share, so the Parts filed under it would
+	-- otherwise all claim the same place in it. Fixed on first sight, for the same reason
+	-- arc_library_index is: a special published upstream tomorrow must not move the ones a
+	-- Library already holds.
+	create table part_library_index (
+		part_slug text primary key,
+		library_index integer not null
+	);
+	`,
+	`
+	create table remote_path_mapping (
+		id integer primary key,
+		remote_path text not null,
+		local_path text not null
+	);
+	`,
+	`
 	-- Null means Manual Import has nowhere to look, which is the state Pacerr ships in: there is
 	-- no sensible default directory of files the user already has.
 	create table import_source (

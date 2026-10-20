@@ -158,6 +158,7 @@ interface NamingRow {
 	part_number: number;
 	arc_title: string;
 	library_index: number;
+	part_library_index: number | null;
 	arc_part_count: number;
 }
 
@@ -172,11 +173,12 @@ function readNamingFields(db: Database, slugs: string[]): Map<string, NamingTarg
 	const rows = db
 		.prepare(
 			`select part.slug, part.title as part_title, part.number as part_number,
-				arc.title as arc_title, i.library_index,
+				arc.title as arc_title, i.library_index, pi.library_index as part_library_index,
 				(select count(*) from part sibling where sibling.arc_slug = arc.slug) as arc_part_count
 			from part
 			join arc on arc.slug = part.arc_slug
 			join arc_library_index i on i.arc_slug = arc.slug
+			left join part_library_index pi on pi.part_slug = part.slug
 			where part.slug in (${slugs.map(() => '?').join(', ')})`
 		)
 		.all(...slugs) as NamingRow[];
@@ -190,7 +192,8 @@ function readNamingFields(db: Database, slugs: string[]): Map<string, NamingTarg
 					arcTitle: row.arc_title,
 					arcLibraryIndex: row.library_index,
 					partTitle: row.part_title,
-					partLibraryIndex: row.arc_part_count === 1 ? 1 : row.part_number,
+					partLibraryIndex:
+						row.part_library_index ?? (row.arc_part_count === 1 ? 1 : row.part_number),
 					// Pacerr holds no Release for a manually imported Part, so it does not know the
 					// Resolution either, and the template renders what it was given.
 					resolution: null

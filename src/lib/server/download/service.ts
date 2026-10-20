@@ -5,6 +5,10 @@ import type {
 	DownloadClientConnection,
 	DownloadClientFactory
 } from './client';
+import {
+	readRemotePathMappings,
+	throughRemotePathMappings
+} from '../paths/remote-path-mapping';
 import { readConnection, writeConnection } from './connection';
 
 /** What Settings shows about the connection. The password is never rendered back. */
@@ -57,7 +61,7 @@ export class DownloadService {
 		if (this.#built === null || !sameConnection(this.#built.connection, connection)) {
 			this.#built = { connection, client: this.#factory(connection) };
 		}
-		return this.#built.client;
+		return throughRemotePathMappings(this.#built.client, readRemotePathMappings(this.#db));
 	}
 
 	async test(): Promise<ConnectionTest> {

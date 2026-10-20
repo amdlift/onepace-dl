@@ -74,11 +74,19 @@ export function recordHadPart(
 }
 
 /**
- * Fixes where each Arc sits in the Library the first time Pacerr sees it, and never moves it
- * again. Recomputing from Catalogue position would let an Arc inserted upstream renumber every
- * Arc after it, and with them every file already in the Library.
+ * Fixes where each Arc, and each Part sharing an index with another Arc, sits in the Library the
+ * first time Pacerr sees it, and never moves it again. Recomputing from Catalogue position would
+ * let an entry inserted upstream renumber every entry after it, and with them every file already
+ * in the Library.
  */
 export function assignLibraryIndexes(db: Database): void {
+	db.transaction(() => {
+		placeArcs(db);
+		placeSharedParts(db);
+	})();
+}
+
+function placeArcs(db: Database): void {
 	const unplaced = db
 		.prepare(
 			`select slug, special from arc
@@ -98,11 +106,39 @@ export function assignLibraryIndexes(db: Database): void {
 	);
 
 	let next = (highest ?? 0) + 1;
-	db.transaction(() => {
-		// Specials and one-off entries all share index zero, which is where a media server expects
-		// anything outside the numbered run.
-		for (const arc of unplaced) insert.run(arc.slug, arc.special === 1 ? 0 : next++);
-	})();
+	// Specials and one-off entries all share index zero, which is where a media server expects
+	// anything outside the numbered run.
+	for (const arc of unplaced) insert.run(arc.slug, arc.special === 1 ? 0 : next++);
+}
+
+/**
+ * Index zero is shared, so the Parts filed under it cannot take their place from their Arc the way
+ * every other Part does: two one-Part specials would both be the first thing in it, and a media
+ * server reading `S00E01` twice shows one of them and hides the other.
+ */
+function placeSharedParts(db: Database): void {
+	const unplaced = db
+		.prepare(
+			`select part.slug from part
+			join arc_library_index i on i.arc_slug = part.arc_slug
+			join arc on arc.slug = part.arc_slug
+			where i.library_index = 0 and part.slug not in (select part_slug from part_library_index)
+			order by arc.position, part.position`
+		)
+		.all() as { slug: string }[];
+	if (unplaced.length === 0) return;
+
+	const highest = (
+		db.prepare('select max(library_index) as highest from part_library_index').get() as {
+			highest: number | null;
+		}
+	).highest;
+	const insert = db.prepare(
+		'insert into part_library_index (part_slug, library_index) values (?, ?)'
+	);
+
+	let next = (highest ?? 0) + 1;
+	for (const part of unplaced) insert.run(part.slug, next++);
 }
 
 export function readNamingTemplate(db: Database): string {
@@ -146,6 +182,7 @@ interface PendingRow {
 	arc_title: string;
 	arc_part_count: number;
 	library_index: number;
+	part_library_index: number | null;
 	resolution: number | null;
 	had: number;
 }
@@ -155,7 +192,7 @@ export function readPendingImports(db: Database): PendingImport[] {
 		.prepare(
 			`select g.infohash, g.release_title, gp.part_slug,
 				part.title as part_title, part.number as part_number,
-				arc.title as arc_title, i.library_index,
+				arc.title as arc_title, i.library_index, pi.library_index as part_library_index,
 				(select count(*) from part sibling where sibling.arc_slug = arc.slug) as arc_part_count,
 				coalesce(c.resolution, r.resolution) as resolution,
 				exists(select 1 from had_part where had_part.part_slug = gp.part_slug) as had
@@ -164,6 +201,7 @@ export function readPendingImports(db: Database): PendingImport[] {
 			join part on part.slug = gp.part_slug
 			join arc on arc.slug = part.arc_slug
 			join arc_library_index i on i.arc_slug = arc.slug
+			left join part_library_index pi on pi.part_slug = part.slug
 			left join catalogue_release c on c.infohash = g.infohash
 			left join feed_release r on r.infohash = g.infohash
 			order by g.grabbed_at, g.infohash, part.position`
@@ -182,7 +220,8 @@ export function readPendingImports(db: Database): PendingImport[] {
 				partTitle: row.part_title,
 				// An Arc of one Part has nothing to number, and a media server will not show an
 				// episode zero where the Arc itself is the episode.
-				partLibraryIndex: row.arc_part_count === 1 ? 1 : row.part_number,
+				partLibraryIndex:
+					row.part_library_index ?? (row.arc_part_count === 1 ? 1 : row.part_number),
 				resolution: row.resolution as Resolution | null
 			}
 		};

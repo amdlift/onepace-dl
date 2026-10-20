@@ -13,7 +13,7 @@ export interface NamingFields {
 	/** The Arc's fixed place in the Library, which `{season}` renders. */
 	arcLibraryIndex: number;
 	partTitle: string;
-	/** The Part's place within its Arc, which `{episode}` renders. */
+	/** The Part's fixed place within its Arc's place in the Library, which `{episode}` renders. */
 	partLibraryIndex: number;
 	resolution: Resolution | null;
 }
