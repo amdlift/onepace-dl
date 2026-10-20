@@ -2,9 +2,11 @@ import type { Database } from 'better-sqlite3';
 import type { Clock } from '../clock';
 import { recordHistory, type HistoryEntry } from '../history/store';
 import { select, type SelectedRelease } from '../selection/selection';
+import { readDueUpgrades, recordUpgrades } from '../upgrade/store';
 import type { DownloadClient, DownloadSource } from './client';
 import { DownloadService, reasonOf } from './service';
 import {
+	linkGrabToPart,
 	readGrabbedInfohashes,
 	readReleaseSources,
 	readWantedPartTitles,
@@ -133,12 +135,23 @@ export class AcquisitionService {
 	}
 
 	#pending(): PendingGrab[] {
+		const selection = select(this.#db);
 		const wanted = readWantedPartTitles(this.#db);
+		const grabbed = readGrabbedInfohashes(this.#db);
+
+		// A Part due an Upgrade is already had, so it is not wanted; it still needs grabbing.
+		const upgrades = readDueUpgrades(this.#db, selection);
+		recordUpgrades(this.#db, upgrades);
+		for (const upgrade of upgrades) {
+			wanted.set(upgrade.partSlug, upgrade.partTitle);
+			// The replacement may already be downloading for another Part of the Arc, in which case
+			// nothing below grabs it again and only this Part's claim on it is missing.
+			if (grabbed.has(upgrade.replacementInfohash))
+				linkGrabToPart(this.#db, upgrade.replacementInfohash, upgrade.partSlug);
+		}
 		if (wanted.size === 0) return [];
 
-		const grabbed = readGrabbedInfohashes(this.#db);
 		const sources = readReleaseSources(this.#db);
-		const selection = select(this.#db);
 
 		const pending = new Map<string, PendingGrab>();
 		for (const [slug, title] of wanted) {

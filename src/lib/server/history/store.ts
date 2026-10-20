@@ -13,8 +13,9 @@ export interface HistoryEntry {
 	partTitle?: string | null;
 	infohash?: string | null;
 	releaseTitle?: string | null;
-	/** The Release an Upgrade superseded. */
+	/** The Release an Upgrade superseded, named as well as identified. */
 	replacedInfohash?: string | null;
+	replacedReleaseTitle?: string | null;
 	detail?: string | null;
 	reason?: string | null;
 }
@@ -34,6 +35,7 @@ interface Row {
 	infohash: string | null;
 	release_title: string | null;
 	replaced_infohash: string | null;
+	replaced_release_title: string | null;
 	detail: string | null;
 	reason: string | null;
 }
@@ -41,8 +43,8 @@ interface Row {
 export function recordHistory(db: Database, at: Date, entries: HistoryEntry[]): void {
 	const insert = db.prepare(
 		`insert into history (at, event, outcome, part_slug, part_title, infohash, release_title,
-			replaced_infohash, detail, reason)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			replaced_infohash, replaced_release_title, detail, reason)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	);
 	db.transaction(() => {
 		for (const entry of entries) {
@@ -55,6 +57,7 @@ export function recordHistory(db: Database, at: Date, entries: HistoryEntry[]): 
 				entry.infohash ?? null,
 				entry.releaseTitle ?? null,
 				entry.replacedInfohash ?? null,
+				entry.replacedReleaseTitle ?? null,
 				entry.detail ?? null,
 				entry.reason ?? null
 			);
@@ -80,6 +83,7 @@ export function readHistory(db: Database, limit = 200, offset = 0): HistoryRecor
 		infohash: row.infohash,
 		releaseTitle: row.release_title,
 		replacedInfohash: row.replaced_infohash,
+		replacedReleaseTitle: row.replaced_release_title,
 		detail: row.detail,
 		reason: row.reason
 	}));

@@ -5,6 +5,11 @@ import type { Clock } from '../clock';
 import type { DownloadClient } from '../download/client';
 import { DownloadService, reasonOf } from '../download/service';
 import { recordHistory, type HistoryEntry } from '../history/store';
+import {
+	forgetSupersededRelease,
+	readSupersededReleases,
+	recordUpgradeImported
+} from '../upgrade/store';
 import { renderLibraryPath } from './naming';
 import {
 	readNamingTemplate,
@@ -41,12 +46,15 @@ export class ImportService {
 	}
 
 	async run(): Promise<void> {
-		const pending = readPendingImports(this.#db);
-		if (pending.length === 0) return;
-
 		const client = this.#downloads.client();
 		if (client === null) return;
 
+		const pending = readPendingImports(this.#db);
+		if (pending.length > 0 && !(await this.#importAll(client, pending))) return;
+		await this.#removeSuperseded(client);
+	}
+
+	async #importAll(client: DownloadClient, pending: PendingImport[]): Promise<boolean> {
 		const completed = new Map<string, string>();
 		try {
 			for (const status of await client.statuses(pending.map((grab) => grab.infohash))) {
@@ -56,13 +64,33 @@ export class ImportService {
 			this.#downloads.noteSuccess();
 		} catch (error) {
 			this.#downloads.noteFailure(error);
-			return;
+			return false;
 		}
 
 		const template = readNamingTemplate(this.#db);
 		for (const grab of pending) {
 			const contentPath = completed.get(grab.infohash);
 			if (contentPath !== undefined) await this.#import(client, grab, contentPath, template);
+		}
+		return true;
+	}
+
+	/**
+	 * The one removal Pacerr performs. Everything else seeds under the Download Client's own rules,
+	 * and a Release only reaches here once every Part that held it holds its replacement instead.
+	 */
+	async #removeSuperseded(client: DownloadClient): Promise<void> {
+		for (const infohash of readSupersededReleases(this.#db)) {
+			try {
+				await client.remove(infohash, true);
+				this.#downloads.noteSuccess();
+			} catch (error) {
+				this.#downloads.noteFailure(error);
+				// The record stays, so a daemon that refused is asked again rather than leaving the
+				// superseded copy on disk forever.
+				return;
+			}
+			forgetSupersededRelease(this.#db, infohash);
 		}
 	}
 
@@ -99,13 +127,19 @@ export class ImportService {
 					},
 					this.#clock.now()
 				);
+				// Only once the Library holds the replacement does the superseded Release become
+				// Pacerr's to remove; a failed import must leave it exactly where it was.
+				if (target.replaces !== null)
+					recordUpgradeImported(this.#db, target.partSlug, this.#clock.now());
 				entries.push({
-					event: 'import',
+					event: target.replaces === null ? 'import' : 'upgrade',
 					outcome: placed.copied ? 'warned' : 'succeeded',
 					partSlug: target.partSlug,
 					partTitle: target.partTitle,
 					infohash: grab.infohash,
 					releaseTitle: grab.releaseTitle,
+					replacedInfohash: target.replaces?.infohash ?? null,
+					replacedReleaseTitle: target.replaces?.releaseTitle ?? null,
 					detail: placed.libraryPath,
 					reason: placed.copied ? copiedInsteadOfLinked : null
 				});
@@ -121,14 +155,15 @@ export class ImportService {
 		const destination = join(this.#library, libraryPath);
 		mkdirSync(dirname(destination), { recursive: true });
 		rmSync(destination, { force: true });
-		try {
-			linkSync(source, destination);
-			return { libraryPath, copied: false };
-		} catch (error) {
-			if (!crossesFilesystems(error)) throw error;
-			copyFileSync(source, destination);
-			return { libraryPath, copied: true };
-		}
+		const copied = linkOrCopy(source, destination);
+
+		// An Upgrade that changed the Resolution renders a different name, so overwriting the
+		// destination is not on its own enough to leave one file per Part.
+		const replaced = target.replaces?.libraryPath;
+		if (replaced !== undefined && replaced !== libraryPath)
+			rmSync(join(this.#library, replaced), { force: true });
+
+		return { libraryPath, copied };
 	}
 
 	/**
@@ -161,14 +196,25 @@ export class ImportService {
 }
 
 const failed = (grab: PendingImport, target: ImportTarget, reason: string): HistoryEntry => ({
-	event: 'import',
+	event: target.replaces === null ? 'import' : 'upgrade',
 	outcome: 'failed',
 	partSlug: target.partSlug,
 	partTitle: target.partTitle,
 	infohash: grab.infohash,
 	releaseTitle: grab.releaseTitle,
+	replacedInfohash: target.replaces?.infohash ?? null,
+	replacedReleaseTitle: target.replaces?.releaseTitle ?? null,
 	reason
 });
 
-const crossesFilesystems = (error: unknown): boolean =>
-	(error as NodeJS.ErrnoException | null)?.code === 'EXDEV';
+/** True where the filesystem left no choice but to copy. */
+function linkOrCopy(source: string, destination: string): boolean {
+	try {
+		linkSync(source, destination);
+		return false;
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException | null)?.code !== 'EXDEV') throw error;
+		copyFileSync(source, destination);
+		return true;
+	}
+}

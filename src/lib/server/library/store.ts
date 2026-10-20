@@ -119,11 +119,20 @@ export function writeNamingTemplate(db: Database, template: string): void {
 	);
 }
 
+/** The Release a file supersedes, and where in the Library the Part it replaces sits. */
+export interface ReplacedRelease {
+	infohash: string;
+	releaseTitle: string;
+	libraryPath: string;
+}
+
 /** One Part a completed download owes the Library, and everything its name is rendered from. */
 export interface ImportTarget {
 	partSlug: string;
 	partTitle: string;
 	had: boolean;
+	/** Set only where this file is the replacement half of an Upgrade. */
+	replaces: ReplacedRelease | null;
 	naming: NamingFields;
 }
 
@@ -148,6 +157,16 @@ interface PendingRow {
 	library_index: number;
 	resolution: number | null;
 	had: number;
+	replaced_infohash: string | null;
+	replaced_release_title: string | null;
+	replaced_library_path: string | null;
+}
+
+/** The three columns come from one left join, so they are null together or not at all. */
+function replacedBy(row: PendingRow): ReplacedRelease | null {
+	const { replaced_infohash: infohash, replaced_library_path: libraryPath } = row;
+	if (infohash === null || libraryPath === null) return null;
+	return { infohash, libraryPath, releaseTitle: row.replaced_release_title ?? infohash };
 }
 
 export function readPendingImports(db: Database): PendingImport[] {
@@ -158,7 +177,9 @@ export function readPendingImports(db: Database): PendingImport[] {
 				arc.title as arc_title, i.library_index,
 				(select count(*) from part sibling where sibling.arc_slug = arc.slug) as arc_part_count,
 				coalesce(c.resolution, r.resolution) as resolution,
-				exists(select 1 from had_part where had_part.part_slug = gp.part_slug) as had
+				(exists(select 1 from had_part where had_part.part_slug = gp.part_slug)
+					and u.part_slug is null) as had,
+				u.replaced_infohash, u.replaced_release_title, u.replaced_library_path
 			from grab g
 			join grab_part gp on gp.infohash = g.infohash
 			join part on part.slug = gp.part_slug
@@ -166,6 +187,8 @@ export function readPendingImports(db: Database): PendingImport[] {
 			join arc_library_index i on i.arc_slug = arc.slug
 			left join catalogue_release c on c.infohash = g.infohash
 			left join feed_release r on r.infohash = g.infohash
+			left join upgrade u on u.part_slug = gp.part_slug
+				and u.replacement_infohash = g.infohash and u.imported_at is null
 			order by g.grabbed_at, g.infohash, part.position`
 		)
 		.all() as PendingRow[];
@@ -176,6 +199,7 @@ export function readPendingImports(db: Database): PendingImport[] {
 			partSlug: row.part_slug,
 			partTitle: row.part_title,
 			had: row.had === 1,
+			replaces: replacedBy(row),
 			naming: {
 				arcTitle: row.arc_title,
 				arcLibraryIndex: row.library_index,

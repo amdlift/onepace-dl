@@ -175,6 +175,20 @@ const migrations = [
 		template text
 	);
 	insert into naming_template (id) values (1);
+	`,
+	`
+	-- An Upgrade in flight. The row outlives the import it describes, because the superseded
+	-- torrent is only removed afterwards and a removal the Download Client refused has to be
+	-- retried rather than forgotten.
+	create table upgrade (
+		part_slug text primary key,
+		replaced_infohash text not null,
+		replaced_release_title text not null,
+		replaced_library_path text not null,
+		replacement_infohash text not null,
+		imported_at text
+	);
+	alter table history add column replaced_release_title text;
 	`
 ];
 

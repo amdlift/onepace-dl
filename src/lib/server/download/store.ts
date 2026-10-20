@@ -64,6 +64,14 @@ export function recordGrab(
 	})();
 }
 
+/** Claims a Part against a Release already handed over, so the importer files it too. */
+export function linkGrabToPart(db: Database, infohash: string, partSlug: string): void {
+	db.prepare('insert or ignore into grab_part (infohash, part_slug) values (?, ?)').run(
+		infohash,
+		partSlug
+	);
+}
+
 /** Where each Release can be downloaded from. The feed carries neither for its oldest items. */
 export function readReleaseSources(db: Database): Map<string, DownloadSource> {
 	const rows = db.prepare('select infohash, magnet_uri, torrent_url from feed_release').all() as {

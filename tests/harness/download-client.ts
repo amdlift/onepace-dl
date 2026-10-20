@@ -1,3 +1,4 @@
+import { rmSync } from 'node:fs';
 import type {
 	ConnectionFailure,
 	ConnectionTest,
@@ -91,7 +92,12 @@ export class FakeDownloadClient implements DownloadClient {
 		this.#requireReachable();
 		this.removed.push({ infohash: infohash.toLowerCase(), deleteData });
 		const index = this.added.findIndex((it) => it.infohash === infohash.toLowerCase());
-		if (index >= 0) this.added.splice(index, 1);
+		if (index < 0) return;
+		const [download] = this.added.splice(index, 1);
+		// A real daemon deletes the files, and whether what Pacerr put in the Library survives
+		// that is the whole question an Upgrade asks of the filesystem.
+		if (deleteData && download?.contentPath != null)
+			rmSync(download.contentPath, { recursive: true, force: true });
 	}
 
 	async test(): Promise<ConnectionTest> {
