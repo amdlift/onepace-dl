@@ -1,5 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { readArcDetail } from './catalogue/store';
+import { readMonitoredArcs, readNotWantedParts } from './monitoring/store';
 import { readReleasesCovering, type ReleaseListing } from './releases/store';
 
 export interface PartRow {
@@ -8,6 +9,7 @@ export interface PartRow {
 	title: string;
 	releases: ReleaseListing[];
 	toBeRedone: boolean;
+	wanted: boolean;
 }
 
 export interface UnreleasedPartRow {
@@ -19,6 +21,7 @@ export type ArcRow = ({ released: true } & PartRow) | ({ released: false } & Unr
 export interface ArcDetail {
 	slug: string;
 	title: string;
+	monitored: boolean;
 	rows: ArcRow[];
 }
 
@@ -30,6 +33,8 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 	const arc = readArcDetail(db, slug);
 	if (arc === null) return null;
 
+	const monitored = readMonitoredArcs(db).has(arc.slug);
+	const notWanted = readNotWantedParts(db);
 	const covering = readReleasesCovering(
 		db,
 		arc.parts.map((part) => part.slug)
@@ -38,6 +43,7 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 	return {
 		slug: arc.slug,
 		title: arc.title,
+		monitored,
 		rows: [
 			...arc.parts.map((part) => {
 				const releases = covering.get(part.slug) ?? [];
@@ -47,7 +53,8 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 					number: part.number,
 					title: part.title,
 					releases,
-					toBeRedone: releases.some((release) => release.status === 'to-be-redone')
+					toBeRedone: releases.some((release) => release.status === 'to-be-redone'),
+					wanted: monitored && !notWanted.has(part.slug)
 				};
 			}),
 			...arc.unreleasedPartNumbers.map((number) => ({ released: false as const, number }))

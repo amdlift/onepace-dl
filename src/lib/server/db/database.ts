@@ -95,6 +95,22 @@ const migrations = [
 		failure text
 	);
 	insert into feed_source (id) values (1);
+	`,
+	`
+	-- The Catalogue is replaced wholesale by every clean scrape, so none of these reference it:
+	-- a standing instruction has to outlive the rows it names.
+	create table monitored_arc (
+		arc_slug text primary key
+	);
+	create table not_wanted_part (
+		part_slug text primary key
+	);
+	create table had_part (
+		part_slug text primary key,
+		library_path text not null,
+		infohash text,
+		had_at text not null
+	);
 	`
 ];
 
