@@ -8,6 +8,7 @@ import {
 	statSync,
 	writeFileSync
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import {
@@ -273,5 +274,35 @@ describe('the queue', () => {
 		expect(page.texts('.table .parts')).toEqual([
 			'The Fifth Emperor, A Beautiful World, The Empty Throne'
 		]);
+	});
+});
+
+describe('a manually imported Part', () => {
+	const fanLetter = '80872a919a43b5d044caa3fd80933707344e4fab';
+	const theFile = 'One Piece Fan Letter.mkv';
+	const inTheLibrary =
+		'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [unknown].mkv';
+
+	it('has no Upgrade path, because Pacerr does not know what it holds', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+		const source = mkdtempSync(join(tmpdir(), 'pacerr-source-'));
+		onTestFinished(() => rmSync(source, { recursive: true, force: true }));
+		writeFileSync(join(source, theFile), 'the file the user already had');
+
+		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+		await pacerr.submit('/manual-import', 'import', {
+			[`part:${theFile}`]: 'one-piece-fan-letter-01'
+		});
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'one-piece-fan-letter' });
+
+		// The Release the Catalogue offers for that Part is superseded by another One Pace
+		// published, which for a downloaded Part would be an Upgrade.
+		pacerr.upstream.watchPage.publish(fixtures.watchPage.replaceAll(fanLetter, earlierCut));
+		await pacerr.advance(hours(24));
+
+		expect(pacerr.downloadClient.added).toEqual([]);
+		expect(pacerr.downloadClient.removed).toEqual([]);
+		expect(contentOf(pacerr, inTheLibrary)).toBe('the file the user already had');
 	});
 });
