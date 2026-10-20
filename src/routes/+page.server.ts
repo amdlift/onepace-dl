@@ -11,11 +11,15 @@ export const load: PageServerLoad = async () => {
 export const actions: Actions = {
 	toggleMonitoring: async ({ request }) => {
 		const submitted = await request.formData();
-		getApp().monitoring.toggleArc(String(submitted.get('arc')));
+		const app = getApp();
+		app.monitoring.toggleArc(String(submitted.get('arc')));
+		await app.acquisition.run();
 		return { monitoring: true };
 	},
 	monitorAllArcs: async () => {
-		getApp().monitoring.monitorEveryArc();
+		const app = getApp();
+		app.monitoring.monitorEveryArc();
+		await app.acquisition.run();
 		return { monitoring: true };
 	},
 	refreshCatalogue: async () => {

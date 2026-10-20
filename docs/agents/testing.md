@@ -1,16 +1,23 @@
 # Testing
 
-Three seams, fixed by the spec. Add tests at seam 1 by default; a new seam needs a reason that
+Four seams. Add tests at seam 1 by default; a new seam needs a reason that
 "it would be convenient" does not satisfy.
 
 | Seam | What it is | Where |
 | --- | --- | --- |
 | 1 | The whole application, driven over HTTP | `tests/*.test.ts` via `tests/harness/pacerr.ts` |
 | 2 | The Catalogue parser, a pure function with golden-file assertions | `src/lib/server/catalogue/watch-page.test.ts` |
-| 3 | Batch expansion, a pure function | not written yet |
+| 3 | Batch expansion, a pure function | `src/lib/server/batch/expansion.test.ts` |
+| 4 | The qBittorrent adapter, against a stub HTTP daemon | `src/lib/server/download/qbittorrent.test.ts` |
 
 A good test states a user-visible outcome and asserts nothing about how it was reached. Asserting
 that a function was called, or reading a column out of SQLite, tests the implementation.
+
+Seam 4 exists because seam 1 replaces the whole `DownloadClient`, so nothing above it can reach
+the two things the adapter decides on its own: which of unreachable, banned, bad credentials or
+"not a WebUI" an auth response means, and waiting out the 409 qBittorrent answers with until a
+magnet link's metadata arrives. Both are acceptance criteria, and neither is reachable through the
+fake. Nothing else belongs here: behaviour goes at seam 1.
 
 ## Seam 1
 
@@ -49,8 +56,10 @@ The instance stops itself when the test finishes.
 - `pacerr.upstream.watchPage` / `.feed` — `publish(body)`, `fail(status)`, `sendValidators()`,
   `requests`, `requestCount`, `body`, `etag`. `publish` between ticks is how a test changes what
   upstream says.
-- `pacerr.downloadClient` — the in-memory fake: `added`, `removed`, `complete(infohash, path)`,
-  `reachable`.
+- `pacerr.downloadClient` — the in-memory fake: `added`, `removed`, `deselected()`,
+  `complete(infohash, path)`, `progressed(infohash, fraction)`, `reachable`, `failing`,
+  `filesPerTorrent`.
+- `pacerr.connectDownloadClient()` — point Pacerr at one, which nothing is grabbed without.
 - `pacerr.paths` — `config`, `library`, `downloads`, all under a temporary directory. Assert on
   the Library by reading it.
 - `pacerr.restart()` — recreate the container: same config volume, everything else new.

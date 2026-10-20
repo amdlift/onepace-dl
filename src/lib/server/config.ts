@@ -1,28 +1,16 @@
 import { resolve } from 'node:path';
 import type { Credentials } from './auth/service';
 import { systemClock } from './clock';
-import type { DownloadClient } from './download-client';
+import { QBittorrentClient } from './download/qbittorrent';
 import type { Runtime } from './runtime';
 
 const minutes = (count: number): number => count * 60 * 1000;
 const hours = (count: number): number => minutes(count) * 60;
 
-const unconfiguredDownloadClient: DownloadClient = {
-	add: () => unconfigured(),
-	setFilePriority: () => unconfigured(),
-	statusOf: () => unconfigured(),
-	remove: () => unconfigured(),
-	test: () => unconfigured()
-};
-
-const unconfigured = (): never => {
-	throw new Error('no Download Client is configured');
-};
-
 export function runtimeFromEnvironment(environment = process.env): Runtime {
 	return {
 		clock: systemClock,
-		downloadClient: unconfiguredDownloadClient,
+		downloadClients: (connection) => new QBittorrentClient(connection),
 		onePaceBaseUrl: environment.PACERR_ONEPACE_URL ?? 'https://onepace.net',
 		paths: {
 			config: resolve(environment.PACERR_CONFIG_DIR ?? '/config'),

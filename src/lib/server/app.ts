@@ -3,6 +3,8 @@ import { mkdirSync } from 'node:fs';
 import { AuthenticationService } from './auth/service';
 import { CatalogueService } from './catalogue/service';
 import { openDatabase, type Database } from './db/database';
+import { AcquisitionService } from './download/acquisition';
+import { DownloadService } from './download/service';
 import { MonitoringService } from './monitoring/service';
 import { ReleaseService } from './releases/service';
 import type { Runtime } from './runtime';
@@ -18,6 +20,8 @@ export interface App {
 	releases: ReleaseService;
 	monitoring: MonitoringService;
 	authentication: AuthenticationService;
+	downloads: DownloadService;
+	acquisition: AcquisitionService;
 	scheduler: Scheduler;
 	/** Resolves once the startup scrape has run; the HTTP surface waits on it. */
 	ready: Promise<void>;
@@ -35,11 +39,16 @@ export function createApp(runtime: Runtime): App {
 		runtime.clock,
 		runtime.environmentCredentials
 	);
+	const downloads = new DownloadService(db, runtime.downloadClients);
+	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
 	const scheduler = new Scheduler(runtime.clock);
 	scheduler.add({
 		name: catalogueJob,
 		every: runtime.catalogueRefreshInterval,
-		run: async () => void (await catalogue.scrape())
+		run: async () => {
+			await catalogue.scrape();
+			await acquisition.run();
+		}
 	});
 	scheduler.add({
 		name: feedJob,
@@ -48,6 +57,7 @@ export function createApp(runtime: Runtime): App {
 			// A Release the Catalogue cannot explain was published since the last scrape, so waiting
 			// for tomorrow's would leave it unmatched for a day.
 			if ((await releases.poll()).unknownInfohashes.length > 0) await catalogue.scrape();
+			await acquisition.run();
 		}
 	});
 
@@ -58,6 +68,8 @@ export function createApp(runtime: Runtime): App {
 		releases,
 		monitoring,
 		authentication,
+		downloads,
+		acquisition,
 		scheduler,
 		ready: (async () => {
 			await scheduler.tick();

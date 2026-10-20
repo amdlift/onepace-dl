@@ -1,22 +1,33 @@
 import type {
+	ConnectionFailure,
+	ConnectionTest,
 	DownloadClient,
 	DownloadRequest,
 	DownloadStatus,
 	FilePriority
-} from '../../src/lib/server/download-client';
+} from '../../src/lib/server/download/client';
 
-export interface FakeDownload extends DownloadRequest {
+export type FakeDownload = DownloadRequest & {
 	infohash: string;
-	filePriorities: Map<string, FilePriority>;
+	filePriorities: Map<number, FilePriority>;
+	fileCount: number;
 	state: DownloadStatus['state'];
 	progress: number;
 	contentPath: string | null;
-}
+};
 
 export interface FakeRemoval {
 	infohash: string;
 	deleteData: boolean;
 }
+
+const failureDetails: Record<ConnectionFailure, string> = {
+	unconfigured: 'No Download Client is configured.',
+	unreachable: 'The Download Client did not answer.',
+	credentials: 'The Download Client rejected that username and password.',
+	banned: 'The Download Client has banned this address after too many failed logins.',
+	rejected: 'That address answered, but not like a Download Client.'
+};
 
 /**
  * Records what Pacerr asked the Download Client for, and lets a test drive a download to
@@ -26,6 +37,10 @@ export class FakeDownloadClient implements DownloadClient {
 	readonly added: FakeDownload[] = [];
 	readonly removed: FakeRemoval[] = [];
 	reachable = true;
+	/** What the daemon is doing wrong, when it is answering at all. */
+	failing: ConnectionFailure | null = null;
+	/** How many files every torrent added from here turns out to contain. */
+	filesPerTorrent = 1;
 
 	async add(request: DownloadRequest): Promise<void> {
 		this.#requireReachable();
@@ -33,27 +48,43 @@ export class FakeDownloadClient implements DownloadClient {
 			...request,
 			infohash: request.infohash.toLowerCase(),
 			filePriorities: new Map(),
+			fileCount: this.filesPerTorrent,
 			state: 'downloading',
 			progress: 0,
 			contentPath: null
 		});
 	}
 
-	async setFilePriority(infohash: string, path: string, priority: FilePriority): Promise<void> {
+	async files(infohash: string): Promise<string[]> {
 		this.#requireReachable();
-		this.#find(infohash).filePriorities.set(path, priority);
+		const download = this.#find(infohash);
+		return Array.from(
+			{ length: download.fileCount },
+			(_, position) => `${download.infohash}/${position + 1}.mkv`
+		);
 	}
 
-	async statusOf(infohash: string): Promise<DownloadStatus | null> {
+	async setFilePriority(
+		infohash: string,
+		positions: number[],
+		priority: FilePriority
+	): Promise<void> {
 		this.#requireReachable();
-		const download = this.added.find((it) => it.infohash === infohash.toLowerCase());
-		if (download === undefined) return null;
-		return {
-			infohash: download.infohash,
-			state: download.state,
-			progress: download.progress,
-			contentPath: download.contentPath
-		};
+		const download = this.#find(infohash);
+		for (const position of positions) download.filePriorities.set(position, priority);
+	}
+
+	async statuses(infohashes: string[]): Promise<DownloadStatus[]> {
+		this.#requireReachable();
+		const wanted = new Set(infohashes.map((it) => it.toLowerCase()));
+		return this.added
+			.filter((download) => wanted.has(download.infohash))
+			.map((download) => ({
+				infohash: download.infohash,
+				state: download.state,
+				progress: download.progress,
+				contentPath: download.contentPath
+			}));
 	}
 
 	async remove(infohash: string, deleteData: boolean): Promise<void> {
@@ -63,8 +94,11 @@ export class FakeDownloadClient implements DownloadClient {
 		if (index >= 0) this.added.splice(index, 1);
 	}
 
-	async test(): Promise<void> {
+	async test(): Promise<ConnectionTest> {
 		this.#requireReachable();
+		if (this.failing !== null)
+			return { ok: false, failure: this.failing, detail: failureDetails[this.failing] };
+		return { ok: true, detail: 'Connected to qBittorrent 5.0.3.' };
 	}
 
 	/** Drive a download to "complete", as a torrent client eventually would. */
@@ -73,6 +107,23 @@ export class FakeDownloadClient implements DownloadClient {
 		download.state = 'completed';
 		download.progress = 1;
 		download.contentPath = contentPath;
+	}
+
+	progressed(infohash: string, progress: number): void {
+		this.#find(infohash).progress = progress;
+	}
+
+/** Every torrent Pacerr asked to leave files out of, and which positions it left out. */
+	deselected(): { infohash: string; positions: number[] }[] {
+		return this.added
+			.map((download) => ({
+				infohash: download.infohash,
+				positions: [...download.filePriorities]
+					.filter(([, priority]) => priority === 'skip')
+					.map(([position]) => position)
+					.sort((left, right) => left - right)
+			}))
+			.filter((download) => download.positions.length > 0);
 	}
 
 	#find(infohash: string): FakeDownload {

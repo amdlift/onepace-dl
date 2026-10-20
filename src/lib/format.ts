@@ -47,3 +47,35 @@ function formatTerm(term: CoverageLike['terms'][number]): string {
 	if ('text' in term) return term.text;
 	return term.from === term.to ? `${term.from}` : `${term.from}–${term.to}`;
 }
+
+export function formatProgress(progress: number | null): string {
+	return progress === null ? '—' : `${Math.floor(progress * 100)}%`;
+}
+
+export function formatDownloadState(
+	state: 'downloading' | 'completed' | 'failed' | 'unknown'
+): string {
+	return {
+		downloading: 'Downloading',
+		completed: 'Completed',
+		failed: 'Failed',
+		unknown: 'Unknown'
+	}[state];
+}
+
+export function formatHistoryEvent(
+	event: 'grab' | 'import' | 'upgrade' | 'manualImport',
+	outcome: 'succeeded' | 'warned' | 'failed'
+): string {
+	const past = {
+		grab: 'Grabbed',
+		import: 'Imported',
+		upgrade: 'Upgraded',
+		manualImport: 'Manually imported'
+	}[event];
+	if (outcome === 'succeeded') return past;
+	return outcome === 'failed' ? `Failed to ${verbOf(event)}` : `${past}, with a warning`;
+}
+
+const verbOf = (event: 'grab' | 'import' | 'upgrade' | 'manualImport'): string =>
+	({ grab: 'grab', import: 'import', upgrade: 'upgrade', manualImport: 'import' })[event];

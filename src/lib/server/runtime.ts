@@ -2,7 +2,7 @@ import { createApp, type App } from './app';
 import type { Credentials } from './auth/service';
 import type { Clock } from './clock';
 import { runtimeFromEnvironment } from './config';
-import type { DownloadClient } from './download-client';
+import type { DownloadClientFactory } from './download/client';
 
 export interface RuntimePaths {
 	config: string;
@@ -13,7 +13,8 @@ export interface RuntimePaths {
 /** Everything Pacerr is allowed to substitute. Seam 1 replaces exactly these. */
 export interface Runtime {
 	clock: Clock;
-	downloadClient: DownloadClient;
+	/** Builds the client for the connection Settings holds; seam 1 hands back its fake instead. */
+	downloadClients: DownloadClientFactory;
 	onePaceBaseUrl: string;
 	paths: RuntimePaths;
 	catalogueRefreshInterval: number;

@@ -158,6 +158,15 @@ export class Pacerr {
 		return this.open(path);
 	}
 
+	/** Point Pacerr at a Download Client, the way a user does before anything can be grabbed. */
+	async connectDownloadClient(): Promise<void> {
+		await this.submit('/settings', 'saveDownloadClient', {
+			url: 'http://qbittorrent.test:8080',
+			username: 'admin',
+			password: 'adminadmin'
+		});
+	}
+
 	/** Recreate the container: same config volume and same upstream, everything else new. */
 	async restart(): Promise<void> {
 		await this.stop();
@@ -178,7 +187,7 @@ export class Pacerr {
 	async #boot(): Promise<void> {
 		setRuntime({
 			clock: this.clock,
-			downloadClient: this.downloadClient,
+			downloadClients: () => this.downloadClient,
 			onePaceBaseUrl: this.upstream.url,
 			paths: this.paths,
 			catalogueRefreshInterval: hours(24),

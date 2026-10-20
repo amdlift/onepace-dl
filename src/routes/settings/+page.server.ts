@@ -6,15 +6,40 @@ import type { Resolution, Variant } from '../../lib/server/catalogue/watch-page'
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	return { authentication: locals.authentication, profile: readProfile(getApp().db) };
+	const app = getApp();
+	return {
+		authentication: locals.authentication,
+		profile: readProfile(app.db),
+		downloadClient: app.downloads.connection(),
+		connection: app.downloads.health()
+	};
 };
 
 export const actions: Actions = {
+	saveDownloadClient: async ({ request }) => {
+		const submitted = await request.formData();
+		const app = getApp();
+		app.downloads.configure({
+			url: String(submitted.get('url') ?? '').trim(),
+			username: String(submitted.get('username') ?? '').trim(),
+			password: String(submitted.get('password') ?? '')
+		});
+		await app.acquisition.run();
+		return { saved: true };
+	},
+
+	testDownloadClient: async () => {
+		await getApp().downloads.test();
+		return { tested: true };
+	},
+
 	saveProfile: async ({ request }) => {
 		const submitted = await request.formData();
 		const profile = profileFrom(submitted);
 		if (profile === null) return { profileProblem: 'Choose at least one Resolution.' };
-		writeProfile(getApp().db, profile);
+		const app = getApp();
+		writeProfile(app.db, profile);
+		await app.acquisition.run();
 		return { saved: true };
 	},
 

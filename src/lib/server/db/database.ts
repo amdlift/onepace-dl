@@ -121,6 +121,42 @@ const migrations = [
 	);
 	insert into profile (id, resolutions, variant, cutoff)
 		values (1, '[1080,720,480]', 'regular', 1080);
+	`,
+	`
+	create table download_client (
+		id integer primary key check (id = 1),
+		url text,
+		username text,
+		password text
+	);
+	insert into download_client (id) values (1);
+	create table grab (
+		infohash text primary key,
+		release_title text not null,
+		batch integer not null,
+		grabbed_at text not null
+	);
+	create table grab_part (
+		infohash text not null references grab(infohash) on delete cascade,
+		part_slug text not null,
+		primary key (infohash, part_slug)
+	);
+	-- Both the Catalogue and the feed are replaced wholesale, so History keeps its own copy of
+	-- every name it states: an event has to stay readable once the rows it names are gone.
+	create table history (
+		id integer primary key,
+		at text not null,
+		event text not null,
+		outcome text not null,
+		part_slug text,
+		part_title text,
+		infohash text,
+		release_title text,
+		replaced_infohash text,
+		detail text,
+		reason text
+	);
+	create index history_by_time on history(at desc, id desc);
 	`
 ];
 
