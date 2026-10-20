@@ -1,7 +1,8 @@
 # Select the most recent Release per Part, not per Arc
 
-When several Releases cover the same Part, Pacerr takes the most recently published one that
-satisfies the Profile. The unit of that comparison is the **Part**, not the Arc.
+When several Releases cover the same Part, Pacerr takes the most recently published one at the
+best Resolution the Profile asks for — see ADR-0006 for which of those two ranks first. The unit
+of that comparison is the **Part**, not the Arc.
 
 ## Why the unit matters
 
