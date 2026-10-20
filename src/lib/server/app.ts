@@ -1,5 +1,4 @@
 import { join } from 'node:path';
-import { mkdirSync } from 'node:fs';
 import { AuthenticationService } from './auth/service';
 import { CatalogueService } from './catalogue/service';
 import { openDatabase, type Database } from './db/database';
@@ -8,6 +7,7 @@ import { DownloadService } from './download/service';
 import { ImportService } from './library/import';
 import { assignLibraryIndexes } from './library/store';
 import { MonitoringService } from './monitoring/service';
+import { openConfigDirectory, reportPathValidation, validatePaths } from './paths/validation';
 import { ReleaseService } from './releases/service';
 import type { Runtime } from './runtime';
 import { Scheduler } from './scheduler';
@@ -34,7 +34,8 @@ export interface App {
 }
 
 export function createApp(runtime: Runtime): App {
-	mkdirSync(runtime.paths.config, { recursive: true });
+	openConfigDirectory(runtime.paths.config);
+	reportPathValidation(validatePaths(runtime.paths));
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
 	assignLibraryIndexes(db);
 	const catalogue = new CatalogueService(db, runtime);

@@ -10,6 +10,8 @@
 	const downloadClient = $derived(data.downloadClient);
 	const connection = $derived(data.connection);
 	const namingTemplate = $derived(data.namingTemplate);
+	const remotePathMappings = $derived(data.remotePathMappings);
+	const paths = $derived(data.paths);
 
 	const tokens = '{arc}, {season}, {part}, {episode}, {resolution}';
 	const resolutions = [1080, 720, 480] as const;
@@ -125,6 +127,62 @@
 	{/if}
 </section>
 
+<section class="paths">
+	<h2>Directories</h2>
+
+	<ul>
+		{#each paths.directories as directory (directory.directory)}
+			<li class:bad={directory.condition !== 'ok'}>{directory.diagnostic}</li>
+		{/each}
+		<li class:warned={!paths.hardlinking.sameFilesystem}>{paths.hardlinking.diagnostic}</li>
+	</ul>
+
+	<form method="POST" action="?/testPaths">
+		<button class="button" type="submit">Test</button>
+	</form>
+</section>
+
+<section class="mappings">
+	<h2>Remote Path Mappings</h2>
+
+	{#if form?.mappingProblem}
+		<p class="alert">{form.mappingProblem}</p>
+	{/if}
+
+	{#if remotePathMappings.length > 0}
+		<ul class="mapping-list">
+			{#each remotePathMappings as mapping (mapping.id)}
+				<li>
+					<code>{mapping.remotePath}</code>
+					<span aria-hidden="true">&rarr;</span>
+					<code>{mapping.localPath}</code>
+					<form method="POST" action="?/removeRemotePathMapping">
+						<input type="hidden" name="id" value={mapping.id} />
+						<button class="button" type="submit">Remove</button>
+					</form>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+
+	<form method="POST" action="?/addRemotePathMapping">
+		<label>
+			<span>Path on the Download Client</span>
+			<input name="remotePath" autocomplete="off" placeholder="/data/torrents" />
+		</label>
+		<label>
+			<span>The same place as Pacerr sees it</span>
+			<input name="localPath" autocomplete="off" placeholder="/downloads" />
+		</label>
+		<p class="note">
+			Only needed when the two do not share a mount layout. The Download Client reports where it
+			put a completed download using its own paths; a mapping rewrites that prefix to the
+			equivalent path inside this container.
+		</p>
+		<button class="button" type="submit">Add</button>
+	</form>
+</section>
+
 <section>
 	<h2>Security</h2>
 
@@ -227,6 +285,50 @@
 		gap: 0.5rem;
 	}
 
+	.paths ul {
+		display: grid;
+		gap: 0.35rem;
+		max-width: 44rem;
+		margin: 0 0 0.75rem;
+		padding: 0;
+		list-style: none;
+		color: var(--ink-dim);
+		font-size: 0.8rem;
+	}
+
+	.paths li.warned {
+		color: var(--ink-bright);
+	}
+
+	.paths li.bad {
+		color: var(--danger);
+	}
+
+	.mapping-list {
+		display: grid;
+		gap: 0.35rem;
+		margin: 0 0 0.75rem;
+		padding: 0;
+		list-style: none;
+	}
+
+	.mapping-list li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.8rem;
+	}
+
+	.mapping-list code {
+		color: var(--ink-bright);
+	}
+
+	.mapping-list form {
+		display: inline;
+		max-width: none;
+	}
+
 	.connection {
 		margin: 0.5rem 0 0;
 		color: var(--ink-bright);
@@ -241,7 +343,9 @@
 	input[name='url'],
 	input[name='username'],
 	input[name='password'],
-	input[name='template'] {
+	input[name='template'],
+	input[name='remotePath'],
+	input[name='localPath'] {
 		padding: 0.35rem 0.5rem;
 		border: 1px solid var(--border);
 		border-radius: 2px;

@@ -175,6 +175,13 @@ const migrations = [
 		template text
 	);
 	insert into naming_template (id) values (1);
+	`,
+	`
+	create table remote_path_mapping (
+		id integer primary key,
+		remote_path text not null,
+		local_path text not null
+	);
 	`
 ];
 
