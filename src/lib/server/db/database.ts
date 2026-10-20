@@ -1,0 +1,80 @@
+import Database from 'better-sqlite3';
+
+export type { Database } from 'better-sqlite3';
+
+const migrations = [
+	`
+	create table arc (
+		slug text primary key,
+		position integer not null,
+		title text not null,
+		description text,
+		special integer not null,
+		unfinished integer not null,
+		chapters text,
+		episodes text,
+		cover_image_url text
+	);
+	create table part (
+		slug text primary key,
+		arc_slug text not null references arc(slug) on delete cascade,
+		position integer not null,
+		number integer not null,
+		title text not null,
+		description text,
+		chapters text,
+		episodes text,
+		to_be_redone integer not null
+	);
+	create index part_by_arc on part(arc_slug);
+	create table unreleased_part (
+		arc_slug text not null references arc(slug) on delete cascade,
+		number integer not null,
+		primary key (arc_slug, number)
+	);
+	create table catalogue_release (
+		infohash text primary key,
+		arc_slug text not null,
+		resolution integer not null,
+		variant text not null,
+		size_label text,
+		batch_complete integer,
+		batch_part_count integer,
+		batch_part_range text
+	);
+	create table catalogue_release_part (
+		infohash text not null references catalogue_release(infohash) on delete cascade,
+		part_slug text not null,
+		primary key (infohash, part_slug)
+	);
+	create table catalogue_source (
+		id integer primary key check (id = 1),
+		body_sha256 text,
+		etag text,
+		last_modified text,
+		checked_at text,
+		updated_at text,
+		failure text
+	);
+	insert into catalogue_source (id) values (1);
+	`
+];
+
+export function openDatabase(file: string): Database.Database {
+	const db = new Database(file);
+	db.pragma('journal_mode = WAL');
+	db.pragma('foreign_keys = ON');
+	migrate(db);
+	return db;
+}
+
+function migrate(db: Database.Database): void {
+	const applied = db.pragma('user_version', { simple: true }) as number;
+	for (const [index, migration] of migrations.entries()) {
+		if (index < applied) continue;
+		db.transaction(() => {
+			db.exec(migration);
+			db.pragma(`user_version = ${index + 1}`);
+		})();
+	}
+}
