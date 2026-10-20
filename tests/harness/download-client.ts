@@ -42,6 +42,8 @@ export class FakeDownloadClient implements DownloadClient {
 	failing: ConnectionFailure | null = null;
 	/** How many files every torrent added from here turns out to contain. */
 	filesPerTorrent = 1;
+	/** Where the daemon says it writes, in its own paths. Null is a daemon that states none. */
+	savePath: string | null = null;
 
 	async add(request: DownloadRequest): Promise<void> {
 		this.#requireReachable();
@@ -86,6 +88,11 @@ export class FakeDownloadClient implements DownloadClient {
 				progress: download.progress,
 				contentPath: download.contentPath
 			}));
+	}
+
+	async saveDirectory(): Promise<string | null> {
+		this.#requireReachable();
+		return this.savePath;
 	}
 
 	async remove(infohash: string, deleteData: boolean): Promise<void> {

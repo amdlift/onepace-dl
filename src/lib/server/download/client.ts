@@ -42,6 +42,11 @@ export interface DownloadClient {
 	 */
 	setFilePriority(infohash: string, positions: number[], priority: FilePriority): Promise<void>;
 	statuses(infohashes: string[]): Promise<DownloadStatus[]>;
+	/**
+	 * The directory the daemon says it writes completed downloads into. This, not the mount Pacerr
+	 * was configured with, is the path an import will actually read. Null where it states none.
+	 */
+	saveDirectory(): Promise<string | null>;
 	remove(infohash: string, deleteData: boolean): Promise<void>;
 	test(): Promise<ConnectionTest>;
 }

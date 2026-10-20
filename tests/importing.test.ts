@@ -108,11 +108,15 @@ describe('importing a completed download', () => {
 		]);
 	});
 
-	it('shows every Part it filed as had, with the Release that satisfied it', async () => {
+	it('shows every Part it filed as had, with the Resolution and Variant it holds', async () => {
 		const pacerr = await reverie();
 
 		const arc = await pacerr.open('/arcs/reverie');
-		expect(arc.texts('tbody .have')).toEqual(['Reverie 1080p', 'Reverie 1080p', 'Reverie 1080p']);
+		expect(arc.texts('tbody .have')).toEqual([
+			'Reverie 1080p Regular',
+			'Reverie 1080p Regular',
+			'Reverie 1080p Regular'
+		]);
 
 		const arcs = await pacerr.open('/');
 		expect(arcs.text('tbody tr:has(a[href="/arcs/reverie"])')).toContain('3 of 3');

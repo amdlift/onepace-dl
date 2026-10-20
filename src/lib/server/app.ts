@@ -35,7 +35,6 @@ export interface App {
 
 export function createApp(runtime: Runtime): App {
 	openConfigDirectory(runtime.paths.config);
-	reportPathValidation(validatePaths(runtime.paths));
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
 	assignLibraryIndexes(db);
 	const catalogue = new CatalogueService(db, runtime);
@@ -95,6 +94,10 @@ export function createApp(runtime: Runtime): App {
 		imports,
 		scheduler,
 		ready: (async () => {
+			// Before anything else, because the download directory worth validating is the one the
+			// Download Client will report, and only asking it produces that path.
+			await downloads.test();
+			reportPathValidation(validatePaths(runtime.paths, downloads.downloadDirectory()));
 			await scheduler.tick();
 			if (runtime.polls) scheduler.startPolling();
 		})(),

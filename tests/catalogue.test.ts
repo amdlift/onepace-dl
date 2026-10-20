@@ -27,6 +27,23 @@ describe('the Arcs view', () => {
 		expect(page.text()).toContain('Warship Island 01 (April Fools 2025)');
 		expect(page.text()).toContain('One Piece Fan Letter');
 	});
+
+	it('badges an Arc whose only coverage is a Batch, with the Resolution that leaves it at', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+
+		const rows = (await pacerr.open('/')).texts('tbody tr');
+
+		expect(rows.find((row) => row.startsWith('Whisky Peak'))).toContain('Batch only 480p');
+		expect(rows.find((row) => row.startsWith('Thriller Bark'))).toContain('Batch only 720p');
+	});
+
+	it('leaves an Arc One Pace has begun re-cutting Part by Part unbadged', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+
+		const rows = (await pacerr.open('/')).texts('tbody tr');
+
+		expect(rows.find((row) => row.startsWith('Fishman Island'))).not.toContain('Batch only');
+	});
 });
 
 describe('scraping the Catalogue', () => {

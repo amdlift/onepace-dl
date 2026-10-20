@@ -1,5 +1,5 @@
 import type { Database } from 'better-sqlite3';
-import type { Resolution } from '../catalogue/watch-page';
+import type { Resolution, Variant } from '../catalogue/watch-page';
 import { defaultNamingTemplate, type NamingFields } from './naming';
 
 /**
@@ -25,6 +25,8 @@ export interface HadPart {
 	infohash: string | null;
 	releaseTitle: string | null;
 	resolution: Resolution | null;
+	/** Null for a manually imported Part: per ADR-0004 Pacerr holds no Release to read it from. */
+	variant: Variant | null;
 	hadAt: Date;
 }
 
@@ -34,6 +36,7 @@ interface HadRow {
 	infohash: string | null;
 	release_title: string | null;
 	resolution: number | null;
+	variant: string | null;
 	had_at: string;
 }
 
@@ -41,7 +44,8 @@ export function readHadParts(db: Database): Map<string, HadPart> {
 	const rows = db
 		.prepare(
 			`select h.part_slug, h.library_path, h.infohash, h.had_at,
-				r.title as release_title, coalesce(c.resolution, r.resolution) as resolution
+				r.title as release_title, coalesce(c.resolution, r.resolution) as resolution,
+				coalesce(c.variant, r.variant) as variant
 			from had_part h
 			left join feed_release r on r.infohash = h.infohash
 			left join catalogue_release c on c.infohash = h.infohash`
@@ -56,6 +60,7 @@ export function readHadParts(db: Database): Map<string, HadPart> {
 				infohash: row.infohash,
 				releaseTitle: row.release_title,
 				resolution: row.resolution as Resolution | null,
+				variant: row.variant as Variant | null,
 				hadAt: new Date(row.had_at)
 			}
 		])

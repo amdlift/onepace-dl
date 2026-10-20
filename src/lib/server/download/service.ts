@@ -6,6 +6,7 @@ import type {
 	DownloadClientFactory
 } from './client';
 import {
+	applyRemotePathMappings,
 	readRemotePathMappings,
 	throughRemotePathMappings
 } from '../paths/remote-path-mapping';
@@ -29,6 +30,7 @@ export class DownloadService {
 	#factory: DownloadClientFactory;
 	#built: { connection: DownloadClientConnection; client: DownloadClient } | null = null;
 	#outcome: ConnectionTest | null = null;
+	#reportedSaveDirectory: string | null = null;
 
 	constructor(db: Database, factory: DownloadClientFactory) {
 		this.#db = db;
@@ -53,23 +55,44 @@ export class DownloadService {
 		});
 		this.#built = null;
 		this.#outcome = null;
+		this.#reportedSaveDirectory = null;
 	}
 
+	// Remote Path Mappings are read at every use rather than baked into the built client, so adding
+	// one takes effect on the next read instead of waiting for the connection to change.
 	client(): DownloadClient | null {
-		const connection = readConnection(this.#db);
-		if (connection === null) return null;
-		if (this.#built === null || !sameConnection(this.#built.connection, connection)) {
-			this.#built = { connection, client: this.#factory(connection) };
-		}
-		return throughRemotePathMappings(this.#built.client, readRemotePathMappings(this.#db));
+		const client = this.#unmapped();
+		return client === null
+			? null
+			: throughRemotePathMappings(client, readRemotePathMappings(this.#db));
+	}
+
+	/**
+	 * Where the Download Client last said it writes, as Pacerr sees that path. Null until one has
+	 * answered, so a Pacerr with no Download Client or an unreachable one falls back to the
+	 * configured mount rather than reporting a path it was never told about.
+	 */
+	downloadDirectory(): string | null {
+		const reported = this.#reportedSaveDirectory;
+		return reported === null
+			? null
+			: applyRemotePathMappings(readRemotePathMappings(this.#db), reported);
 	}
 
 	async test(): Promise<ConnectionTest> {
-		const client = this.client();
-		if (client === null) return this.#record(unconfigured);
+		const client = this.#unmapped();
+		if (client === null) {
+			this.#reportedSaveDirectory = null;
+			return this.#record(unconfigured);
+		}
 		try {
-			return this.#record(await client.test());
+			const outcome = this.#record(await client.test());
+			// Asked on the back of the one call Pacerr makes on a cadence whether or not it wants
+			// anything, which is what keeps the validated path current without a second schedule.
+			this.#reportedSaveDirectory = outcome.ok ? await client.saveDirectory() : null;
+			return outcome;
 		} catch (error) {
+			this.#reportedSaveDirectory = null;
 			return this.noteFailure(error);
 		}
 	}
@@ -89,6 +112,15 @@ export class DownloadService {
 			failure: 'unreachable',
 			detail: `The Download Client is unreachable: ${reasonOf(error)}`
 		});
+	}
+
+	#unmapped(): DownloadClient | null {
+		const connection = readConnection(this.#db);
+		if (connection === null) return null;
+		if (this.#built === null || !sameConnection(this.#built.connection, connection)) {
+			this.#built = { connection, client: this.#factory(connection) };
+		}
+		return this.#built.client;
 	}
 
 	#record(outcome: ConnectionTest): ConnectionTest {

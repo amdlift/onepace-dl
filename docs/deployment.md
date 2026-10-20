@@ -96,6 +96,26 @@ banner on every view, and clears on its own once the mount is fixed.
 
 **Settings → Directories → Test** re-runs exactly the same validation on demand.
 
+## What Pacerr costs One Pace
+
+One Pace serves no `ETag` and no `Last-Modified`, and answers a conditional request with the whole
+body, so **every poll transfers the whole document**. Pacerr sends the conditional headers anyway
+and will take a `304` the day upstream starts offering one, but today the bytes move:
+
+| Document | Size | Default cadence | Per day |
+| --------- | ----- | --------------- | ------- |
+| Release feed | ~1.9 MB | every 15 minutes | ~180 MB |
+| Watch page | ~5.1 MB | every 24 hours | ~5 MB |
+
+That is roughly 5.5 GB a month off a volunteer project's servers, almost all of it unchanged.
+Pacerr still avoids *reparsing* what has not changed — the feed's own `lastBuildDate` and a hash of
+the watch page body see to that — but reparsing is a local cost, not upstream's.
+
+The only lever is cadence. `PACERR_FEED_INTERVAL_MINUTES` and `PACERR_CATALOGUE_INTERVAL_HOURS`
+below set it, and doubling the feed interval halves the bill. One Pace publishes irregularly and
+months apart, so an hour costs very little in freshness. See
+`docs/adr/0005-poll-one-pace-without-conditional-requests.md`.
+
 ## Environment variables
 
 | Variable                         | Default               | Purpose                                   |

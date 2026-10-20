@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatTimestamp, pluralise } from '../lib/format';
+	import { formatResolution, formatTimestamp, pluralise } from '../lib/format';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -69,6 +69,13 @@
 						<a href="/arcs/{arc.slug}">{arc.title}</a>
 						{#if arc.special}<span class="badge">Special</span>{/if}
 						{#if arc.unfinished}<span class="badge unfinished">Unfinished</span>{/if}
+						{#if arc.batchOnly !== null}
+							<span class="badge batch">
+								Batch only{arc.batchOnly.resolution === null
+									? ''
+									: ` ${formatResolution(arc.batchOnly.resolution)}`}
+							</span>
+						{/if}
 					</td>
 					<td class="numeric">
 						{pluralise(arc.partCount, 'Part')}

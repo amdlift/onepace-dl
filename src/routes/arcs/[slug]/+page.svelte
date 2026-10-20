@@ -68,6 +68,7 @@
 							{#if row.had.resolution !== null}
 								<span class="resolution">{formatResolution(row.had.resolution)}</span>
 							{/if}
+							{#if row.had.variant !== null}<span>{formatVariant(row.had.variant)}</span>{/if}
 						{/if}
 					</td>
 					<td>

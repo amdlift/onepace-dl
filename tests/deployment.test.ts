@@ -35,9 +35,9 @@ describe('a Download Client that reports a path Pacerr does not have', () => {
 		});
 
 		expect((await pacerr.open('/arcs/reverie')).texts('tbody .have')).toEqual([
-			'Reverie 1080p',
-			'Reverie 1080p',
-			'Reverie 1080p'
+			'Reverie 1080p Regular',
+			'Reverie 1080p Regular',
+			'Reverie 1080p Regular'
 		]);
 	});
 
@@ -155,5 +155,44 @@ describe('a config volume the container cannot write to', () => {
 		expect((failure as Error).message).toContain('cannot write to it');
 		expect((failure as Error).message).toContain(`${process.getuid!()}:${process.getgid!()}`);
 		expect((failure as Error).message).not.toContain('SQLITE');
+	});
+});
+
+describe('a Download Client that saves somewhere Pacerr cannot reach', () => {
+	it('says so at startup, rather than at the first import days later', async () => {
+		const pacerr = await startPacerr();
+		pacerr.downloadClient.savePath = remoteRoot;
+
+		await pacerr.connectDownloadClient();
+
+		const banner = (await pacerr.open('/')).text('.banner');
+		expect(banner).toContain('cannot find the download directory');
+		expect(banner).toContain(remoteRoot);
+		expect(banner).toContain('Remote Path Mapping');
+	});
+
+	it('clears once a Remote Path Mapping says where that path is here', async () => {
+		const pacerr = await startPacerr();
+		pacerr.downloadClient.savePath = remoteRoot;
+		await pacerr.connectDownloadClient();
+
+		await pacerr.submit('/settings', 'addRemotePathMapping', {
+			remotePath: remoteRoot,
+			localPath: pacerr.paths.downloads
+		});
+
+		expect((await pacerr.open('/')).text('.banner')).toBe('');
+	});
+
+	it('is not raised against a Download Client that cannot be asked where it saves', async () => {
+		const pacerr = await startPacerr();
+		pacerr.downloadClient.savePath = remoteRoot;
+		await pacerr.connectDownloadClient();
+		expect((await pacerr.open('/')).text('.banner')).toContain('cannot find');
+
+		pacerr.downloadClient.reachable = false;
+		await pacerr.submit('/settings', 'testPaths');
+
+		expect((await pacerr.open('/')).text('.banner')).not.toContain('cannot find');
 	});
 });

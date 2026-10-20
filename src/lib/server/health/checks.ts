@@ -56,7 +56,7 @@ const directoryOutcomes: Record<DirectoryCheck['condition'], string> = {
  * ownership clears the banner without anything having to be acknowledged.
  */
 function pathChecks(app: App): HealthCheck[] {
-	const validation = validatePaths(app.runtime.paths);
+	const validation = validatePaths(app.runtime.paths, app.downloads.downloadDirectory());
 	const directories = validation.directories.map(
 		(directory): HealthCheck => ({
 			name: directoryChecks[directory.directory],
@@ -250,6 +250,11 @@ const allPlaced: Reading = {
  * Counted against the current ones alone. Most of the feed is superseded Releases One Pace delisted
  * years ago, so a check on the whole population would read as broken from the first run and stop
  * being read at all.
+ *
+ * What is left is still permanent: the current ones are Releases the feed carries and the watch
+ * page has never listed, and no action by the operator will change that. The copy therefore states
+ * a fact about what upstream publishes rather than a fault awaiting repair, because this check
+ * never clears and #13 would otherwise be read as broken.
  */
 function unmatchedCheck(app: App): HealthCheck {
 	const counts = app.releases.unmatchedCounts();
@@ -260,10 +265,11 @@ function unmatchedCheck(app: App): HealthCheck {
 			? allPlaced
 			: {
 					status: 'warned' as const,
-					outcome: `${counts.current} unexplained`,
+					outcome: `${counts.current} not in the Catalogue`,
 					summary:
-						`${pluralise(counts.current, 'Release')} One Pace still publishes as current ` +
-						'cannot be found in the Catalogue, so Pacerr cannot tell which Parts they cover.'
+						`One Pace's feed carries ${pluralise(counts.current, 'Release')} that its watch ` +
+						'page has never listed, so Pacerr cannot tell which Parts they cover. That is how ' +
+						'upstream publishes rather than something to fix, and they are listed below.'
 				}),
 		detail: null,
 		at: null

@@ -225,9 +225,9 @@ describe('the Cutoff', () => {
 		const pacerr = await upgraded();
 
 		expect((await pacerr.open('/arcs/reverie')).texts('tbody .have')).toEqual([
-			'Reverie 1080p',
-			'Reverie 1080p',
-			'Reverie 1080p'
+			'Reverie 1080p Regular',
+			'Reverie 1080p Regular',
+			'Reverie 1080p Regular'
 		]);
 		expect(contentOf(pacerr, firstPart)).toBe('the current cut 1');
 		expect(pacerr.downloadClient.removed).toEqual([{ infohash: earlierCut, deleteData: true }]);

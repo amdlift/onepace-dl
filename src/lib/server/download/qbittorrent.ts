@@ -91,6 +91,13 @@ export class QBittorrentClient implements DownloadClient {
 		}));
 	}
 
+	async saveDirectory(): Promise<string | null> {
+		const response = await this.#call('/api/v2/app/preferences');
+		const preferences = (await response.json()) as { save_path?: string };
+		const path = preferences.save_path ?? '';
+		return path === '' ? null : path;
+	}
+
 	async remove(infohash: string, deleteData: boolean): Promise<void> {
 		const form = new FormData();
 		form.set('hashes', infohash.toLowerCase());

@@ -32,8 +32,8 @@ interface Purpose {
 	noun: string;
 	/** Why Pacerr needs it, in one sentence, after the path has been named. */
 	consequence: string;
-	variable: string;
-	advice: string;
+	/** What to do about it, for the one condition whose fix depends on where the path came from. */
+	remedy: string;
 }
 
 const purposes: Record<DirectoryName, Purpose> = {
@@ -41,38 +41,63 @@ const purposes: Record<DirectoryName, Purpose> = {
 		noun: 'config directory',
 		consequence:
 			'Pacerr keeps its database and every setting there, so it cannot start without it.',
-		variable: 'PACERR_CONFIG_DIR',
-		advice: ''
+		remedy: 'Mount a volume there, or set PACERR_CONFIG_DIR to where it already is.'
 	},
 	library: {
 		noun: 'Library',
 		consequence: 'Every import is filed there, so nothing can be imported.',
-		variable: 'PACERR_LIBRARY_DIR',
-		advice: ''
+		remedy: 'Mount a volume there, or set PACERR_LIBRARY_DIR to where it already is.'
 	},
 	downloads: {
 		noun: 'download directory',
 		consequence: 'Pacerr reads completed downloads from there, so nothing can be imported.',
-		variable: 'PACERR_DOWNLOADS_DIR',
-		advice:
-			' If the Download Client already holds the files somewhere Pacerr can reach under a ' +
-			'different path, add a Remote Path Mapping instead of moving the mount.'
+		remedy:
+			'Mount a volume there, or set PACERR_DOWNLOADS_DIR to where it already is. If the ' +
+			'Download Client already holds the files somewhere Pacerr can reach under a different ' +
+			'path, add a Remote Path Mapping instead of moving the mount.'
 	}
 };
 
-export function validatePaths(paths: RuntimePaths): PathValidation {
+/**
+ * Replaces the configured mount's wording wholesale, because the two have different fixes: moving
+ * a path the Download Client chose is a Remote Path Mapping or a matching mount, never
+ * PACERR_DOWNLOADS_DIR.
+ */
+const asReported: Purpose = {
+	noun: 'download directory',
+	consequence:
+		'That is where the Download Client says it writes completed downloads, so it is the path ' +
+		'every import will read.',
+	remedy:
+		'Mount that storage at the same path in both containers, or add a Remote Path Mapping from ' +
+		'it to the path Pacerr has for the same storage.'
+};
+
+/**
+ * Story 65 asks for the download directory *as the Download Client reports it*, so `reported` —
+ * already through any Remote Path Mapping — is what gets validated when there is one. Null is a
+ * Download Client that is unconfigured or could not be asked, which is a separate condition the
+ * Download Client check already owns; this falls back to the configured mount rather than
+ * inventing a path error out of it.
+ */
+export function validatePaths(paths: RuntimePaths, reported: string | null = null): PathValidation {
+	const downloads = reported ?? paths.downloads;
 	return {
 		directories: [
 			validateDirectory('config', paths.config),
 			validateDirectory('library', paths.library),
-			validateDirectory('downloads', paths.downloads)
+			validateDirectory('downloads', downloads, reported !== null)
 		],
-		hardlinking: validateHardlinking(paths.library, paths.downloads)
+		hardlinking: validateHardlinking(paths.library, downloads)
 	};
 }
 
-function validateDirectory(directory: DirectoryName, path: string): DirectoryCheck {
-	const { noun, consequence, variable, advice } = purposes[directory];
+function validateDirectory(
+	directory: DirectoryName,
+	path: string,
+	fromDownloadClient = false
+): DirectoryCheck {
+	const { noun, consequence, remedy } = fromDownloadClient ? asReported : purposes[directory];
 	const subject = noun.charAt(0).toUpperCase() + noun.slice(1);
 	const found = describe(path);
 	if (found === null) {
@@ -81,9 +106,7 @@ function validateDirectory(directory: DirectoryName, path: string): DirectoryChe
 			subject,
 			path,
 			condition: 'missing',
-			diagnostic:
-				`Pacerr cannot find the ${noun} at ${path}. ${consequence} Mount a volume there, ` +
-				`or set ${variable} to where it already is.${advice}`
+			diagnostic: `Pacerr cannot find the ${noun} at ${path}. ${consequence} ${remedy}`
 		};
 	}
 	if (writable(path)) {

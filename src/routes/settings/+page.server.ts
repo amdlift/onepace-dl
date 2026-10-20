@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		downloadClient: app.downloads.connection(),
 		connection: app.downloads.health(),
 		remotePathMappings: readRemotePathMappings(app.db),
-		paths: validatePaths(app.runtime.paths)
+		paths: validatePaths(app.runtime.paths, app.downloads.downloadDirectory())
 	};
 };
 
@@ -36,6 +36,9 @@ export const actions: Actions = {
 			username: String(submitted.get('username') ?? '').trim(),
 			password: String(submitted.get('password') ?? '')
 		});
+		// Pointing Pacerr at a Download Client is the moment story 65's validation has something new
+		// to say, because only the client knows where it will put the files.
+		await app.downloads.test();
 		await app.acquisition.run();
 		return { saved: true };
 	},
@@ -46,7 +49,9 @@ export const actions: Actions = {
 	},
 
 	testPaths: async () => {
-		reportPathValidation(validatePaths(getApp().runtime.paths));
+		const app = getApp();
+		await app.downloads.test();
+		reportPathValidation(validatePaths(app.runtime.paths, app.downloads.downloadDirectory()));
 		return { tested: true };
 	},
 

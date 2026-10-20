@@ -34,7 +34,7 @@ export function removeRemotePathMapping(db: Database, id: number): void {
  * The longest matching remote prefix wins, so a mapping for a subdirectory beats the one for the
  * root it sits under rather than depending on insertion order.
  */
-function applyRemotePathMappings(
+export function applyRemotePathMappings(
 	mappings: RemotePathMapping[],
 	reported: string
 ): string {
@@ -59,6 +59,10 @@ export function throughRemotePathMappings(
 			client.setFilePriority(infohash, positions, priority),
 		remove: (infohash, deleteData) => client.remove(infohash, deleteData),
 		test: () => client.test(),
+		saveDirectory: async (): Promise<string | null> => {
+			const reported = await client.saveDirectory();
+			return reported === null ? null : applyRemotePathMappings(mappings, reported);
+		},
 		statuses: async (infohashes): Promise<DownloadStatus[]> =>
 			(await client.statuses(infohashes)).map((status) => ({
 				...status,
