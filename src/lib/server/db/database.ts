@@ -215,6 +215,30 @@ const migrations = [
 		imported_at text
 	);
 	alter table history add column replaced_release_title text;
+	`,
+	`
+	-- The watch page and the release feed are one concept polled twice, so they are one table with
+	-- a row each rather than two tables that have to be kept in step. The freshness column is
+	-- whichever answer the document gives about its own age: the feed's lastBuildDate, or a
+	-- hash of the watch page body, which states nothing of its own.
+	create table upstream_source (
+		name text primary key,
+		freshness text,
+		etag text,
+		last_modified text,
+		checked_at text,
+		updated_at text,
+		outcome text,
+		failure text
+	);
+	insert into upstream_source
+		select 'catalogue', body_sha256, etag, last_modified, checked_at, updated_at, outcome, failure
+		from catalogue_source;
+	insert into upstream_source
+		select 'feed', last_build_date, etag, last_modified, checked_at, updated_at, outcome, failure
+		from feed_source;
+	drop table catalogue_source;
+	drop table feed_source;
 	`
 ];
 

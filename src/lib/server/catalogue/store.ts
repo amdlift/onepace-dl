@@ -7,20 +7,8 @@ import type {
 	UnreleasedPart,
 	Variant
 } from './watch-page';
-import type { SourceValidators } from './source';
-
-/**
- * How the last scrape attempt ended. `unparsed` is the one ADR-0002 warns about: One Pace answered
- * but the payload no longer has the shape the parser knows, so Pacerr has stopped discovering Parts.
- */
-export type ScrapeOutcome = 'updated' | 'unchanged' | 'unparsed' | 'unreachable';
-
-export interface StoredSource extends SourceValidators {
-	checkedAt: Date | null;
-	updatedAt: Date | null;
-	outcome: ScrapeOutcome | null;
-	failure: string | null;
-}
+import { recordUpstreamUpdate } from '../upstream/store';
+import type { Validators } from '../upstream/source';
 
 export interface StoredArc {
 	slug: string;
@@ -32,16 +20,6 @@ export interface StoredArc {
 	coverImagePath: string | null;
 }
 
-interface SourceRow {
-	body_sha256: string | null;
-	etag: string | null;
-	last_modified: string | null;
-	checked_at: string | null;
-	updated_at: string | null;
-	outcome: string | null;
-	failure: string | null;
-}
-
 interface ArcRow {
 	slug: string;
 	title: string;
@@ -50,19 +28,6 @@ interface ArcRow {
 	cover_image_url: string | null;
 	part_count: number;
 	unreleased_part_count: number;
-}
-
-export function readSource(db: Database): StoredSource {
-	const row = db.prepare('select * from catalogue_source where id = 1').get() as SourceRow;
-	return {
-		bodySha256: row.body_sha256,
-		etag: row.etag,
-		lastModified: row.last_modified,
-		checkedAt: parseTime(row.checked_at),
-		updatedAt: parseTime(row.updated_at),
-		outcome: row.outcome as ScrapeOutcome | null,
-		failure: row.failure
-	};
 }
 
 export function readArcs(db: Database): StoredArc[] {
@@ -86,36 +51,6 @@ export function readArcs(db: Database): StoredArc[] {
 	}));
 }
 
-export function recordCheck(
-	db: Database,
-	at: Date,
-	validators: SourceValidators,
-	outcome: ScrapeOutcome
-): void {
-	db.prepare(
-		`update catalogue_source
-		set checked_at = ?, outcome = ?, failure = null, body_sha256 = ?, etag = ?, last_modified = ?
-		where id = 1`
-	).run(
-		at.toISOString(),
-		outcome,
-		validators.bodySha256,
-		validators.etag,
-		validators.lastModified
-	);
-}
-
-export function recordFailure(
-	db: Database,
-	at: Date,
-	outcome: ScrapeOutcome,
-	failure: string
-): void {
-	db.prepare(
-		'update catalogue_source set checked_at = ?, outcome = ?, failure = ? where id = 1'
-	).run(at.toISOString(), outcome, failure);
-}
-
 /**
  * Replaces the whole Catalogue in one transaction. Only ever reached with a Catalogue that parsed
  * cleanly, so a broken upstream leaves the previous one standing rather than truncating it.
@@ -124,7 +59,8 @@ export function replaceCatalogue(
 	db: Database,
 	catalogue: Catalogue,
 	at: Date,
-	validators: SourceValidators
+	validators: Validators,
+	freshness: string | null
 ): void {
 	const insertArc = db.prepare(
 		`insert into arc (slug, position, title, description, special, unfinished, chapters, episodes,
@@ -195,14 +131,12 @@ export function replaceCatalogue(
 			);
 			for (const partSlug of release.partSlugs) insertReleasePart.run(release.infohash, partSlug);
 		}
-		recordCheck(db, at, validators, 'updated');
-		db.prepare('update catalogue_source set updated_at = ? where id = 1').run(at.toISOString());
+		recordUpstreamUpdate(db, 'catalogue', at, validators, freshness);
 	})();
 }
 
 const flag = (value: boolean): number => (value ? 1 : 0);
 const json = (value: unknown): string | null => (value === null ? null : JSON.stringify(value));
-const parseTime = (value: string | null): Date | null => (value === null ? null : new Date(value));
 
 export interface StoredPart {
 	slug: string;

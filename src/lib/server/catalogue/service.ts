@@ -1,19 +1,11 @@
+import { createHash } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
-import { reasonOf } from '../failure';
-import type { Runtime } from '../runtime';
-import { fetchWatchPage } from './source';
-import {
-	readArcs,
-	readSource,
-	recordCheck,
-	recordFailure,
-	replaceCatalogue,
-	type ScrapeOutcome
-} from './store';
-import { parseCatalogue } from './watch-page';
 import { assignLibraryIndexes } from '../library/store';
-
-export type { ScrapeOutcome } from './store';
+import type { Runtime } from '../runtime';
+import { UpstreamSource, type UpstreamDocument } from '../upstream/service';
+import type { UpstreamOutcome } from '../upstream/store';
+import { readArcs, replaceCatalogue } from './store';
+import { parseCatalogue, type Catalogue } from './watch-page';
 
 export interface ArcListing {
 	slug: string;
@@ -29,49 +21,41 @@ export interface CatalogueView {
 	arcs: ArcListing[];
 	checkedAt: Date | null;
 	updatedAt: Date | null;
-	outcome: ScrapeOutcome | null;
+	outcome: UpstreamOutcome | null;
 	failure: string | null;
 }
+
+const watchPage = (db: Database): UpstreamDocument<Catalogue> => ({
+	name: 'catalogue',
+	path: '/en/watch',
+	subject: 'the watch page',
+	// The watch page states nothing about its own age, so the only thing that can tell a reparse
+	// from a wasted one is the body Pacerr has already paid for.
+	freshnessOf: (body) => createHash('sha256').update(body).digest('hex'),
+	parse: parseCatalogue,
+	replace: (catalogue, at, validators, freshness) => {
+		replaceCatalogue(db, catalogue, at, validators, freshness);
+		assignLibraryIndexes(db);
+	}
+});
 
 export class CatalogueService {
 	#db: Database;
 	#runtime: Runtime;
+	#source: UpstreamSource<Catalogue>;
 
 	constructor(db: Database, runtime: Runtime) {
 		this.#db = db;
 		this.#runtime = runtime;
+		this.#source = new UpstreamSource(db, runtime, watchPage(db));
 	}
 
-	async scrape(): Promise<ScrapeOutcome> {
-		const at = this.#runtime.clock.now();
-		const stored = readSource(this.#db);
-
-		let fetched;
-		try {
-			fetched = await fetchWatchPage(this.#runtime.onePaceBaseUrl, stored);
-		} catch (error) {
-			recordFailure(this.#db, at, 'unreachable', reasonOf(error));
-			return 'unreachable';
-		}
-
-		if (fetched.kind === 'unchanged') {
-			recordCheck(this.#db, at, fetched.validators, 'unchanged');
-			return 'unchanged';
-		}
-
-		try {
-			const catalogue = parseCatalogue(fetched.body);
-			replaceCatalogue(this.#db, catalogue, at, fetched.validators);
-			assignLibraryIndexes(this.#db);
-			return 'updated';
-		} catch (error) {
-			recordFailure(this.#db, at, 'unparsed', reasonOf(error));
-			return 'unparsed';
-		}
+	scrape(): Promise<UpstreamOutcome> {
+		return this.#source.check();
 	}
 
 	view(): CatalogueView {
-		const source = readSource(this.#db);
+		const source = this.#source.state();
 		return {
 			arcs: readArcs(this.#db).map((arc) => ({
 				slug: arc.slug,
@@ -92,4 +76,3 @@ export class CatalogueService {
 		};
 	}
 }
-

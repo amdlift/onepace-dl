@@ -2,18 +2,8 @@ import type { Database } from 'better-sqlite3';
 import type { BatchRelease } from '../batch/expansion';
 import type { Coverage, Resolution, Variant } from '../catalogue/watch-page';
 import type { FeedRelease, ReleaseStatus } from './feed';
-import type { FeedValidators } from './source';
-
-/** How the last poll ended. `unparsed` is One Pace changing shape; `unchanged` is a quiet hour. */
-export type PollOutcome = 'updated' | 'unchanged' | 'unparsed' | 'unreachable';
-
-export interface StoredFeed extends FeedValidators {
-	lastBuildDate: Date | null;
-	checkedAt: Date | null;
-	updatedAt: Date | null;
-	outcome: PollOutcome | null;
-	failure: string | null;
-}
+import { recordUpstreamUpdate } from '../upstream/store';
+import type { Validators } from '../upstream/source';
 
 /** A Release as the Arc detail view shows it: feed facts, plus the size only the Catalogue states. */
 export interface ReleaseListing {
@@ -29,16 +19,6 @@ export interface ReleaseListing {
 export interface UnmatchedRelease extends ReleaseListing {
 	chapters: Coverage | null;
 	episodes: Coverage | null;
-}
-
-interface FeedRow {
-	last_build_date: string | null;
-	etag: string | null;
-	last_modified: string | null;
-	checked_at: string | null;
-	updated_at: string | null;
-	outcome: string | null;
-	failure: string | null;
 }
 
 interface ReleaseRow {
@@ -62,19 +42,6 @@ interface BatchRow {
 interface UnmatchedRow extends Omit<ReleaseRow, 'part_slug'> {
 	chapters: string | null;
 	episodes: string | null;
-}
-
-export function readFeedSource(db: Database): StoredFeed {
-	const row = db.prepare('select * from feed_source where id = 1').get() as FeedRow;
-	return {
-		lastBuildDate: parseTime(row.last_build_date),
-		etag: row.etag,
-		lastModified: row.last_modified,
-		checkedAt: parseTime(row.checked_at),
-		updatedAt: parseTime(row.updated_at),
-		outcome: row.outcome as PollOutcome | null,
-		failure: row.failure
-	};
 }
 
 export function readInfohashes(db: Database): Set<string> {
@@ -180,47 +147,13 @@ export function readBatchReleases(db: Database): BatchRelease[] {
 	}));
 }
 
-export function recordFeedCheck(
-	db: Database,
-	at: Date,
-	validators: FeedValidators,
-	lastBuildDate: Date | null,
-	outcome: PollOutcome
-): void {
-	db.prepare(
-		`update feed_source
-		set checked_at = ?, outcome = ?, failure = null, etag = ?, last_modified = ?,
-			last_build_date = ?
-		where id = 1`
-	).run(
-		at.toISOString(),
-		outcome,
-		validators.etag,
-		validators.lastModified,
-		lastBuildDate === null ? null : lastBuildDate.toISOString()
-	);
-}
-
-export function recordFeedFailure(
-	db: Database,
-	at: Date,
-	outcome: PollOutcome,
-	failure: string
-): void {
-	db.prepare('update feed_source set checked_at = ?, outcome = ?, failure = ? where id = 1').run(
-		at.toISOString(),
-		outcome,
-		failure
-	);
-}
-
 /** Replaces every Release in one transaction, only ever with a feed that parsed cleanly. */
 export function replaceReleases(
 	db: Database,
 	releases: FeedRelease[],
 	at: Date,
-	validators: FeedValidators,
-	lastBuildDate: Date | null
+	validators: Validators,
+	freshness: string | null
 ): void {
 	const insert = db.prepare(
 		`insert into feed_release (infohash, title, published_at, variant, status, resolution,
@@ -243,8 +176,7 @@ export function replaceReleases(
 				release.torrentUrl
 			);
 		}
-		recordFeedCheck(db, at, validators, lastBuildDate, 'updated');
-		db.prepare('update feed_source set updated_at = ? where id = 1').run(at.toISOString());
+		recordUpstreamUpdate(db, 'feed', at, validators, freshness);
 	})();
 }
 
@@ -263,7 +195,6 @@ function toListing(row: Omit<ReleaseRow, 'part_slug'>): ReleaseListing {
 const json = (value: unknown): string | null => (value === null ? null : JSON.stringify(value));
 const parseCoverage = (value: string | null): Coverage | null =>
 	value === null ? null : (JSON.parse(value) as Coverage);
-const parseTime = (value: string | null): Date | null => (value === null ? null : new Date(value));
 
 export interface PublishedRelease {
 	title: string;

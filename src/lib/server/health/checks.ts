@@ -1,9 +1,8 @@
 import { pluralise } from '../../format';
 import type { App } from '../app';
-import { readSource, type ScrapeOutcome } from '../catalogue/store';
 import type { ConnectionFailure, ConnectionTest } from '../download/client';
 import { validatePaths, type DirectoryCheck } from '../paths/validation';
-import { readFeedSource, type PollOutcome } from '../releases/store';
+import { readUpstream, type UpstreamName, type UpstreamOutcome } from '../upstream/store';
 
 /** `warned` is for something a person should know about but which is not Pacerr being broken. */
 export type HealthStatus = 'ok' | 'warned' | 'failed';
@@ -31,8 +30,8 @@ export interface HealthCheck {
 
 export function healthChecks(app: App): HealthCheck[] {
 	return [
-		catalogueCheck(app),
-		feedCheck(app),
+		upstreamCheck(app, catalogueReadings),
+		upstreamCheck(app, feedReadings),
 		downloadClientCheck(app),
 		unmatchedCheck(app),
 		...pathChecks(app)
@@ -92,96 +91,98 @@ interface Reading {
 	summary: string;
 }
 
-const notYet: Reading = {
-	status: 'ok',
-	outcome: 'Not yet attempted',
-	summary: 'Pacerr has not scraped the One Pace watch page yet.'
-};
-
 /**
- * The distinction ADR-0002 exists for. A scrape that parses and finds nothing is a quiet month
- * upstream; a scrape that fetches and no longer parses is the silent failure that otherwise reads
- * as a quiet month for a year.
+ * What one upstream document's four outcomes read as. Both documents have the same four, and both
+ * turn on the distinction ADR-0002 exists for — a fetch that parses and finds nothing is a quiet
+ * month upstream, a fetch that no longer parses is the silent failure that otherwise reads as a
+ * quiet month for a year — but they are about different things, and say so in their own words.
  */
-const scrapeReadings: Record<ScrapeOutcome, Reading> = {
-	updated: {
-		status: 'ok',
-		outcome: 'Updated',
-		summary: 'The watch page parsed cleanly and the Catalogue was replaced with what it publishes.'
-	},
-	unchanged: {
-		status: 'ok',
-		outcome: 'No new Parts',
-		summary: 'The watch page has not changed, so One Pace has announced no new Parts.'
-	},
-	unparsed: {
-		status: 'failed',
-		outcome: 'Upstream changed shape',
-		summary:
-			'The One Pace watch page was fetched but no longer parses, so Pacerr has stopped ' +
-			'discovering Parts. This is upstream changing shape, not a quiet month.'
-	},
-	unreachable: {
-		status: 'failed',
-		outcome: 'One Pace unreachable',
-		summary: 'One Pace did not answer, so the Catalogue has not been scraped.'
-	}
-};
+interface UpstreamReadings {
+	name: UpstreamName & HealthCheckName;
+	subject: string;
+	notYet: Reading;
+	outcomes: Record<UpstreamOutcome, Reading>;
+}
 
-function catalogueCheck(app: App): HealthCheck {
-	const source = readSource(app.db);
-	const reading = source.outcome === null ? notYet : scrapeReadings[source.outcome];
+function upstreamCheck(app: App, readings: UpstreamReadings): HealthCheck {
+	const source = readUpstream(app.db, readings.name);
 	return {
-		name: 'catalogue',
-		subject: 'Catalogue scrape',
-		...reading,
+		name: readings.name,
+		subject: readings.subject,
+		...(source.outcome === null ? readings.notYet : readings.outcomes[source.outcome]),
 		detail: source.failure,
 		at: source.checkedAt
 	};
 }
 
-const notPolled: Reading = {
-	status: 'ok',
-	outcome: 'Not yet attempted',
-	summary: 'Pacerr has not read the One Pace release feed yet.'
-};
-
-const pollReadings: Record<PollOutcome, Reading> = {
-	updated: {
+const catalogueReadings: UpstreamReadings = {
+	name: 'catalogue',
+	subject: 'Catalogue scrape',
+	notYet: {
 		status: 'ok',
-		outcome: 'Updated',
-		summary: 'The release feed parsed cleanly and Pacerr holds every Release it publishes.'
+		outcome: 'Not yet attempted',
+		summary: 'Pacerr has not scraped the One Pace watch page yet.'
 	},
-	unchanged: {
-		status: 'ok',
-		outcome: 'No new Releases',
-		summary: 'The feed has not been rebuilt, so One Pace has published no new Releases.'
-	},
-	unparsed: {
-		status: 'failed',
-		outcome: 'Upstream changed shape',
-		summary:
-			'The One Pace release feed was fetched but no longer parses, so Pacerr has stopped ' +
-			'seeing new Releases. This is upstream changing shape, not a quiet week.'
-	},
-	unreachable: {
-		status: 'failed',
-		outcome: 'One Pace unreachable',
-		summary: 'One Pace did not answer, so the release feed has not been read.'
+	outcomes: {
+		updated: {
+			status: 'ok',
+			outcome: 'Updated',
+			summary:
+				'The watch page parsed cleanly and the Catalogue was replaced with what it publishes.'
+		},
+		unchanged: {
+			status: 'ok',
+			outcome: 'No new Parts',
+			summary: 'The watch page has not changed, so One Pace has announced no new Parts.'
+		},
+		unparsed: {
+			status: 'failed',
+			outcome: 'Upstream changed shape',
+			summary:
+				'The One Pace watch page was fetched but no longer parses, so Pacerr has stopped ' +
+				'discovering Parts. This is upstream changing shape, not a quiet month.'
+		},
+		unreachable: {
+			status: 'failed',
+			outcome: 'One Pace unreachable',
+			summary: 'One Pace did not answer, so the Catalogue has not been scraped.'
+		}
 	}
 };
 
-function feedCheck(app: App): HealthCheck {
-	const source = readFeedSource(app.db);
-	const reading = source.outcome === null ? notPolled : pollReadings[source.outcome];
-	return {
-		name: 'feed',
-		subject: 'Release feed',
-		...reading,
-		detail: source.failure,
-		at: source.checkedAt
-	};
-}
+const feedReadings: UpstreamReadings = {
+	name: 'feed',
+	subject: 'Release feed',
+	notYet: {
+		status: 'ok',
+		outcome: 'Not yet attempted',
+		summary: 'Pacerr has not read the One Pace release feed yet.'
+	},
+	outcomes: {
+		updated: {
+			status: 'ok',
+			outcome: 'Updated',
+			summary: 'The release feed parsed cleanly and Pacerr holds every Release it publishes.'
+		},
+		unchanged: {
+			status: 'ok',
+			outcome: 'No new Releases',
+			summary: 'The feed has not been rebuilt, so One Pace has published no new Releases.'
+		},
+		unparsed: {
+			status: 'failed',
+			outcome: 'Upstream changed shape',
+			summary:
+				'The One Pace release feed was fetched but no longer parses, so Pacerr has stopped ' +
+				'seeing new Releases. This is upstream changing shape, not a quiet week.'
+		},
+		unreachable: {
+			status: 'failed',
+			outcome: 'One Pace unreachable',
+			summary: 'One Pace did not answer, so the release feed has not been read.'
+		}
+	}
+};
 
 const connectionReadings: Record<ConnectionFailure, Reading> = {
 	// A fresh Pacerr has no Download Client and that is not a fault, so it never raises the banner.

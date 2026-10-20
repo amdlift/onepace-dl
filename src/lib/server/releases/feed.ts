@@ -15,11 +15,6 @@ export interface FeedRelease {
 	torrentUrl: string | null;
 }
 
-export interface Feed {
-	lastBuildDate: Date | null;
-	releases: FeedRelease[];
-}
-
 export class FeedParseError extends Error {
 	constructor(reason: string) {
 		super(`the One Pace release feed did not parse: ${reason}`);
@@ -27,14 +22,12 @@ export class FeedParseError extends Error {
 	}
 }
 
-export function parseFeed(xml: string): Feed {
+export function parseFeed(xml: string): FeedRelease[] {
 	// Eighty-odd of the oldest items carry a urn:crc32 guid and no infohash, magnet or enclosure
 	// at all. Nothing identifies or downloads them, and per ADR-0004 their titles never could.
-	const releases = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)]
+	return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)]
 		.map((match) => readRelease(match[1]!))
 		.filter((release): release is FeedRelease => release !== null);
-
-	return { lastBuildDate: readLastBuildDate(xml), releases };
 }
 
 /**

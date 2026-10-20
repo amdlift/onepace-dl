@@ -1,26 +1,20 @@
 import type { Database } from 'better-sqlite3';
-import { reasonOf } from '../failure';
 import type { Runtime } from '../runtime';
-import { parseFeed, readLastBuildDate } from './feed';
-import { fetchFeed } from './source';
+import { UpstreamSource, type UpstreamDocument } from '../upstream/service';
+import type { UpstreamOutcome } from '../upstream/store';
+import { parseFeed, readLastBuildDate, type FeedRelease } from './feed';
 import {
-	readFeedSource,
 	readInfohashes,
 	readUnknownInfohashes,
 	readUnmatchedCounts,
 	readUnmatchedReleases,
-	recordFeedCheck,
-	recordFeedFailure,
 	replaceReleases,
-	type PollOutcome,
 	type UnmatchedCounts,
 	type UnmatchedRelease
 } from './store';
 
-export type { PollOutcome } from './store';
-
 export interface PollResult {
-	outcome: PollOutcome;
+	outcome: UpstreamOutcome;
 	/** Infohashes the Catalogue has never explained, which only a fresh scrape could. */
 	unknownInfohashes: string[];
 }
@@ -37,58 +31,47 @@ export interface FeedView {
 	releaseCount: number;
 	checkedAt: Date | null;
 	updatedAt: Date | null;
-	outcome: PollOutcome | null;
+	outcome: UpstreamOutcome | null;
 	failure: string | null;
 }
 
+const feed = (db: Database): UpstreamDocument<FeedRelease[]> => ({
+	name: 'feed',
+	path: '/en/releases/rss.xml',
+	subject: 'the release feed',
+	// The feed dates its own build, which is cheaper and more honest than hashing a document whose
+	// bytes can differ without a Release having changed.
+	freshnessOf: (body) => readLastBuildDate(body)?.toISOString() ?? null,
+	parse: parseFeed,
+	replace: (releases, at, validators, freshness) =>
+		replaceReleases(db, releases, at, validators, freshness)
+});
+
 export class ReleaseService {
 	#db: Database;
-	#runtime: Runtime;
+	#source: UpstreamSource<FeedRelease[]>;
 
 	constructor(db: Database, runtime: Runtime) {
 		this.#db = db;
-		this.#runtime = runtime;
+		this.#source = new UpstreamSource(db, runtime, feed(db));
 	}
 
 	async poll(): Promise<PollResult> {
-		const at = this.#runtime.clock.now();
-		const stored = readFeedSource(this.#db);
-
-		let fetched;
-		try {
-			fetched = await fetchFeed(this.#runtime.onePaceBaseUrl, stored);
-		} catch (error) {
-			recordFeedFailure(this.#db, at, 'unreachable', reasonOf(error));
-			return { outcome: 'unreachable', unknownInfohashes: [] };
-		}
-
-		if (fetched.kind === 'unchanged') {
-			recordFeedCheck(this.#db, at, fetched.validators, stored.lastBuildDate, 'unchanged');
-			return { outcome: 'unchanged', unknownInfohashes: [] };
-		}
-
-		try {
-			const lastBuildDate = readLastBuildDate(fetched.body);
-			if (lastBuildDate !== null && sameMoment(lastBuildDate, stored.lastBuildDate)) {
-				recordFeedCheck(this.#db, at, fetched.validators, lastBuildDate, 'unchanged');
-				return { outcome: 'unchanged', unknownInfohashes: [] };
-			}
-
-			const known = readInfohashes(this.#db);
-			const releases = parseFeed(fetched.body).releases;
-			replaceReleases(this.#db, releases, at, fetched.validators, lastBuildDate);
-			return {
-				outcome: 'updated',
-				unknownInfohashes: readUnknownInfohashes(this.#db).filter((it) => !known.has(it))
-			};
-		} catch (error) {
-			recordFeedFailure(this.#db, at, 'unparsed', reasonOf(error));
-			return { outcome: 'unparsed', unknownInfohashes: [] };
-		}
+		// Read before the poll replaces them, so what comes back is what this poll brought in
+		// rather than everything the Catalogue has never explained.
+		const known = readInfohashes(this.#db);
+		const outcome = await this.#source.check();
+		return {
+			outcome,
+			unknownInfohashes:
+				outcome === 'updated'
+					? readUnknownInfohashes(this.#db).filter((it) => !known.has(it))
+					: []
+		};
 	}
 
 	view(): FeedView {
-		const source = readFeedSource(this.#db);
+		const source = this.#source.state();
 		const count = this.#db.prepare('select count(*) as n from feed_release').get() as { n: number };
 		return {
 			releaseCount: count.n,
@@ -112,7 +95,3 @@ export class ReleaseService {
 		return readUnmatchedCounts(this.#db);
 	}
 }
-
-const sameMoment = (left: Date, right: Date | null): boolean =>
-	right !== null && left.getTime() === right.getTime();
-

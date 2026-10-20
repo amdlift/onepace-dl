@@ -69,6 +69,13 @@ prefer), **outdated** (superseded by a newer Release of the same Part), or **to-
 outdated, so this is a first-class state rather than a filter.
 _Avoid_: Deprecated, stale, obsolete
 
+**Upstream source**:
+One of the two documents One Pace publishes that Pacerr derives everything from: the watch page,
+which yields the Catalogue, and the release feed, which yields Releases. They are polled on
+different cadences and parsed by different code, but checked identically, and a check of either
+ends **updated**, **unchanged**, **unparsed** or **unreachable**.
+_Avoid_: Provider, endpoint, remote, upstream on its own
+
 ### Acquisition
 
 **Monitoring**:
