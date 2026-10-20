@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import { reasonOf } from '../failure';
 import type { Runtime } from '../runtime';
 import { fetchWatchPage } from './source';
 import {
@@ -92,5 +93,3 @@ export class CatalogueService {
 	}
 }
 
-const reasonOf = (error: unknown): string =>
-	error instanceof Error ? error.message : String(error);

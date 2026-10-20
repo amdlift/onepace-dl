@@ -25,7 +25,7 @@ export interface HistoryRecord extends HistoryEntry {
 	at: Date;
 }
 
-interface Row {
+interface HistoryRow {
 	id: number;
 	at: string;
 	event: string;
@@ -72,7 +72,7 @@ export function countHistory(db: Database): number {
 export function readHistory(db: Database, limit = 200, offset = 0): HistoryRecord[] {
 	const rows = db
 		.prepare('select * from history order by at desc, id desc limit ? offset ?')
-		.all(limit, offset) as Row[];
+		.all(limit, offset) as HistoryRow[];
 	return rows.map((row) => ({
 		id: row.id,
 		at: new Date(row.at),

@@ -26,7 +26,7 @@ export function formatReleaseStatus(status: 'current' | 'outdated' | 'to-be-redo
 
 export function formatWantedState(state: 'missing' | 'available' | 'unreleased'): string {
 	return {
-		missing: 'Missing',
+		missing: 'No Release',
 		available: 'Release available',
 		unreleased: 'Not released yet'
 	}[state];

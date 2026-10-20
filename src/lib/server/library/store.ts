@@ -146,6 +146,17 @@ function placeSharedParts(db: Database): void {
 	for (const part of unplaced) insert.run(part.slug, next++);
 }
 
+/**
+ * Where a Part sits inside its Arc in the Library. Parts under the shared index zero were assigned
+ * a place of their own; everywhere else the Part's own number does. An Arc of one Part has nothing
+ * to number, and a media server will not show an episode zero where the Arc itself is the episode.
+ */
+export const partLibraryIndex = (part: {
+	assigned: number | null;
+	number: number;
+	arcPartCount: number;
+}): number => part.assigned ?? (part.arcPartCount === 1 ? 1 : part.number);
+
 export function readNamingTemplate(db: Database): string {
 	const row = db.prepare('select template from naming_template where id = 1').get() as {
 		template: string | null;
@@ -247,10 +258,11 @@ export function readPendingImports(db: Database): PendingImport[] {
 				arcTitle: row.arc_title,
 				arcLibraryIndex: row.library_index,
 				partTitle: row.part_title,
-				// An Arc of one Part has nothing to number, and a media server will not show an
-				// episode zero where the Arc itself is the episode.
-				partLibraryIndex:
-					row.part_library_index ?? (row.arc_part_count === 1 ? 1 : row.part_number),
+				partLibraryIndex: partLibraryIndex({
+					assigned: row.part_library_index,
+					number: row.part_number,
+					arcPartCount: row.arc_part_count
+				}),
 				resolution: row.resolution as Resolution | null
 			}
 		};

@@ -6,7 +6,6 @@ import { AcquisitionService } from './download/acquisition';
 import { DownloadService } from './download/service';
 import { ImportService } from './library/import';
 import { assignLibraryIndexes } from './library/store';
-import { MonitoringService } from './monitoring/service';
 import { openConfigDirectory, reportPathValidation, validatePaths } from './paths/validation';
 import { ReleaseService } from './releases/service';
 import type { Runtime } from './runtime';
@@ -22,7 +21,6 @@ export interface App {
 	db: Database;
 	catalogue: CatalogueService;
 	releases: ReleaseService;
-	monitoring: MonitoringService;
 	authentication: AuthenticationService;
 	downloads: DownloadService;
 	acquisition: AcquisitionService;
@@ -39,7 +37,6 @@ export function createApp(runtime: Runtime): App {
 	assignLibraryIndexes(db);
 	const catalogue = new CatalogueService(db, runtime);
 	const releases = new ReleaseService(db, runtime);
-	const monitoring = new MonitoringService(db);
 	const authentication = new AuthenticationService(
 		db,
 		runtime.clock,
@@ -87,7 +84,6 @@ export function createApp(runtime: Runtime): App {
 		db,
 		catalogue,
 		releases,
-		monitoring,
 		authentication,
 		downloads,
 		acquisition,

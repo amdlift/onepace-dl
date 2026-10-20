@@ -1,5 +1,6 @@
 import { catalogueJob, feedJob } from '../lib/server/app';
 import { arcsView } from '../lib/server/arcs';
+import { monitorEveryArc, toggleArcMonitored } from '../lib/server/monitoring/store';
 import { getApp } from '../lib/server/runtime';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -12,13 +13,13 @@ export const actions: Actions = {
 	toggleMonitoring: async ({ request }) => {
 		const submitted = await request.formData();
 		const app = getApp();
-		app.monitoring.toggleArc(String(submitted.get('arc')));
+		toggleArcMonitored(app.db, String(submitted.get('arc')));
 		await app.acquisition.run();
 		return { monitoring: true };
 	},
 	monitorAllArcs: async () => {
 		const app = getApp();
-		app.monitoring.monitorEveryArc();
+		monitorEveryArc(app.db);
 		await app.acquisition.run();
 		return { monitoring: true };
 	},

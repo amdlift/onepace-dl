@@ -26,13 +26,13 @@ describe('the Wanted view', () => {
 });
 
 describe('why a Part is not had', () => {
-	it('shows a Part with no Release at all as missing, never as a failure', async () => {
+	it('shows a Part with no Release at all as having none, never as a failure', async () => {
 		const pacerr = await startPacerr();
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
 
 		const page = await pacerr.open('/wanted');
 
-		expect(page.texts('tbody .state')).toEqual(Array(3).fill('Missing'));
+		expect(page.texts('tbody .state')).toEqual(Array(3).fill('No Release'));
 		expect(page.text()).not.toContain('Failed');
 	});
 

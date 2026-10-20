@@ -6,6 +6,7 @@ import type {
 	DownloadStatus,
 	FilePriority
 } from './client';
+import { reasonOf } from '../failure';
 
 interface TorrentInfo {
 	hash: string;
@@ -218,5 +219,3 @@ function stateOf(torrent: TorrentInfo): DownloadStatus['state'] {
 	return torrent.completion_on > 0 || torrent.progress >= 1 ? 'completed' : 'downloading';
 }
 
-const reasonOf = (error: unknown): string =>
-	error instanceof Error ? error.message : String(error);

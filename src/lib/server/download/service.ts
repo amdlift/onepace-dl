@@ -10,6 +10,7 @@ import {
 	readRemotePathMappings,
 	throughRemotePathMappings
 } from '../paths/remote-path-mapping';
+import { reasonOf } from '../failure';
 import { readConnection, writeConnection } from './connection';
 
 /** What Settings shows about the connection. The password is never rendered back. */
@@ -135,5 +136,3 @@ const sameConnection = (
 ): boolean =>
 	left.url === right.url && left.username === right.username && left.password === right.password;
 
-export const reasonOf = (error: unknown): string =>
-	error instanceof Error ? error.message : String(error);

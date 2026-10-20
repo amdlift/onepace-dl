@@ -1,10 +1,11 @@
 import type { Database } from 'better-sqlite3';
 import type { Clock } from '../clock';
+import { reasonOf } from '../failure';
 import { recordHistory, type HistoryEntry } from '../history/store';
 import { select, type SelectedRelease } from '../selection/selection';
 import { readDueUpgrades, recordUpgrades } from '../upgrade/store';
 import type { DownloadClient, DownloadSource } from './client';
-import { DownloadService, reasonOf } from './service';
+import { DownloadService } from './service';
 import {
 	linkGrabToPart,
 	readGrabbedInfohashes,

@@ -3,6 +3,7 @@ import type { App } from './app';
 import type { ArcListing, CatalogueView } from './catalogue/service';
 import type { Resolution } from './catalogue/watch-page';
 import { readHadPartCountsByArc } from './library/store';
+import { readMonitoredArcs } from './monitoring/store';
 import { select } from './selection/selection';
 
 /**
@@ -27,7 +28,7 @@ export interface ArcsView extends Omit<CatalogueView, 'arcs'> {
 
 export function arcsView(app: App): ArcsView {
 	const catalogue = app.catalogue.view();
-	const monitored = app.monitoring.monitoredArcs();
+	const monitored = readMonitoredArcs(app.db);
 	const had = readHadPartCountsByArc(app.db);
 	const batchOnly = batchOnlyArcs(app.db);
 	return {

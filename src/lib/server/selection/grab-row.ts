@@ -1,3 +1,4 @@
+import type { Resolution, Variant } from '../catalogue/watch-page';
 import type { PartSelection } from './selection';
 
 /** What Pacerr would grab for one Part, as a row states it. */
@@ -5,8 +6,8 @@ export type GrabRow =
 	| {
 			chosen: true;
 			title: string;
-			resolution: number;
-			variant: 'regular' | 'extended' | 'alternate';
+			resolution: Resolution;
+			variant: Variant;
 			batch: boolean;
 			neededPartCount: number;
 			coveredPartCount: number;

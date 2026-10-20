@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import { reasonOf } from '../failure';
 import type { Runtime } from '../runtime';
 import { parseFeed, readLastBuildDate } from './feed';
 import { fetchFeed } from './source';
@@ -115,5 +116,3 @@ export class ReleaseService {
 const sameMoment = (left: Date, right: Date | null): boolean =>
 	right !== null && left.getTime() === right.getTime();
 
-const reasonOf = (error: unknown): string =>
-	error instanceof Error ? error.message : String(error);

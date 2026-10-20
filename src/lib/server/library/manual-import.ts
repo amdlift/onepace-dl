@@ -2,10 +2,11 @@ import { readdirSync, realpathSync, statSync } from 'node:fs';
 import { basename, extname, join, relative, resolve, sep } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { Clock } from '../clock';
+import { reasonOf } from '../failure';
 import { recordHistory, type HistoryEntry } from '../history/store';
-import { placeIntoLibrary, type Placing } from './import';
+import { copiedInsteadOfLinked, placeIntoLibrary, type Placing } from './import';
 import type { NamingFields } from './naming';
-import { readNamingTemplate, recordHadPart } from './store';
+import { partLibraryIndex, readNamingTemplate, recordHadPart } from './store';
 
 const videoExtensions = new Set([
 	'.mkv',
@@ -192,8 +193,11 @@ function readNamingFields(db: Database, slugs: string[]): Map<string, NamingTarg
 					arcTitle: row.arc_title,
 					arcLibraryIndex: row.library_index,
 					partTitle: row.part_title,
-					partLibraryIndex:
-						row.part_library_index ?? (row.arc_part_count === 1 ? 1 : row.part_number),
+					partLibraryIndex: partLibraryIndex({
+						assigned: row.part_library_index,
+						number: row.part_number,
+						arcPartCount: row.arc_part_count
+					}),
 					// Pacerr holds no Release for a manually imported Part, so it does not know the
 					// Resolution either, and the template renders what it was given.
 					resolution: null
@@ -257,7 +261,7 @@ export function manualImport(
 				partSlug: target.partSlug,
 				partTitle: target.partTitle,
 				detail: placed.libraryPath,
-				reason: placed.copied ? copiedInsteadOfLinked : null
+				reason: placed.copied ? copiedInsteadOfLinked.fromImportSource : null
 			});
 		} catch (error) {
 			entries.push({
@@ -266,17 +270,13 @@ export function manualImport(
 				partSlug: target.partSlug,
 				partTitle: target.partTitle,
 				detail: one.path,
-				reason: error instanceof Error ? error.message : String(error)
+				reason: reasonOf(error)
 			});
 		}
 	}
 
 	if (entries.length > 0) recordHistory(db, clock.now(), entries);
 }
-
-const copiedInsteadOfLinked =
-	'The Library and the file Pacerr imported are on different filesystems, so it copied the file ' +
-	'rather than hardlinking it. It occupies disk twice until you remove the original.';
 
 const outsideWhatPacerrReads =
 	'Pacerr refused to read that path, because it is not inside the directory being browsed. ' +

@@ -2,6 +2,12 @@ import type { Database } from 'better-sqlite3';
 import { grabRow, type GrabRow } from './selection/grab-row';
 import { select } from './selection/selection';
 
+/**
+ * Why a wanted Part is not had yet. `missing` is story 23's "missing rather than failed": the
+ * Catalogue lists the Part as released and no Release in the feed covers it, so there is nothing
+ * for Pacerr to have failed at. `unreleased` is an Unreleased Part, which the glossary keeps
+ * deliberately apart from that — One Pace has announced a number and published nothing.
+ */
 export type WantedState = 'missing' | 'available' | 'unreleased';
 
 export interface WantedRow {
@@ -16,7 +22,8 @@ export interface WantedRow {
 	grab: GrabRow | null;
 }
 
-interface Row {
+/** One gap in a monitored Arc: a Part with no file yet, or a number One Pace has only announced. */
+interface GapRow {
 	unreleased: number;
 	arc_slug: string;
 	arc_title: string;
@@ -55,7 +62,7 @@ export function wantedView(db: Database): WantedRow[] {
 			join monitored_arc on monitored_arc.arc_slug = arc.slug
 			order by arc_position, unreleased, part_position`
 		)
-		.all() as Row[];
+		.all() as GapRow[];
 
 	const selection = select(db);
 	return rows.map((row) => ({
@@ -69,7 +76,7 @@ export function wantedView(db: Database): WantedRow[] {
 	}));
 }
 
-function stateOf(row: Row): WantedState {
+function stateOf(row: GapRow): WantedState {
 	if (row.unreleased === 1) return 'unreleased';
 	return row.has_release === 1 ? 'available' : 'missing';
 }

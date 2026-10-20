@@ -11,7 +11,8 @@ import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { Clock } from '../clock';
 import type { DownloadClient } from '../download/client';
-import { DownloadService, reasonOf } from '../download/service';
+import { DownloadService } from '../download/service';
+import { reasonOf } from '../failure';
 import { recordHistory, type HistoryEntry } from '../history/store';
 import {
 	forgetSupersededRelease,
@@ -27,9 +28,20 @@ import {
 	type PendingImport
 } from './store';
 
-const copiedInsteadOfLinked =
-	'The Library and the download directory are on different filesystems, so Pacerr copied this ' +
-	'file rather than hardlinking it. It occupies disk twice for as long as the Release seeds.';
+/**
+ * The same fallback, said twice, because the cost differs by where the file came from: a download
+ * occupies disk twice only while its Release seeds, where a manually imported file does until the
+ * user removes an original Pacerr was told to leave alone.
+ */
+export const copiedInsteadOfLinked = {
+	fromDownload:
+		'The Library and the download directory are on different filesystems, so Pacerr copied ' +
+		'this file rather than hardlinking it. It occupies disk twice for as long as the Release ' +
+		'seeds.',
+	fromImportSource:
+		'The Library and the file Pacerr imported are on different filesystems, so it copied the ' +
+		'file rather than hardlinking it. It occupies disk twice until you remove the original.'
+};
 
 /** Whether the source file survives the placement. Only Manual Import ever asks for `move`. */
 export type Placing = 'hardlink' | 'move';
@@ -190,7 +202,7 @@ export class ImportService {
 					replacedInfohash: target.replaces?.infohash ?? null,
 					replacedReleaseTitle: target.replaces?.releaseTitle ?? null,
 					detail: placed.libraryPath,
-					reason: placed.copied ? copiedInsteadOfLinked : null
+					reason: placed.copied ? copiedInsteadOfLinked.fromDownload : null
 				});
 			} catch (error) {
 				entries.push(failed(grab, target, reasonOf(error)));
