@@ -1,5 +1,8 @@
 {
 	"name": "pacerr",
+	"version": "0.1.0",
+	"license": "MIT",
+	"description": "Automated One Pace acquisition and library management",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -29,5 +32,9 @@
 		"typescript": "^6.0.3",
 		"vite": "^8.3.0",
 		"vitest": "^5.0.5"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/amdlift/onepace-dl.git"
 	}
 }
