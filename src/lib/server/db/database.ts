@@ -157,6 +157,20 @@ const migrations = [
 		reason text
 	);
 	create index history_by_time on history(at desc, id desc);
+	`,
+	`
+	-- Where each Arc sits in the Library, fixed on first sight. Deliberately not derived from
+	-- arc.position, which the next clean scrape is free to change.
+	create table arc_library_index (
+		arc_slug text primary key,
+		library_index integer not null
+	);
+	-- Null means "whatever Pacerr ships as the default", so that default lives in one place.
+	create table naming_template (
+		id integer primary key check (id = 1),
+		template text
+	);
+	insert into naming_template (id) values (1);
 	`
 ];
 

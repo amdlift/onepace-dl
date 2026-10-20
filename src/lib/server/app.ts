@@ -5,6 +5,8 @@ import { CatalogueService } from './catalogue/service';
 import { openDatabase, type Database } from './db/database';
 import { AcquisitionService } from './download/acquisition';
 import { DownloadService } from './download/service';
+import { ImportService } from './library/import';
+import { assignLibraryIndexes } from './library/store';
 import { MonitoringService } from './monitoring/service';
 import { ReleaseService } from './releases/service';
 import type { Runtime } from './runtime';
@@ -12,6 +14,7 @@ import { Scheduler } from './scheduler';
 
 export const catalogueJob = 'catalogue';
 export const feedJob = 'feed';
+export const importJob = 'import';
 
 export interface App {
 	runtime: Runtime;
@@ -22,6 +25,7 @@ export interface App {
 	authentication: AuthenticationService;
 	downloads: DownloadService;
 	acquisition: AcquisitionService;
+	imports: ImportService;
 	scheduler: Scheduler;
 	/** Resolves once the startup scrape has run; the HTTP surface waits on it. */
 	ready: Promise<void>;
@@ -31,6 +35,7 @@ export interface App {
 export function createApp(runtime: Runtime): App {
 	mkdirSync(runtime.paths.config, { recursive: true });
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
+	assignLibraryIndexes(db);
 	const catalogue = new CatalogueService(db, runtime);
 	const releases = new ReleaseService(db, runtime);
 	const monitoring = new MonitoringService(db);
@@ -41,6 +46,7 @@ export function createApp(runtime: Runtime): App {
 	);
 	const downloads = new DownloadService(db, runtime.downloadClients);
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
+	const imports = new ImportService(db, runtime.clock, downloads, runtime.paths.library);
 	const scheduler = new Scheduler(runtime.clock);
 	scheduler.add({
 		name: catalogueJob,
@@ -60,6 +66,11 @@ export function createApp(runtime: Runtime): App {
 			await acquisition.run();
 		}
 	});
+	scheduler.add({
+		name: importJob,
+		every: runtime.feedPollInterval,
+		run: () => imports.run()
+	});
 
 	return {
 		runtime,
@@ -70,6 +81,7 @@ export function createApp(runtime: Runtime): App {
 		authentication,
 		downloads,
 		acquisition,
+		imports,
 		scheduler,
 		ready: (async () => {
 			await scheduler.tick();

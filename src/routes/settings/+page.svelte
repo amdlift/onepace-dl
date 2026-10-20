@@ -9,7 +9,9 @@
 	const profile = $derived(data.profile);
 	const downloadClient = $derived(data.downloadClient);
 	const connection = $derived(data.connection);
+	const namingTemplate = $derived(data.namingTemplate);
 
+	const tokens = '{arc}, {season}, {part}, {episode}, {resolution}';
 	const resolutions = [1080, 720, 480] as const;
 	const variants = ['regular', 'extended', 'alternate'] as const;
 	const ranks = [0, 1, 2] as const;
@@ -70,6 +72,23 @@
 		<p class="note">
 			Pacerr takes the most recently published Release covering each Part that this Profile
 			accepts, and stops looking for a better Resolution once a Part reaches the Cutoff.
+		</p>
+		<button class="button" type="submit">Save</button>
+	</form>
+</section>
+
+<section>
+	<h2>Library</h2>
+
+	<form method="POST" action="?/saveNamingTemplate">
+		<label>
+			<span>Naming template</span>
+			<input name="template" autocomplete="off" value={namingTemplate} />
+		</label>
+		<p class="note">
+			Arcs render as seasons and Parts as episodes, which is what Jellyfin and Plex parse.
+			Available tokens: {tokens}. A slash starts a new folder, and the file keeps the extension it
+			was downloaded with. Leave this empty to go back to the default.
 		</p>
 		<button class="button" type="submit">Save</button>
 	</form>
@@ -221,7 +240,8 @@
 	select,
 	input[name='url'],
 	input[name='username'],
-	input[name='password'] {
+	input[name='password'],
+	input[name='template'] {
 		padding: 0.35rem 0.5rem;
 		border: 1px solid var(--border);
 		border-radius: 2px;

@@ -40,9 +40,11 @@ it('picks up an Arc that appeared upstream', async () => {
 
 The instance stops itself when the test finishes.
 
-- `startPacerr({ configDir, watchPage, feed, now, authentication })` — all optional. `configDir`
-  boots against state a previous instance left behind; `authentication` is the container being
-  given credentials by environment variable. `watchPage` defaults to `fixtures.watchPage` and
+- `startPacerr({ configDir, watchPage, feed, now, authentication, downloadsDir })` — all optional.
+  `configDir` boots against state a previous instance left behind; `authentication` is the
+  container being given credentials by environment variable; `downloadsDir` mounts the download
+  directory somewhere specific, which is how a test puts it on a filesystem the Library cannot be
+  hardlinked to. `watchPage` defaults to `fixtures.watchPage` and
   `feed` to an empty channel, so a test that wants Releases passes `fixtures.feed`. Both
   fixtures are the real documents, captured from One Pace.
 - `pacerr.open(path)` → a `PacerrPage`: `text(selector?)`, `texts(selector)`,

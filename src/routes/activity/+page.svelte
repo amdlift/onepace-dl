@@ -81,6 +81,7 @@
 						<td>{entry.partTitle ?? ''}</td>
 						<td>
 							{entry.releaseTitle ?? ''}
+							{#if entry.detail}<span class="detail">{entry.detail}</span>{/if}
 							{#if entry.reason}<span class="reason">{entry.reason}</span>{/if}
 						</td>
 					</tr>
@@ -100,13 +101,11 @@
 	}
 
 	.parts,
-	.reason {
+	.reason,
+	.detail {
+		display: block;
 		color: var(--ink-dim);
 		font-size: 0.8rem;
-	}
-
-	.reason {
-		display: block;
 	}
 
 	.event.bad {

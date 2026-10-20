@@ -1,5 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { readArcDetail } from './catalogue/store';
+import { readHadParts, type HadPart } from './library/store';
 import { readMonitoredArcs, readNotWantedParts } from './monitoring/store';
 import { readReleasesCovering, type ReleaseListing } from './releases/store';
 import { grabRow, type GrabRow } from './selection/grab-row';
@@ -11,6 +12,8 @@ export interface PartRow {
 	title: string;
 	releases: ReleaseListing[];
 	toBeRedone: boolean;
+	/** What Pacerr holds for this Part, and the Release it came from. Null while it is missing. */
+	had: HadPart | null;
 	wanted: boolean;
 	grab: GrabRow;
 }
@@ -42,6 +45,7 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 		db,
 		arc.parts.map((part) => part.slug)
 	);
+	const had = readHadParts(db);
 	const selection = select(db);
 
 	return {
@@ -58,6 +62,7 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 					title: part.title,
 					releases,
 					toBeRedone: releases.some((release) => release.status === 'to-be-redone'),
+					had: had.get(part.slug) ?? null,
 					wanted: monitored && !notWanted.has(part.slug),
 					grab: grabRow(selection.parts.get(part.slug))
 				};

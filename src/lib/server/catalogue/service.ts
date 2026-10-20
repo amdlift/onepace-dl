@@ -3,6 +3,7 @@ import type { Runtime } from '../runtime';
 import { fetchWatchPage } from './source';
 import { readArcs, readSource, recordCheck, recordFailure, replaceCatalogue } from './store';
 import { parseCatalogue } from './watch-page';
+import { assignLibraryIndexes } from '../library/store';
 
 export type ScrapeOutcome = 'updated' | 'unchanged' | 'failed';
 
@@ -52,6 +53,7 @@ export class CatalogueService {
 		try {
 			const catalogue = parseCatalogue(fetched.body);
 			replaceCatalogue(this.#db, catalogue, at, fetched.validators);
+			assignLibraryIndexes(this.#db);
 			return 'updated';
 		} catch (error) {
 			recordFailure(this.#db, at, reasonOf(error));

@@ -29,6 +29,7 @@
 			<th class="numeric">Part</th>
 			<th>Title</th>
 			<th>Would grab</th>
+			<th>Have</th>
 			<th>Releases</th>
 			<th class="wanted">Wanted</th>
 		</tr>
@@ -59,6 +60,16 @@
 							<span class="none">{row.grab.reason}</span>
 						{/if}
 					</td>
+					<td class="have">
+						{#if row.had === null}
+							<span class="none">Missing</span>
+						{:else}
+							{row.had.releaseTitle ?? 'Imported'}
+							{#if row.had.resolution !== null}
+								<span class="resolution">{formatResolution(row.had.resolution)}</span>
+							{/if}
+						{/if}
+					</td>
 					<td>
 						{#if row.releases.length === 0}
 							<span class="none">No Release</span>
@@ -87,7 +98,7 @@
 						{/if}
 					</td>
 				{:else}
-					<td colspan="3"><span class="none">Not released yet</span></td>
+					<td colspan="4"><span class="none">Not released yet</span></td>
 				{/if}
 			</tr>
 		{/each}
@@ -119,6 +130,12 @@
 		gap: 0.5rem;
 		color: var(--ink-dim);
 		font-size: 0.8rem;
+	}
+
+	.have {
+		color: var(--ink-dim);
+		font-size: 0.8rem;
+		white-space: nowrap;
 	}
 
 	.flag {

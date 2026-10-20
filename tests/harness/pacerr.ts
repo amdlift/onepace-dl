@@ -40,6 +40,11 @@ export interface StartOptions {
 	now?: Date;
 	/** Credentials the container was given by environment variable. */
 	authentication?: { username: string; password: string };
+	/**
+	 * Where the download directory is mounted. Pass a path on another filesystem to boot the
+	 * deployment whose Library and downloads cannot be hardlinked between.
+	 */
+	downloadsDir?: string;
 }
 
 export interface PacerrPaths {
@@ -89,7 +94,7 @@ export class Pacerr {
 		const paths: PacerrPaths = {
 			config: options.configDir ?? join(root, 'config'),
 			library: join(root, 'library'),
-			downloads: join(root, 'downloads')
+			downloads: options.downloadsDir ?? join(root, 'downloads')
 		};
 		for (const path of Object.values(paths)) mkdirSync(path, { recursive: true });
 
