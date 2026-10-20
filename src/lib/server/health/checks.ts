@@ -2,12 +2,21 @@ import { pluralise } from '../../format';
 import type { App } from '../app';
 import { readSource, type ScrapeOutcome } from '../catalogue/store';
 import type { ConnectionFailure, ConnectionTest } from '../download/client';
+import { validatePaths, type DirectoryCheck } from '../paths/validation';
 import { readFeedSource, type PollOutcome } from '../releases/store';
 
 /** `warned` is for something a person should know about but which is not Pacerr being broken. */
 export type HealthStatus = 'ok' | 'warned' | 'failed';
 
-export type HealthCheckName = 'catalogue' | 'feed' | 'downloadClient' | 'unmatched';
+export type HealthCheckName =
+	| 'catalogue'
+	| 'feed'
+	| 'downloadClient'
+	| 'unmatched'
+	| 'configDirectory'
+	| 'libraryDirectory'
+	| 'downloadsDirectory'
+	| 'hardlinking';
 
 export interface HealthCheck {
 	name: HealthCheckName;
@@ -21,7 +30,57 @@ export interface HealthCheck {
 }
 
 export function healthChecks(app: App): HealthCheck[] {
-	return [catalogueCheck(app), feedCheck(app), downloadClientCheck(app), unmatchedCheck(app)];
+	return [
+		catalogueCheck(app),
+		feedCheck(app),
+		downloadClientCheck(app),
+		unmatchedCheck(app),
+		...pathChecks(app)
+	];
+}
+
+const directoryChecks: Record<DirectoryCheck['directory'], HealthCheckName> = {
+	config: 'configDirectory',
+	library: 'libraryDirectory',
+	downloads: 'downloadsDirectory'
+};
+
+const directoryOutcomes: Record<DirectoryCheck['condition'], string> = {
+	ok: 'Writable',
+	missing: 'Not mounted',
+	unwritable: 'Not writable'
+};
+
+/**
+ * Re-derived from the filesystem on every request, so mounting the missing volume or fixing the
+ * ownership clears the banner without anything having to be acknowledged.
+ */
+function pathChecks(app: App): HealthCheck[] {
+	const validation = validatePaths(app.runtime.paths);
+	const directories = validation.directories.map(
+		(directory): HealthCheck => ({
+			name: directoryChecks[directory.directory],
+			subject: directory.subject,
+			status: directory.condition === 'ok' ? 'ok' : 'failed',
+			outcome: directoryOutcomes[directory.condition],
+			summary: directory.diagnostic,
+			detail: null,
+			at: null
+		})
+	);
+	return [
+		...directories,
+		{
+			name: 'hardlinking',
+			subject: 'Hardlinking',
+			// A permanently true fact about how the volumes are mounted, not a fault to chase.
+			status: validation.hardlinking.sameFilesystem ? 'ok' : 'warned',
+			outcome: validation.hardlinking.sameFilesystem ? 'Available' : 'Copies instead',
+			summary: validation.hardlinking.diagnostic,
+			detail: null,
+			at: null
+		}
+	];
 }
 
 export const failingChecks = (checks: HealthCheck[]): HealthCheck[] =>
