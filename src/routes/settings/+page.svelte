@@ -10,6 +10,7 @@
 	const downloadClient = $derived(data.downloadClient);
 	const connection = $derived(data.connection);
 	const namingTemplate = $derived(data.namingTemplate);
+	const importSource = $derived(data.importSource);
 
 	const tokens = '{arc}, {season}, {part}, {episode}, {resolution}';
 	const resolutions = [1080, 720, 480] as const;
@@ -91,6 +92,26 @@
 			was downloaded with. Leave this empty to go back to the default.
 		</p>
 		<button class="button" type="submit">Save</button>
+	</form>
+</section>
+
+<section>
+	<h2>Manual Import</h2>
+
+	<form method="POST" action="?/saveImportSource">
+		<label>
+			<span>Import Source</span>
+			<input name="importSource" autocomplete="off" value={importSource ?? ''} />
+		</label>
+		<p class="note">
+			The directory Manual Import browses for One Pace files you already have. Pacerr reads this
+			directory and the Library and nowhere else, and never scans either on its own. Leave this
+			empty to give Manual Import nowhere to look.
+		</p>
+		<div class="row">
+			<button class="button" type="submit">Save</button>
+			<a class="button" href="/manual-import">Manual Import</a>
+		</div>
 	</form>
 </section>
 

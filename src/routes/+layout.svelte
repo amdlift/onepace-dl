@@ -11,6 +11,7 @@
 		{ href: '/', label: 'Arcs' },
 		{ href: '/activity', label: 'Activity' },
 		{ href: '/wanted', label: 'Wanted' },
+		{ href: '/manual-import', label: 'Manual Import' },
 		{ href: '/settings', label: 'Settings' },
 		{ href: '/system', label: 'System' }
 	];

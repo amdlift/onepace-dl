@@ -175,6 +175,15 @@ const migrations = [
 		template text
 	);
 	insert into naming_template (id) values (1);
+	`,
+	`
+	-- Null means Manual Import has nowhere to look, which is the state Pacerr ships in: there is
+	-- no sensible default directory of files the user already has.
+	create table import_source (
+		id integer primary key check (id = 1),
+		path text
+	);
+	insert into import_source (id) values (1);
 	`
 ];
 

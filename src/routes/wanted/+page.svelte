@@ -24,6 +24,7 @@
 				<th>Title</th>
 				<th>Status</th>
 				<th>Would grab</th>
+				<th>Have it already</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -56,6 +57,11 @@
 							{#if row.grab.belowCutoff}<span class="flag">Below Cutoff</span>{/if}
 						{:else}
 							<span class="none">{row.grab.reason}</span>
+						{/if}
+					</td>
+					<td>
+						{#if row.partSlug !== null}
+							<a class="manual-import" href="/manual-import?part={row.partSlug}">Manual Import</a>
 						{/if}
 					</td>
 				</tr>

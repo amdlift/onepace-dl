@@ -1,11 +1,19 @@
-import { copyFileSync, existsSync, linkSync, mkdirSync, rmSync } from 'node:fs';
+import {
+	copyFileSync,
+	existsSync,
+	linkSync,
+	mkdirSync,
+	renameSync,
+	rmSync,
+	unlinkSync
+} from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { Clock } from '../clock';
 import type { DownloadClient } from '../download/client';
 import { DownloadService, reasonOf } from '../download/service';
 import { recordHistory, type HistoryEntry } from '../history/store';
-import { renderLibraryPath } from './naming';
+import { renderLibraryPath, type NamingFields } from './naming';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -18,9 +26,49 @@ const copiedInsteadOfLinked =
 	'The Library and the download directory are on different filesystems, so Pacerr copied this ' +
 	'file rather than hardlinking it. It occupies disk twice for as long as the Release seeds.';
 
-interface Placement {
+/** Whether the source file survives the placement. Only Manual Import ever asks for `move`. */
+export type Placing = 'hardlink' | 'move';
+
+export interface Placement {
 	libraryPath: string;
 	copied: boolean;
+}
+
+/**
+ * Puts one file in the Library under the rendered name. Every file in the Library arrives through
+ * here, so downloaded and manually imported Parts land in one consistent tree.
+ */
+export function placeIntoLibrary(
+	library: string,
+	source: string,
+	template: string,
+	naming: NamingFields,
+	placing: Placing = 'hardlink'
+): Placement {
+	const libraryPath = renderLibraryPath(template, naming) + extname(source);
+	const destination = join(library, libraryPath);
+	mkdirSync(dirname(destination), { recursive: true });
+	rmSync(destination, { force: true });
+
+	if (placing === 'move') {
+		try {
+			renameSync(source, destination);
+		} catch (error) {
+			if (!crossesFilesystems(error)) throw error;
+			copyFileSync(source, destination);
+			unlinkSync(source);
+		}
+		return { libraryPath, copied: false };
+	}
+
+	try {
+		linkSync(source, destination);
+		return { libraryPath, copied: false };
+	} catch (error) {
+		if (!crossesFilesystems(error)) throw error;
+		copyFileSync(source, destination);
+		return { libraryPath, copied: true };
+	}
 }
 
 /**
@@ -89,7 +137,7 @@ export class ImportService {
 			const target = grab.targets[position];
 			if (target === undefined || target.had) continue;
 			try {
-				const placed = this.#place(source, template, target);
+				const placed = placeIntoLibrary(this.#library, source, template, target.naming);
 				recordHadPart(
 					this.#db,
 					{
@@ -114,21 +162,6 @@ export class ImportService {
 			}
 		}
 		this.#record(entries);
-	}
-
-	#place(source: string, template: string, target: ImportTarget): Placement {
-		const libraryPath = renderLibraryPath(template, target.naming) + extname(source);
-		const destination = join(this.#library, libraryPath);
-		mkdirSync(dirname(destination), { recursive: true });
-		rmSync(destination, { force: true });
-		try {
-			linkSync(source, destination);
-			return { libraryPath, copied: false };
-		} catch (error) {
-			if (!crossesFilesystems(error)) throw error;
-			copyFileSync(source, destination);
-			return { libraryPath, copied: true };
-		}
 	}
 
 	/**

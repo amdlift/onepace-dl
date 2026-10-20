@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { forgetSession, rememberSession, sessionCookie } from '../../lib/server/auth/cookie';
 import { getApp } from '../../lib/server/runtime';
 import { readNamingTemplate, writeNamingTemplate } from '../../lib/server/library/store';
+import { readImportSource, writeImportSource } from '../../lib/server/library/manual-import';
 import { readProfile, writeProfile, type Profile } from '../../lib/server/selection/profile';
 import type { Resolution, Variant } from '../../lib/server/catalogue/watch-page';
 import type { Actions, PageServerLoad } from './$types';
@@ -12,6 +13,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		authentication: locals.authentication,
 		profile: readProfile(app.db),
 		namingTemplate: readNamingTemplate(app.db),
+		importSource: readImportSource(app.db),
 		downloadClient: app.downloads.connection(),
 		connection: app.downloads.health()
 	};
@@ -48,6 +50,12 @@ export const actions: Actions = {
 	saveNamingTemplate: async ({ request }) => {
 		const submitted = await request.formData();
 		writeNamingTemplate(getApp().db, String(submitted.get('template') ?? ''));
+		return { saved: true };
+	},
+
+	saveImportSource: async ({ request }) => {
+		const submitted = await request.formData();
+		writeImportSource(getApp().db, String(submitted.get('importSource') ?? ''));
 		return { saved: true };
 	},
 
