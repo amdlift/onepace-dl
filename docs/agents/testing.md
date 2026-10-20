@@ -33,15 +33,17 @@ it('picks up an Arc that appeared upstream', async () => {
 
 The instance stops itself when the test finishes.
 
-- `startPacerr({ configDir, watchPage, feed, now })` — all optional. `configDir` boots against
-  state a previous instance left behind. `watchPage` defaults to `fixtures.watchPage`; `feed`
-  defaults to an empty channel, so a test that wants Releases passes `fixtures.feed`. Both
+- `startPacerr({ configDir, watchPage, feed, now, authentication })` — all optional. `configDir`
+  boots against state a previous instance left behind; `authentication` is the container being
+  given credentials by environment variable. `watchPage` defaults to `fixtures.watchPage` and
+  `feed` to an empty channel, so a test that wants Releases passes `fixtures.feed`. Both
   fixtures are the real documents, captured from One Pace.
 - `pacerr.open(path)` → a `PacerrPage`: `text(selector?)`, `texts(selector)`,
   `attributes(selector, name)`, `document`, `status`.
 - `pacerr.submit(path, action, fields?)` — a form action, the way a browser without JavaScript
   submits one. Returns the page as it looks afterwards.
-- `pacerr.fetch(path, init?)` — the raw `Response`, for JSON endpoints.
+- `pacerr.fetch(path, init?)` — the raw `Response`, for JSON endpoints. Cookies are kept between
+  calls the way a browser keeps them; `pacerr.forget()` empties the jar.
 - `pacerr.advance(hours(24))` — move the clock and run whatever that made due. Nothing is timed;
   a tick only ever happens because a test asked for one.
 - `pacerr.upstream.watchPage` / `.feed` — `publish(body)`, `fail(status)`, `sendValidators()`,

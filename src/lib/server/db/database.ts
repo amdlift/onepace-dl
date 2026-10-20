@@ -59,6 +59,20 @@ const migrations = [
 	insert into catalogue_source (id) values (1);
 	`,
 	`
+	create table authentication (
+		id integer primary key check (id = 1),
+		enabled integer not null,
+		username text,
+		password_hash text
+	);
+	insert into authentication (id, enabled) values (1, 0);
+	create table session (
+		id text primary key,
+		created_at text not null,
+		expires_at text not null
+	);
+	`,
+	`
 	create table feed_release (
 		infohash text primary key,
 		title text not null,

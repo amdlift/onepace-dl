@@ -1,4 +1,5 @@
 import { createApp, type App } from './app';
+import type { Credentials } from './auth/service';
 import type { Clock } from './clock';
 import { runtimeFromEnvironment } from './config';
 import type { DownloadClient } from './download-client';
@@ -18,6 +19,8 @@ export interface Runtime {
 	catalogueRefreshInterval: number;
 	feedPollInterval: number;
 	polls: boolean;
+	/** Credentials supplied by environment variable, which stand in for the Settings ones. */
+	environmentCredentials: Credentials | null;
 }
 
 interface Slot {
