@@ -4,10 +4,14 @@ import type { Coverage, Resolution, Variant } from '../catalogue/watch-page';
 import type { FeedRelease, ReleaseStatus } from './feed';
 import type { FeedValidators } from './source';
 
+/** How the last poll ended. `unparsed` is One Pace changing shape; `unchanged` is a quiet hour. */
+export type PollOutcome = 'updated' | 'unchanged' | 'unparsed' | 'unreachable';
+
 export interface StoredFeed extends FeedValidators {
 	lastBuildDate: Date | null;
 	checkedAt: Date | null;
 	updatedAt: Date | null;
+	outcome: PollOutcome | null;
 	failure: string | null;
 }
 
@@ -33,6 +37,7 @@ interface FeedRow {
 	last_modified: string | null;
 	checked_at: string | null;
 	updated_at: string | null;
+	outcome: string | null;
 	failure: string | null;
 }
 
@@ -67,6 +72,7 @@ export function readFeedSource(db: Database): StoredFeed {
 		lastModified: row.last_modified,
 		checkedAt: parseTime(row.checked_at),
 		updatedAt: parseTime(row.updated_at),
+		outcome: row.outcome as PollOutcome | null,
 		failure: row.failure
 	};
 }
@@ -114,6 +120,28 @@ export function readReleasesCovering(
 	return covering;
 }
 
+export interface UnmatchedCounts {
+	total: number;
+	current: number;
+}
+
+/**
+ * All of them are Unmatched Releases by the glossary's definition, but One Pace drops a superseded
+ * Release from the watch page while keeping it in the feed forever, so most of them are ordinary
+ * delisted history. Only the ones the feed still calls current are a Release Pacerr cannot place.
+ */
+export function readUnmatchedCounts(db: Database): UnmatchedCounts {
+	const row = db
+		.prepare(
+			`select count(*) as total,
+				coalesce(sum(case when status <> 'outdated' then 1 else 0 end), 0) as current
+			from feed_release
+			where infohash not in (select infohash from catalogue_release)`
+		)
+		.get() as UnmatchedCounts;
+	return row;
+}
+
 export function readUnmatchedReleases(db: Database): UnmatchedRelease[] {
 	const rows = db
 		.prepare(
@@ -156,23 +184,32 @@ export function recordFeedCheck(
 	db: Database,
 	at: Date,
 	validators: FeedValidators,
-	lastBuildDate: Date | null
+	lastBuildDate: Date | null,
+	outcome: PollOutcome
 ): void {
 	db.prepare(
 		`update feed_source
-		set checked_at = ?, failure = null, etag = ?, last_modified = ?, last_build_date = ?
+		set checked_at = ?, outcome = ?, failure = null, etag = ?, last_modified = ?,
+			last_build_date = ?
 		where id = 1`
 	).run(
 		at.toISOString(),
+		outcome,
 		validators.etag,
 		validators.lastModified,
 		lastBuildDate === null ? null : lastBuildDate.toISOString()
 	);
 }
 
-export function recordFeedFailure(db: Database, at: Date, failure: string): void {
-	db.prepare('update feed_source set checked_at = ?, failure = ? where id = 1').run(
+export function recordFeedFailure(
+	db: Database,
+	at: Date,
+	outcome: PollOutcome,
+	failure: string
+): void {
+	db.prepare('update feed_source set checked_at = ?, outcome = ?, failure = ? where id = 1').run(
 		at.toISOString(),
+		outcome,
 		failure
 	);
 }
@@ -206,7 +243,7 @@ export function replaceReleases(
 				release.torrentUrl
 			);
 		}
-		recordFeedCheck(db, at, validators, lastBuildDate);
+		recordFeedCheck(db, at, validators, lastBuildDate, 'updated');
 		db.prepare('update feed_source set updated_at = ? where id = 1').run(at.toISOString());
 	})();
 }

@@ -159,6 +159,10 @@ const migrations = [
 	create index history_by_time on history(at desc, id desc);
 	`,
 	`
+	alter table catalogue_source add column outcome text;
+	alter table feed_source add column outcome text;
+	`,
+	`
 	-- Where each Arc sits in the Library, fixed on first sight. Deliberately not derived from
 	-- arc.position, which the next clean scrape is free to change.
 	create table arc_library_index (

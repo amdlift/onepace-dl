@@ -1,11 +1,18 @@
 import type { Database } from 'better-sqlite3';
 import type { Runtime } from '../runtime';
 import { fetchWatchPage } from './source';
-import { readArcs, readSource, recordCheck, recordFailure, replaceCatalogue } from './store';
+import {
+	readArcs,
+	readSource,
+	recordCheck,
+	recordFailure,
+	replaceCatalogue,
+	type ScrapeOutcome
+} from './store';
 import { parseCatalogue } from './watch-page';
 import { assignLibraryIndexes } from '../library/store';
 
-export type ScrapeOutcome = 'updated' | 'unchanged' | 'failed';
+export type { ScrapeOutcome } from './store';
 
 export interface ArcListing {
 	slug: string;
@@ -21,6 +28,7 @@ export interface CatalogueView {
 	arcs: ArcListing[];
 	checkedAt: Date | null;
 	updatedAt: Date | null;
+	outcome: ScrapeOutcome | null;
 	failure: string | null;
 }
 
@@ -41,12 +49,12 @@ export class CatalogueService {
 		try {
 			fetched = await fetchWatchPage(this.#runtime.onePaceBaseUrl, stored);
 		} catch (error) {
-			recordFailure(this.#db, at, reasonOf(error));
-			return 'failed';
+			recordFailure(this.#db, at, 'unreachable', reasonOf(error));
+			return 'unreachable';
 		}
 
 		if (fetched.kind === 'unchanged') {
-			recordCheck(this.#db, at, fetched.validators);
+			recordCheck(this.#db, at, fetched.validators, 'unchanged');
 			return 'unchanged';
 		}
 
@@ -56,8 +64,8 @@ export class CatalogueService {
 			assignLibraryIndexes(this.#db);
 			return 'updated';
 		} catch (error) {
-			recordFailure(this.#db, at, reasonOf(error));
-			return 'failed';
+			recordFailure(this.#db, at, 'unparsed', reasonOf(error));
+			return 'unparsed';
 		}
 	}
 
@@ -78,6 +86,7 @@ export class CatalogueService {
 			})),
 			checkedAt: source.checkedAt,
 			updatedAt: source.updatedAt,
+			outcome: source.outcome,
 			failure: source.failure
 		};
 	}

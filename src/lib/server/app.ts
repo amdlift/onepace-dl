@@ -15,6 +15,7 @@ import { Scheduler } from './scheduler';
 export const catalogueJob = 'catalogue';
 export const feedJob = 'feed';
 export const importJob = 'import';
+export const downloadClientJob = 'downloadClient';
 
 export interface App {
 	runtime: Runtime;
@@ -70,6 +71,15 @@ export function createApp(runtime: Runtime): App {
 		name: importJob,
 		every: runtime.feedPollInterval,
 		run: () => imports.run()
+	});
+	// Nothing else reaches the Download Client when there is nothing to grab, so without this an
+	// unreachable one would stay invisible for as long as Pacerr happened to want nothing.
+	scheduler.add({
+		name: downloadClientJob,
+		every: runtime.feedPollInterval,
+		run: async () => {
+			await downloads.test();
+		}
 	});
 
 	return {

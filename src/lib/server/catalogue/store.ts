@@ -9,9 +9,16 @@ import type {
 } from './watch-page';
 import type { SourceValidators } from './source';
 
+/**
+ * How the last scrape attempt ended. `unparsed` is the one ADR-0002 warns about: One Pace answered
+ * but the payload no longer has the shape the parser knows, so Pacerr has stopped discovering Parts.
+ */
+export type ScrapeOutcome = 'updated' | 'unchanged' | 'unparsed' | 'unreachable';
+
 export interface StoredSource extends SourceValidators {
 	checkedAt: Date | null;
 	updatedAt: Date | null;
+	outcome: ScrapeOutcome | null;
 	failure: string | null;
 }
 
@@ -31,6 +38,7 @@ interface SourceRow {
 	last_modified: string | null;
 	checked_at: string | null;
 	updated_at: string | null;
+	outcome: string | null;
 	failure: string | null;
 }
 
@@ -52,6 +60,7 @@ export function readSource(db: Database): StoredSource {
 		lastModified: row.last_modified,
 		checkedAt: parseTime(row.checked_at),
 		updatedAt: parseTime(row.updated_at),
+		outcome: row.outcome as ScrapeOutcome | null,
 		failure: row.failure
 	};
 }
@@ -77,19 +86,34 @@ export function readArcs(db: Database): StoredArc[] {
 	}));
 }
 
-export function recordCheck(db: Database, at: Date, validators: SourceValidators): void {
+export function recordCheck(
+	db: Database,
+	at: Date,
+	validators: SourceValidators,
+	outcome: ScrapeOutcome
+): void {
 	db.prepare(
 		`update catalogue_source
-		set checked_at = ?, failure = null, body_sha256 = ?, etag = ?, last_modified = ?
+		set checked_at = ?, outcome = ?, failure = null, body_sha256 = ?, etag = ?, last_modified = ?
 		where id = 1`
-	).run(at.toISOString(), validators.bodySha256, validators.etag, validators.lastModified);
+	).run(
+		at.toISOString(),
+		outcome,
+		validators.bodySha256,
+		validators.etag,
+		validators.lastModified
+	);
 }
 
-export function recordFailure(db: Database, at: Date, failure: string): void {
-	db.prepare('update catalogue_source set checked_at = ?, failure = ? where id = 1').run(
-		at.toISOString(),
-		failure
-	);
+export function recordFailure(
+	db: Database,
+	at: Date,
+	outcome: ScrapeOutcome,
+	failure: string
+): void {
+	db.prepare(
+		'update catalogue_source set checked_at = ?, outcome = ?, failure = ? where id = 1'
+	).run(at.toISOString(), outcome, failure);
 }
 
 /**
@@ -171,7 +195,7 @@ export function replaceCatalogue(
 			);
 			for (const partSlug of release.partSlugs) insertReleasePart.run(release.infohash, partSlug);
 		}
-		recordCheck(db, at, validators);
+		recordCheck(db, at, validators, 'updated');
 		db.prepare('update catalogue_source set updated_at = ? where id = 1').run(at.toISOString());
 	})();
 }

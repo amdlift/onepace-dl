@@ -3,7 +3,9 @@
 	import type { LayoutProps } from './$types';
 	import '../app.css';
 
-	let { children }: LayoutProps = $props();
+	let { children, data }: LayoutProps = $props();
+
+	const failing = $derived(data.failing);
 
 	const sections = [
 		{ href: '/', label: 'Arcs' },
@@ -35,6 +37,14 @@
 		</ul>
 	</nav>
 	<main>
+		{#each failing as check (check.name)}
+			<p class="banner">
+				<strong>{check.subject}</strong>
+				{check.summary}
+				{#if check.detail !== null}<span class="detail">{check.detail}</span>{/if}
+				<a href="/system">System</a>
+			</p>
+		{/each}
 		{@render children()}
 	</main>
 </div>
@@ -109,5 +119,26 @@
 	main {
 		grid-area: main;
 		padding: 1rem;
+	}
+
+	.banner {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin: 0 0 0.75rem;
+		padding: 0.5rem 0.75rem;
+		border-left: 3px solid var(--danger);
+		background: var(--surface-raised);
+	}
+
+	.banner strong {
+		color: var(--ink-bright);
+		font-weight: 500;
+	}
+
+	.banner .detail {
+		color: var(--ink-dim);
+		font-size: 0.8rem;
 	}
 </style>
