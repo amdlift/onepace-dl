@@ -27,7 +27,11 @@ export type PartSelection =
 			partSlug: string;
 			chosen: true;
 			release: SelectedRelease;
-			/** The only Parts open to a Resolution-driven Upgrade; the rest have met the Cutoff. */
+			/**
+			 * Whether the *offered* Release falls short of the Cutoff, which is what the "Below
+			 * Cutoff" badge states. Not what decides an Upgrade: that is gated on the Resolution of
+			 * the Release a Part already holds, in `upgrade/store.ts`, which never reads this.
+			 */
 			belowCutoff: boolean;
 	  }
 	| { partSlug: string; chosen: false; reason: string };

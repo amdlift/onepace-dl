@@ -19,6 +19,17 @@ One numbered instalment within an Arc, such as Wano 54. Some Arcs consist of a s
 Part. The smallest unit the catalogue tracks.
 _Avoid_: Episode (reserve for the library edge), entry, instalment
 
+**Coverage**:
+The stretch of *One Piece* an Arc, a Part or a Release recuts, stated as the manga **chapters** and
+the anime **episodes** it spans. One Pace publishes it on the watch page and in the feed, and Batch
+expansion reads it to work out which Parts a Batch Release contains.
+
+This is the one place `chapter` and `episode` are legitimate as field, type and column names: they
+are *One Piece*'s units for the source material One Pace cut from, not a media server's units for
+the Library. The prohibition under Part is on naming a **Pacerr** Part an episode. `library/naming.ts`
+remains the only place Pacerr speaks a media server's Season and Episode.
+_Avoid_: Range, span, extent
+
 **Unreleased Part**:
 A Part that the catalogue knows is planned but which has no Release yet. Visible in the UI as a
 gap, never downloadable.
