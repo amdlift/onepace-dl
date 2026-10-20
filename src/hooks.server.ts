@@ -1,11 +1,20 @@
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import { sessionCookie } from './lib/server/auth/cookie';
+import { ConfigurationError } from './lib/server/paths/validation';
 import { getApp } from './lib/server/runtime';
 
 export const loginPath = '/login';
 
 export const init: ServerInit = async () => {
-	await getApp().ready;
+	try {
+		await getApp().ready;
+	} catch (error) {
+		if (!(error instanceof ConfigurationError)) throw error;
+		// Expected, already said in one sentence that names the path and both fixes. Letting it
+		// unwind would print that sentence again under a stack trace from inside the bundle.
+		console.error(`Pacerr: ${error.message}`);
+		process.exit(1);
+	}
 };
 
 /**

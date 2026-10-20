@@ -1,5 +1,7 @@
+import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { fixtures, minutes, startPacerr, type Pacerr } from './harness/pacerr';
@@ -141,12 +143,7 @@ describe('the Test action for paths', () => {
 
 describe('a config volume the container cannot write to', () => {
 	it('says which path and what was wrong, rather than failing as a SQLite error', async () => {
-		const configDir = mkdtempSync(join(tmpdir(), 'pacerr-config-'));
-		onTestFinished(() => {
-			chmodSync(configDir, 0o755);
-			rmSync(configDir, { recursive: true, force: true });
-		});
-		chmodSync(configDir, 0o555);
+		const configDir = unwritableConfigDirectory();
 
 		const failure = await startPacerr({ configDir }).catch((error: Error) => error);
 
@@ -156,7 +153,32 @@ describe('a config volume the container cannot write to', () => {
 		expect((failure as Error).message).toContain(`${process.getuid!()}:${process.getgid!()}`);
 		expect((failure as Error).message).not.toContain('SQLITE');
 	});
+
+	it('exits on that sentence alone, rather than looking like a crash', async () => {
+		const configDir = unwritableConfigDirectory();
+
+		const run = spawnSync('node', ['server.js'], {
+			cwd: fileURLToPath(new URL('../', import.meta.url)),
+			encoding: 'utf8',
+			env: { ...process.env, PACERR_CONFIG_DIR: configDir, PORT: '0' }
+		});
+
+		expect(run.status).toBe(1);
+		expect(run.stderr).toContain('cannot write to it');
+		expect(run.stderr).not.toContain('    at ');
+		expect(run.stderr.split('\n').filter((line) => line.trim() !== '')).toHaveLength(1);
+	});
 });
+
+function unwritableConfigDirectory(): string {
+	const configDir = mkdtempSync(join(tmpdir(), 'pacerr-config-'));
+	onTestFinished(() => {
+		chmodSync(configDir, 0o755);
+		rmSync(configDir, { recursive: true, force: true });
+	});
+	chmodSync(configDir, 0o555);
+	return configDir;
+}
 
 describe('a Download Client that saves somewhere Pacerr cannot reach', () => {
 	it('says so at startup, rather than at the first import days later', async () => {

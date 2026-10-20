@@ -158,6 +158,18 @@ function validateHardlinking(library: string, downloads: string): HardlinkCheck 
 }
 
 /**
+ * A configuration Pacerr cannot start with. Its message is the whole report, so whoever catches it
+ * prints that and exits: a stack trace on top of an expected misconfiguration only makes an
+ * actionable sentence look like a crash.
+ */
+export class ConfigurationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'ConfigurationError';
+	}
+}
+
+/**
  * Opened before SQLite is, because this is the one directory whose failure kills the process:
  * better-sqlite3 answers an unwritable config volume with `SQLITE_CANTOPEN` and no path, no uid
  * and no suggestion, which is the failure every other check here exists to replace.
@@ -170,8 +182,7 @@ export function openConfigDirectory(path: string): void {
 	}
 	const check = validateDirectory('config', path);
 	if (check.condition === 'ok') return;
-	console.error(`Pacerr: ${check.diagnostic}`);
-	throw new Error(check.diagnostic);
+	throw new ConfigurationError(check.diagnostic);
 }
 
 /** The same sentences the UI shows, on stdout, for whoever is reading `docker logs`. */
