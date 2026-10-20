@@ -1,4 +1,11 @@
-import type { Catalogue, Coverage, CoverageTerm, Part } from '../catalogue/watch-page';
+import type {
+	Arc,
+	BatchScope,
+	Catalogue,
+	Coverage,
+	CoverageTerm,
+	Part
+} from '../catalogue/watch-page';
 
 export interface BatchRelease {
 	infohash: string;
@@ -18,6 +25,12 @@ export function expandBatchRelease(batch: BatchRelease, catalogue: Catalogue): B
 		return notExpanded(batch, `the Catalogue lists no Arc ${batch.arcSlug} to expand it over`);
 	if (arc.parts.length === 0)
 		return notExpanded(batch, `the Catalogue lists no Parts under ${arc.slug}`);
+
+	// The watch page states a Batch's coverage as Parts, while the feed states it as a chapter
+	// range that routinely runs wider than the files in the torrent — Wano Act 1 holds 12 Parts
+	// and reports chapters spanning all 62. Take the declared scope wherever there is one.
+	const declaredParts = partsDeclaredFor(batch, catalogue, arc);
+	if (declaredParts !== null) return { outcome: 'expanded', parts: declaredParts };
 
 	// A single-Part Arc leaves only one answer, so it needs no terms to reach it — which is the
 	// only way the unnumbered and one-off Arcs, some of which state no chapters at all, resolve.
@@ -48,6 +61,26 @@ export function expandBatchRelease(batch: BatchRelease, catalogue: Catalogue): B
 		return notExpanded(batch, `its range lands on no Part of ${arc.slug}`);
 
 	return { outcome: 'expanded', parts: expandedParts };
+}
+
+const PART_RANGE = /^(\d+)-(\d+)$/;
+
+function partsDeclaredFor(batch: BatchRelease, catalogue: Catalogue, arc: Arc): Part[] | null {
+	const scope = catalogue.releases.find(
+		(release) => release.infohash === batch.infohash
+	)?.batchScope;
+	if (scope == null) return null;
+	return partsInScope(scope, arc);
+}
+
+function partsInScope(scope: BatchScope, arc: Arc): Part[] | null {
+	if (scope.partRange === null) return scope.complete ? [...arc.parts] : null;
+	const found = PART_RANGE.exec(scope.partRange);
+	if (found === null) return null;
+	const first = Number(found[1]);
+	const last = Number(found[2]);
+	const parts = arc.parts.filter((part) => first <= part.number && part.number <= last);
+	return parts.length === 0 ? null : parts;
 }
 
 function notExpanded(batch: BatchRelease, reason: string): BatchExpansion {

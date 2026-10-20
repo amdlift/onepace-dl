@@ -14,6 +14,11 @@ const catalogue: Catalogue = parseCatalogue(
 	readFileSync(new URL('../catalogue/fixtures/watch-page.html', import.meta.url), 'utf8')
 );
 
+const WANO_ACT_1 = 'd67ed82392c28cb6c40509383ba70bfb4e6aefdf';
+const FISHMAN_ISLAND = 'fd204b5dc346f5458f7f04cf1ad98679aaf9586e';
+const LONG_RING_LONG_LAND = '4f2b72009c25ec6c534a852ddfc3fd85ed10fdf5';
+const UNLISTED = 'f00000000000000000000000000000000000000f';
+
 function arc(slug: string): Arc {
 	const found = catalogue.arcs.find((candidate) => candidate.slug === slug);
 	if (found === undefined) throw new Error(`the fixture has no Arc ${slug}`);
@@ -21,12 +26,87 @@ function arc(slug: string): Arc {
 }
 
 describe('expandBatchRelease', () => {
-	it('names every Part of an Arc the Batch Release covers exactly', () => {
-		const romanceDawn = arc('romance-dawn');
+	it('names every Part of the Arc where the watch page declares the Batch Release complete', () => {
+		const fishmanIsland = arc('fishman-island');
+		expect(batchScopeOf(FISHMAN_ISLAND)).toMatchObject({ complete: true, partRange: null });
 
 		const expansion = expandBatchRelease(
 			{
-				infohash: 'cdab4a928dbbff643bbe5531f216eb36a60c85af',
+				infohash: FISHMAN_ISLAND,
+				arcSlug: fishmanIsland.slug,
+				chapters: { terms: [{ from: 603, to: 610 }], coverStories: false },
+				episodes: null
+			},
+			catalogue
+		);
+
+		expect(partSlugsOf(expansion)).toEqual(fishmanIsland.parts.map((part) => part.slug));
+		expect(partSlugsOf(expansion)).toHaveLength(24);
+	});
+
+	it('takes the scope the watch page declares over a chapter range that contradicts it', () => {
+		const wano = arc('wano');
+		expect(wano.parts).toHaveLength(62);
+		expect(batchScopeOf(WANO_ACT_1).partRange).toBe('01-12');
+
+		const expansion = expandBatchRelease(
+			{
+				infohash: WANO_ACT_1,
+				arcSlug: wano.slug,
+				chapters: { terms: [{ from: 909, to: 1057 }], coverStories: false },
+				episodes: null
+			},
+			catalogue
+		);
+
+		expect(partSlugsOf(expansion)).toEqual([
+			'wano-01',
+			'wano-02',
+			'wano-03',
+			'wano-04',
+			'wano-05',
+			'wano-06',
+			'wano-07',
+			'wano-08',
+			'wano-09',
+			'wano-10',
+			'wano-11',
+			'wano-12'
+		]);
+	});
+
+	it('infers from chapters where the watch page declares neither a Part range nor completeness', () => {
+		const longRingLongLand = arc('long-ring-long-land');
+		const undeclared: Catalogue = {
+			...catalogue,
+			releases: catalogue.releases.map((release) =>
+				release.infohash === LONG_RING_LONG_LAND
+					? { ...release, batchScope: { complete: false, partCount: 6, partRange: null } }
+					: release
+			)
+		};
+
+		const expansion = expandBatchRelease(
+			{
+				infohash: LONG_RING_LONG_LAND,
+				arcSlug: longRingLongLand.slug,
+				chapters: { terms: [{ from: 303, to: 321 }], coverStories: false },
+				episodes: null
+			},
+			undeclared
+		);
+
+		expect(partSlugsOf(expansion)).toContain('long-ring-long-land-00');
+		expect(partSlugsOf(expansion)).toHaveLength(7);
+	});
+
+	it('names every Part of an Arc the Batch Release covers exactly', () => {
+		const romanceDawn = arc('romance-dawn');
+		expect(catalogue.releases.map((release) => release.infohash)).not.toContain(UNLISTED);
+
+		const expansion = expandBatchRelease(
+			{
+				infohash: UNLISTED,
 				arcSlug: 'romance-dawn',
 				chapters: { terms: [{ from: 1, to: 7 }], coverStories: false },
 				episodes: romanceDawn.episodes
@@ -62,13 +142,16 @@ describe('expandBatchRelease', () => {
 
 	it('names only the Parts inside its range when the Batch Release covers part of an Arc', () => {
 		const longRingLongLand = arc('long-ring-long-land');
-		expect(longRingLongLand.parts[0]?.slug).toBe('long-ring-long-land-00');
+		expect(longRingLongLand.parts[0]).toMatchObject({
+			slug: 'long-ring-long-land-00',
+			chapters: { terms: [{ from: 303, to: 303 }] }
+		});
 
 		const expansion = expandBatchRelease(
 			{
-				infohash: '4f2b72009c25ec6c534a852ddfc3fd85ed10fdf5',
+				infohash: LONG_RING_LONG_LAND,
 				arcSlug: longRingLongLand.slug,
-				chapters: { terms: [{ from: 304, to: 321 }], coverStories: false },
+				chapters: { terms: [{ from: 303, to: 321 }], coverStories: false },
 				episodes: null
 			},
 			catalogue
@@ -82,7 +165,7 @@ describe('expandBatchRelease', () => {
 			'long-ring-long-land-05',
 			'long-ring-long-land-06'
 		]);
-		expect(batchScopeOf('4f2b72009c25ec6c534a852ddfc3fd85ed10fdf5').partRange).toBe('01-06');
+		expect(batchScopeOf(LONG_RING_LONG_LAND).partRange).toBe('01-06');
 	});
 
 	it('weighs chapter terms over episode terms, which neighbouring Parts share', () => {
@@ -96,7 +179,7 @@ describe('expandBatchRelease', () => {
 
 		const expansion = expandBatchRelease(
 			{
-				infohash: '4f2b72009c25ec6c534a852ddfc3fd85ed10fdf5',
+				infohash: UNLISTED,
 				arcSlug: longRingLongLand.slug,
 				chapters: { terms: [{ from: 304, to: 321 }], coverStories: false },
 				episodes: {
@@ -165,7 +248,7 @@ describe('expandBatchRelease', () => {
 
 		const expansion = expandBatchRelease(
 			{
-				infohash: 'd67ed82392c28cb6c40509383ba70bfb4e6aefdf',
+				infohash: UNLISTED,
 				arcSlug: wano.slug,
 				chapters: { terms: [{ from: 909, to: 1057 }], coverStories: false },
 				episodes: null
@@ -186,7 +269,7 @@ describe('expandBatchRelease', () => {
 
 		const expansion = expandBatchRelease(
 			{
-				infohash: '4f2b72009c25ec6c534a852ddfc3fd85ed10fdf5',
+				infohash: UNLISTED,
 				arcSlug: longRingLongLand.slug,
 				chapters: { terms: [{ from: 304, to: 314 }], coverStories: false },
 				episodes: null
@@ -226,7 +309,7 @@ describe('expandBatchRelease', () => {
 	it('expands nothing for a Batch Release that states neither chapters nor episodes', () => {
 		const expansion = expandBatchRelease(
 			{
-				infohash: 'cdab4a928dbbff643bbe5531f216eb36a60c85af',
+				infohash: UNLISTED,
 				arcSlug: 'romance-dawn',
 				chapters: null,
 				episodes: null
@@ -240,7 +323,7 @@ describe('expandBatchRelease', () => {
 	it('expands nothing for a Batch Release whose range lands on no Part of its Arc', () => {
 		const expansion = expandBatchRelease(
 			{
-				infohash: 'cdab4a928dbbff643bbe5531f216eb36a60c85af',
+				infohash: UNLISTED,
 				arcSlug: 'romance-dawn',
 				chapters: { terms: [{ from: 5000, to: 5010 }], coverStories: false },
 				episodes: null
@@ -256,7 +339,7 @@ describe('expandBatchRelease', () => {
 
 		const expansion = expandBatchRelease(
 			{
-				infohash: 'cdab4a928dbbff643bbe5531f216eb36a60c85af',
+				infohash: UNLISTED,
 				arcSlug: romanceDawn.slug,
 				chapters: null,
 				episodes: romanceDawn.episodes
@@ -276,7 +359,7 @@ describe('expandBatchRelease', () => {
 
 		const expansion = expandBatchRelease(
 			{
-				infohash: 'cdab4a928dbbff643bbe5531f216eb36a60c85af',
+				infohash: UNLISTED,
 				arcSlug: romanceDawn.slug,
 				chapters: null,
 				episodes: {

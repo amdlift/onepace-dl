@@ -168,8 +168,19 @@ describe('a Batch Release that does not expand cleanly', () => {
 	const postEniesLobbyCovers = (chapters: string): string =>
 		fixtures.feed.replace('<dd>431–441</dd>', `<dd>${chapters}</dd>`);
 
+	// Expansion only has to infer where the watch page declares no scope of its own, so these
+	// cases need a Batch the watch page states neither a Part range nor completeness for.
+	const postEniesLobbyDeclaresNoScope = (): string =>
+		fixtures.watchPage.replace(
+			String.raw`59497fc3d9a6dbcdbaced48eaa9f5ba2047614df\",\"partTitle\":\"$undefined\",\"scope\":{\"complete\":true`,
+			String.raw`59497fc3d9a6dbcdbaced48eaa9f5ba2047614df\",\"partTitle\":\"$undefined\",\"scope\":{\"complete\":false`
+		);
+
 	it('still takes the Parts a partial expansion did place', async () => {
-		const pacerr = await startPacerr({ feed: postEniesLobbyCovers('431–438') });
+		const pacerr = await startPacerr({
+			watchPage: postEniesLobbyDeclaresNoScope(),
+			feed: postEniesLobbyCovers('431–438')
+		});
 
 		const page = await pacerr.open('/arcs/post-enies-lobby');
 
@@ -182,7 +193,10 @@ describe('a Batch Release that does not expand cleanly', () => {
 	});
 
 	it('says which Parts it could not place, rather than dropping them silently', async () => {
-		const pacerr = await startPacerr({ feed: postEniesLobbyCovers('431–438') });
+		const pacerr = await startPacerr({
+			watchPage: postEniesLobbyDeclaresNoScope(),
+			feed: postEniesLobbyCovers('431–438')
+		});
 
 		const reasons = (await pacerr.open('/arcs/post-enies-lobby')).texts(
 			'tbody td:nth-child(3) .none'
@@ -194,7 +208,10 @@ describe('a Batch Release that does not expand cleanly', () => {
 	});
 
 	it('explains a Batch that placed nowhere at all', async () => {
-		const pacerr = await startPacerr({ feed: postEniesLobbyCovers('9001–9002') });
+		const pacerr = await startPacerr({
+			watchPage: postEniesLobbyDeclaresNoScope(),
+			feed: postEniesLobbyCovers('9001–9002')
+		});
 
 		const page = await pacerr.open('/arcs/post-enies-lobby');
 
