@@ -74,6 +74,29 @@ function withAnArcInserted(watchPage: string): string {
 	return watchPage.replace('\\"segments\\":[', `\\"segments\\":[${inserted},`);
 }
 
+/** The watch page with one more special ahead of every Arc Pacerr has already seen. */
+function withASpecialInserted(watchPage: string): string {
+	const inserted = JSON.stringify({
+		slug: 'the-tatsumaki-incident',
+		title: 'The Tatsumaki Incident',
+		special: true,
+		unfinished: false,
+		backdrops: [],
+		downloads: [],
+		parts: [
+			{
+				slug: 'the-tatsumaki-incident-01',
+				part: 1,
+				title: 'The Tatsumaki Incident',
+				toBeRedone: false,
+				downloads: []
+			}
+		],
+		unreleasedParts: []
+	}).replace(/"/g, '\\"');
+	return watchPage.replace('\\"segments\\":[', `\\"segments\\":[${inserted},`);
+}
+
 describe('importing a completed download', () => {
 	it('files it into the Library without being asked', async () => {
 		const pacerr = await reverie();
@@ -191,13 +214,15 @@ describe('the one-off entries the Catalogue keeps alongside real Arcs', () => {
 	it('files them as specials, as the one episode they are', async () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
-
-		await pacerr.submit('/', 'toggleMonitoring', { arc: 'one-piece-fan-letter' });
-		finish(pacerr, 1);
+		for (const arc of ['one-piece-fan-letter', 'warship-island-01-april-fools-2025']) {
+			await pacerr.submit('/', 'toggleMonitoring', { arc });
+			finish(pacerr, 1);
+		}
 		await pacerr.advance(minutes(15));
 
 		expect(libraryFiles(pacerr)).toEqual([
-			'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [1080p].mkv'
+			'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [1080p].mkv',
+			'Warship Island 01 (April Fools 2025)/Season 00/Warship Island 01 (April Fools 2025) - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
 	});
 });
@@ -219,6 +244,29 @@ describe('an Arc that One Pace inserts above one already in the Library', () => 
 			'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv',
 			'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
 			'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv'
+		]);
+	});
+});
+
+describe('a special One Pace publishes after the Library already holds one', () => {
+	it('takes a place of its own rather than renumbering the specials already filed', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'one-piece-fan-letter' });
+		finish(pacerr, 1);
+		await pacerr.advance(minutes(15));
+
+		pacerr.upstream.watchPage.publish(withASpecialInserted(fixtures.watchPage));
+		await pacerr.advance(hours(24));
+		expect((await pacerr.open('/')).text()).toContain('The Tatsumaki Incident');
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'warship-island-01-april-fools-2025' });
+		finish(pacerr, 1);
+		await pacerr.advance(minutes(15));
+
+		expect(libraryFiles(pacerr)).toEqual([
+			'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [1080p].mkv',
+			'Warship Island 01 (April Fools 2025)/Season 00/Warship Island 01 (April Fools 2025) - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
 	});
 });
