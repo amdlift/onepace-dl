@@ -24,6 +24,14 @@ export function formatReleaseStatus(status: 'current' | 'outdated' | 'to-be-redo
 	return { current: 'Current', outdated: 'Outdated', 'to-be-redone': 'To Be Redone' }[status];
 }
 
+export function formatWantedState(state: 'missing' | 'available' | 'unreleased'): string {
+	return {
+		missing: 'Missing',
+		available: 'Release available',
+		unreleased: 'Not released yet'
+	}[state];
+}
+
 interface CoverageLike {
 	terms: ({ from: number; to: number } | { text: string })[];
 	coverStories: boolean;

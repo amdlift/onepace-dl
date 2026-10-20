@@ -202,3 +202,16 @@ describe('a Batch Release that does not expand cleanly', () => {
 		expect(page.texts('tbody td:nth-child(3) .none')[0]).toContain('did not expand');
 	});
 });
+
+describe('the Wanted view', () => {
+	it('names the Release it would grab for each Part it is still missing', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'fishman-island' });
+
+		const grabs = (await pacerr.open('/wanted')).texts('tbody .grab');
+		expect(grabs[1]).toBe('Fishman Island 02 1080p Regular');
+		expect(grabs[4]).toBe('Fishman Island 720p Regular');
+		expect(grabs).toHaveLength(24);
+	});
+});

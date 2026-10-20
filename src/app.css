@@ -83,6 +83,32 @@ h1 {
 	color: var(--ink-bright);
 }
 
+.button[aria-pressed='true'] {
+	border-color: var(--accent);
+	color: var(--ink-bright);
+}
+
+.toggle {
+	padding: 0.1rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: 2px;
+	background: var(--surface-raised);
+	color: var(--ink-dim);
+	font: inherit;
+	font-size: 0.75rem;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.toggle:hover {
+	background: var(--surface-hover);
+}
+
+.toggle[aria-pressed='true'] {
+	border-color: var(--accent);
+	color: var(--ink-bright);
+}
+
 .table {
 	width: 100%;
 	border-collapse: collapse;

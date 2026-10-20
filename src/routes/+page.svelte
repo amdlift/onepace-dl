@@ -13,6 +13,9 @@
 <div class="toolbar">
 	<h1>Arcs</h1>
 	<div class="actions">
+		<form method="POST" action="?/monitorAllArcs">
+			<button class="button" type="submit">Monitor all Arcs</button>
+		</form>
 		<form method="POST" action="?/refreshCatalogue">
 			<button class="button" type="submit">Refresh Catalogue</button>
 		</form>
@@ -48,6 +51,8 @@
 				<th class="cover"><span class="visually-hidden">Cover</span></th>
 				<th>Arc</th>
 				<th class="numeric">Parts</th>
+				<th class="numeric">Had</th>
+				<th class="monitoring">Monitoring</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -70,6 +75,15 @@
 						{#if arc.unreleasedPartCount > 0}
 							<span class="badge">+{arc.unreleasedPartCount} unreleased</span>
 						{/if}
+					</td>
+					<td class="numeric had">{arc.hadCount} of {arc.partCount}</td>
+					<td class="monitoring">
+						<form method="POST" action="?/toggleMonitoring">
+							<input type="hidden" name="arc" value={arc.slug} />
+							<button class="toggle" type="submit" aria-pressed={arc.monitored}>
+								{arc.monitored ? 'Monitored' : 'Not monitored'}
+							</button>
+						</form>
 					</td>
 				</tr>
 			{/each}
@@ -96,6 +110,11 @@
 		object-fit: cover;
 		border-radius: 2px;
 		background: var(--surface-hover);
+	}
+
+	.monitoring {
+		width: 1%;
+		white-space: nowrap;
 	}
 
 	.visually-hidden {

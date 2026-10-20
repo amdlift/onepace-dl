@@ -16,6 +16,11 @@
 
 <div class="toolbar">
 	<h1>{arc.title}</h1>
+	<form class="monitoring" method="POST" action="?/toggleMonitoring">
+		<button class="button" type="submit" aria-pressed={arc.monitored}>
+			{arc.monitored ? 'Monitored' : 'Not monitored'}
+		</button>
+	</form>
 </div>
 
 <table class="table">
@@ -25,6 +30,7 @@
 			<th>Title</th>
 			<th>Would grab</th>
 			<th>Releases</th>
+			<th class="wanted">Wanted</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -70,6 +76,16 @@
 							</ul>
 						{/if}
 					</td>
+					<td class="wanted">
+						{#if arc.monitored}
+							<form method="POST" action="?/togglePartWanted">
+								<input type="hidden" name="part" value={row.slug} />
+								<button class="toggle" type="submit" aria-pressed={row.wanted}>
+									{row.wanted ? 'Wanted' : 'Not wanted'}
+								</button>
+							</form>
+						{/if}
+					</td>
 				{:else}
 					<td colspan="3"><span class="none">Not released yet</span></td>
 				{/if}
@@ -109,6 +125,11 @@
 		display: block;
 		color: var(--ink-dim);
 		font-size: 0.75rem;
+	}
+
+	.wanted {
+		width: 1%;
+		white-space: nowrap;
 	}
 
 	.none {

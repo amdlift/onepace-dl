@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { AuthenticationService } from './auth/service';
 import { CatalogueService } from './catalogue/service';
 import { openDatabase, type Database } from './db/database';
+import { MonitoringService } from './monitoring/service';
 import { ReleaseService } from './releases/service';
 import type { Runtime } from './runtime';
 import { Scheduler } from './scheduler';
@@ -15,6 +16,7 @@ export interface App {
 	db: Database;
 	catalogue: CatalogueService;
 	releases: ReleaseService;
+	monitoring: MonitoringService;
 	authentication: AuthenticationService;
 	scheduler: Scheduler;
 	/** Resolves once the startup scrape has run; the HTTP surface waits on it. */
@@ -27,6 +29,7 @@ export function createApp(runtime: Runtime): App {
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
 	const catalogue = new CatalogueService(db, runtime);
 	const releases = new ReleaseService(db, runtime);
+	const monitoring = new MonitoringService(db);
 	const authentication = new AuthenticationService(
 		db,
 		runtime.clock,
@@ -53,6 +56,7 @@ export function createApp(runtime: Runtime): App {
 		db,
 		catalogue,
 		releases,
+		monitoring,
 		authentication,
 		scheduler,
 		ready: (async () => {
