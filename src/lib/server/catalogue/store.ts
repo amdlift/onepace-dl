@@ -172,3 +172,42 @@ export function replaceCatalogue(
 const flag = (value: boolean): number => (value ? 1 : 0);
 const json = (value: unknown): string | null => (value === null ? null : JSON.stringify(value));
 const parseTime = (value: string | null): Date | null => (value === null ? null : new Date(value));
+
+export interface StoredPart {
+	slug: string;
+	number: number;
+	title: string;
+}
+
+export interface StoredArcDetail extends StoredArc {
+	parts: StoredPart[];
+	unreleasedPartNumbers: number[];
+}
+
+interface PartRow {
+	slug: string;
+	number: number;
+	title: string;
+}
+
+export function readArcDetail(db: Database, slug: string): StoredArcDetail | null {
+	const arc = readArcs(db).find((candidate) => candidate.slug === slug);
+	if (arc === undefined) return null;
+
+	const parts = db
+		.prepare('select slug, number, title from part where arc_slug = ? order by position')
+		.all(slug) as PartRow[];
+	const unreleased = db
+		.prepare('select number from unreleased_part where arc_slug = ? order by number')
+		.all(slug) as { number: number }[];
+
+	return {
+		...arc,
+		parts: parts.map((row) => ({
+			slug: row.slug,
+			number: row.number,
+			title: row.title
+		})),
+		unreleasedPartNumbers: unreleased.map((row) => row.number)
+	};
+}

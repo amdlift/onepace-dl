@@ -5,25 +5,38 @@
 	let { data }: PageProps = $props();
 
 	const catalogue = $derived(data.catalogue);
+	const feed = $derived(data.feed);
 </script>
 
 <svelte:head><title>Arcs - Pacerr</title></svelte:head>
 
 <div class="toolbar">
 	<h1>Arcs</h1>
-	<form method="POST" action="?/refreshCatalogue">
-		<button class="button" type="submit">Refresh Catalogue</button>
-	</form>
+	<div class="actions">
+		<form method="POST" action="?/refreshCatalogue">
+			<button class="button" type="submit">Refresh Catalogue</button>
+		</form>
+		<form method="POST" action="?/refreshReleases">
+			<button class="button" type="submit">Refresh Releases</button>
+		</form>
+	</div>
 </div>
 
 <p class="status">
 	<span>{pluralise(catalogue.arcs.length, 'Arc')}</span>
 	<span>Checked {formatTimestamp(catalogue.checkedAt)}</span>
 	<span>Updated {formatTimestamp(catalogue.updatedAt)}</span>
+	<span>{pluralise(feed.releaseCount, 'Release')}</span>
+	<span>Feed checked {formatTimestamp(feed.checkedAt)}</span>
+	<span>Feed updated {formatTimestamp(feed.updatedAt)}</span>
 </p>
 
 {#if catalogue.failure !== null}
 	<p class="alert">The last Catalogue scrape failed: {catalogue.failure}</p>
+{/if}
+
+{#if feed.failure !== null}
+	<p class="alert">The last release feed poll failed: {feed.failure}</p>
 {/if}
 
 {#if catalogue.arcs.length === 0}
@@ -48,7 +61,7 @@
 						{/if}
 					</td>
 					<td>
-						{arc.title}
+						<a href="/arcs/{arc.slug}">{arc.title}</a>
 						{#if arc.special}<span class="badge">Special</span>{/if}
 						{#if arc.unfinished}<span class="badge unfinished">Unfinished</span>{/if}
 					</td>
@@ -65,6 +78,11 @@
 {/if}
 
 <style>
+	.actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
 	.cover {
 		width: 64px;
 		padding-right: 0;

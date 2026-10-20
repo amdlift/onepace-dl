@@ -3,7 +3,8 @@ import { systemClock } from './clock';
 import type { DownloadClient } from './download-client';
 import type { Runtime } from './runtime';
 
-const hours = (count: number): number => count * 60 * 60 * 1000;
+const minutes = (count: number): number => count * 60 * 1000;
+const hours = (count: number): number => minutes(count) * 60;
 
 const unconfiguredDownloadClient: DownloadClient = {
 	add: () => unconfigured(),
@@ -28,6 +29,7 @@ export function runtimeFromEnvironment(environment = process.env): Runtime {
 			downloads: resolve(environment.PACERR_DOWNLOADS_DIR ?? '/downloads')
 		},
 		catalogueRefreshInterval: numberFrom(environment.PACERR_CATALOGUE_INTERVAL_HOURS, 24, hours),
+		feedPollInterval: numberFrom(environment.PACERR_FEED_INTERVAL_MINUTES, 15, minutes),
 		polls: true
 	};
 }

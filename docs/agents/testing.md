@@ -34,7 +34,9 @@ it('picks up an Arc that appeared upstream', async () => {
 The instance stops itself when the test finishes.
 
 - `startPacerr({ configDir, watchPage, feed, now })` — all optional. `configDir` boots against
-  state a previous instance left behind.
+  state a previous instance left behind. `watchPage` defaults to `fixtures.watchPage`; `feed`
+  defaults to an empty channel, so a test that wants Releases passes `fixtures.feed`. Both
+  fixtures are the real documents, captured from One Pace.
 - `pacerr.open(path)` → a `PacerrPage`: `text(selector?)`, `texts(selector)`,
   `attributes(selector, name)`, `document`, `status`.
 - `pacerr.submit(path, action, fields?)` — a form action, the way a browser without JavaScript

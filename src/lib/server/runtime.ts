@@ -16,6 +16,7 @@ export interface Runtime {
 	onePaceBaseUrl: string;
 	paths: RuntimePaths;
 	catalogueRefreshInterval: number;
+	feedPollInterval: number;
 	polls: boolean;
 }
 

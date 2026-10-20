@@ -12,7 +12,7 @@ import { onTestFinished } from 'vitest';
 import { declareConnectionProtocol, protocolHeader } from '../../src/lib/connection-protocol';
 import type { App } from '../../src/lib/server/app';
 import { getApp, setRuntime, stopApp } from '../../src/lib/server/runtime';
-import { hours, ManualClock } from './clock';
+import { hours, minutes, ManualClock } from './clock';
 import { FakeDownloadClient } from './download-client';
 import { PacerrPage } from './page';
 import { Upstream } from './upstream';
@@ -27,7 +27,8 @@ export const fixtures = {
 	watchPage: readFileSync(
 		new URL('src/lib/server/catalogue/fixtures/watch-page.html', repoRoot),
 		'utf8'
-	)
+	),
+	feed: readFileSync(new URL('src/lib/server/releases/fixtures/feed.xml', repoRoot), 'utf8')
 };
 
 export interface StartOptions {
@@ -162,6 +163,7 @@ export class Pacerr {
 			onePaceBaseUrl: this.upstream.url,
 			paths: this.paths,
 			catalogueRefreshInterval: hours(24),
+			feedPollInterval: minutes(15),
 			polls: false
 		});
 		this.#app = getApp();

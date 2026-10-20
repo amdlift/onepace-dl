@@ -57,6 +57,30 @@ const migrations = [
 		failure text
 	);
 	insert into catalogue_source (id) values (1);
+	`,
+	`
+	create table feed_release (
+		infohash text primary key,
+		title text not null,
+		published_at text not null,
+		variant text not null,
+		status text not null,
+		resolution integer,
+		chapters text,
+		episodes text,
+		magnet_uri text,
+		torrent_url text
+	);
+	create table feed_source (
+		id integer primary key check (id = 1),
+		last_build_date text,
+		etag text,
+		last_modified text,
+		checked_at text,
+		updated_at text,
+		failure text
+	);
+	insert into feed_source (id) values (1);
 	`
 ];
 
