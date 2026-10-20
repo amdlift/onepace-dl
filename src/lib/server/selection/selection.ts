@@ -165,18 +165,25 @@ function bestOf(candidates: Candidate[], profile: Profile): Candidate | undefine
 	return satisfying.sort((left, right) => compare(left, right, profile))[0];
 }
 
+/**
+ * Candidates have already been filtered to the Resolutions the Profile accepts, so what is left
+ * is the order within them.
+ *
+ * The preferred Variant outranks everything: a user who asked for the regular cut means it even
+ * when One Pace published an extended one of the same Part afterwards. Resolution order comes
+ * next, because story 17 asks for 1080p where it exists; story 20's most recently published then
+ * decides within a Resolution, which is the per-Part recency ADR-0003 turns on.
+ */
 function compare(left: Candidate, right: Candidate, profile: Profile): number {
-	// The preferred Variant outranks recency: a user who asked for the regular cut means it even
-	// when One Pace published an extended one of the same Part afterwards.
 	const preference = rank(right.variant, profile) - rank(left.variant, profile);
 	if (preference !== 0) return preference;
 
-	const recency = right.publishedAt.getTime() - left.publishedAt.getTime();
-	if (recency !== 0) return recency;
-
 	const resolution =
 		profile.resolutions.indexOf(left.resolution) - profile.resolutions.indexOf(right.resolution);
-	return resolution !== 0 ? resolution : left.infohash.localeCompare(right.infohash);
+	if (resolution !== 0) return resolution;
+
+	const recency = right.publishedAt.getTime() - left.publishedAt.getTime();
+	return recency !== 0 ? recency : left.infohash.localeCompare(right.infohash);
 }
 
 const rank = (variant: Variant, profile: Profile): number => (variant === profile.variant ? 1 : 0);

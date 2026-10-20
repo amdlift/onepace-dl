@@ -131,6 +131,57 @@ describe('Selection', () => {
 	});
 });
 
+/** The Reverie Batch One Pace currently offers, and the older one it re-cut. */
+const currentCut = '4d9497e964d820760adf11e47664df3091b808f2';
+const earlierCut = 'c5860b5066c7ed8bfe51abde23f76ef3f78a6ec7';
+
+/** How the watch page's payload opens the download it offers for the Reverie Batch. */
+const offerOf = (infohash: string, resolution: number): string =>
+	`{\\"status\\":\\"current\\",\\"resolution\\":${resolution},\\"variant\\":\\"$undefined\\",` +
+	`\\"magnetHref\\":\\"magnet:?xt=urn:btih:${infohash}`;
+
+/** Both Reverie Batches offered as current at once, each at the Resolution given. */
+function bothCutsOffered(earlier: number, current: number): string {
+	const page = fixtures.watchPage;
+	const start = page.indexOf(offerOf(currentCut, 1080));
+	const offer = page.slice(start, page.indexOf('}],\\"guide\\"', start) + 1);
+	return page.replace(
+		offer,
+		() =>
+			`${offer.replaceAll(currentCut, earlierCut).replace('1080', String(earlier))},` +
+			offer.replace('1080', String(current))
+	);
+}
+
+describe('Resolution against recency', () => {
+	it('takes the better Resolution the Profile asks for, even from an older Release', async () => {
+		const pacerr = await startPacerr({
+			watchPage: bothCutsOffered(1080, 480),
+			feed: fixtures.feed
+		});
+		await pacerr.connectDownloadClient();
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+
+		expect((await pacerr.open('/arcs/reverie')).texts('tbody .grab')[0]).toBe(
+			'Reverie 1080p Regular'
+		);
+		expect(pacerr.downloadClient.added.map((download) => download.infohash)).toEqual([earlierCut]);
+	});
+
+	it('still takes the newer of two Releases at the same Resolution', async () => {
+		const pacerr = await startPacerr({
+			watchPage: bothCutsOffered(1080, 1080),
+			feed: fixtures.feed
+		});
+		await pacerr.connectDownloadClient();
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+
+		expect(pacerr.downloadClient.added.map((download) => download.infohash)).toEqual([currentCut]);
+	});
+});
+
 describe('the Cutoff', () => {
 	it('marks a Part below it as still open to a Resolution Upgrade', async () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
