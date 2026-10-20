@@ -62,10 +62,14 @@ export function recordHistory(db: Database, at: Date, entries: HistoryEntry[]): 
 	})();
 }
 
-export function readHistory(db: Database, limit = 200): HistoryRecord[] {
+export function countHistory(db: Database): number {
+	return (db.prepare('select count(*) as n from history').get() as { n: number }).n;
+}
+
+export function readHistory(db: Database, limit = 200, offset = 0): HistoryRecord[] {
 	const rows = db
-		.prepare('select * from history order by at desc, id desc limit ?')
-		.all(limit) as Row[];
+		.prepare('select * from history order by at desc, id desc limit ? offset ?')
+		.all(limit, offset) as Row[];
 	return rows.map((row) => ({
 		id: row.id,
 		at: new Date(row.at),

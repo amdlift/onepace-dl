@@ -204,12 +204,11 @@ describe('Unmatched Releases', () => {
 		const page = await pacerr.open('/system');
 
 		expect(page.text()).toContain('251 Unmatched Releases');
-		const first = page.texts('tbody tr')[0]!;
-		expect(first).toContain('Drum Island 08');
-		expect(first).toContain('1080p');
-		expect(first).toContain('Regular');
-		expect(first).toContain('Outdated');
-		expect(first).toContain('2026-09-12');
+		const drumIsland = page.texts('tbody tr').find((row) => row.includes('Drum Island 08'))!;
+		expect(drumIsland).toContain('1080p');
+		expect(drumIsland).toContain('Regular');
+		expect(drumIsland).toContain('Outdated');
+		expect(drumIsland).toContain('2026-09-12');
 	});
 
 	it('states what an Unmatched Release covers, which is all there is to identify it by', async () => {

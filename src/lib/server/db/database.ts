@@ -157,6 +157,10 @@ const migrations = [
 		reason text
 	);
 	create index history_by_time on history(at desc, id desc);
+	`,
+	`
+	alter table catalogue_source add column outcome text;
+	alter table feed_source add column outcome text;
 	`
 ];
 

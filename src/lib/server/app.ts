@@ -12,6 +12,7 @@ import { Scheduler } from './scheduler';
 
 export const catalogueJob = 'catalogue';
 export const feedJob = 'feed';
+export const downloadClientJob = 'downloadClient';
 
 export interface App {
 	runtime: Runtime;
@@ -58,6 +59,15 @@ export function createApp(runtime: Runtime): App {
 			// for tomorrow's would leave it unmatched for a day.
 			if ((await releases.poll()).unknownInfohashes.length > 0) await catalogue.scrape();
 			await acquisition.run();
+		}
+	});
+	// Nothing else reaches the Download Client when there is nothing to grab, so without this an
+	// unreachable one would stay invisible for as long as Pacerr happened to want nothing.
+	scheduler.add({
+		name: downloadClientJob,
+		every: runtime.feedPollInterval,
+		run: async () => {
+			await downloads.test();
 		}
 	});
 
