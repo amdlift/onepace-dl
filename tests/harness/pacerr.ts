@@ -37,6 +37,8 @@ export interface StartOptions {
 	watchPage?: string;
 	feed?: string;
 	now?: Date;
+	/** Credentials the container was given by environment variable. */
+	authentication?: { username: string; password: string };
 }
 
 export interface PacerrPaths {
@@ -71,12 +73,14 @@ export class Pacerr {
 	#server: Server | null = null;
 	#app: App | null = null;
 	#url = '';
+	#cookies = new Map<string, string>();
 
 	private constructor(
 		readonly upstream: Upstream,
 		readonly clock: ManualClock,
 		readonly downloadClient: FakeDownloadClient,
-		readonly paths: PacerrPaths
+		readonly paths: PacerrPaths,
+		readonly environmentCredentials: { username: string; password: string } | null
 	) {}
 
 	static async start(options: StartOptions = {}): Promise<Pacerr> {
@@ -92,7 +96,8 @@ export class Pacerr {
 			await Upstream.start(options.watchPage ?? fixtures.watchPage, options.feed),
 			new ManualClock(options.now ?? new Date('2026-10-19T22:00:00Z')),
 			new FakeDownloadClient(),
-			paths
+			paths,
+			options.authentication ?? null
 		);
 		onTestFinished(async () => {
 			await pacerr.stop();
@@ -114,7 +119,21 @@ export class Pacerr {
 	}
 
 	async fetch(path: string, init?: RequestInit): Promise<Response> {
-		return fetch(new URL(path, this.#url), init);
+		const headers = new Headers(init?.headers);
+		if (this.#cookies.size > 0 && !headers.has('cookie')) {
+			headers.set(
+				'cookie',
+				[...this.#cookies].map(([name, value]) => `${name}=${value}`).join('; ')
+			);
+		}
+		const response = await fetch(new URL(path, this.#url), { ...init, headers });
+		this.#keepCookies(response);
+		return response;
+	}
+
+	/** Empty the cookie jar: the same Pacerr, opened in a browser that has never seen it. */
+	forget(): void {
+		this.#cookies.clear();
 	}
 
 	async open(path: string): Promise<PacerrPage> {
@@ -162,7 +181,8 @@ export class Pacerr {
 			onePaceBaseUrl: this.upstream.url,
 			paths: this.paths,
 			catalogueRefreshInterval: hours(24),
-			polls: false
+			polls: false,
+			environmentCredentials: this.environmentCredentials
 		});
 		this.#app = getApp();
 		await this.#app.ready;
@@ -175,6 +195,17 @@ export class Pacerr {
 		await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 		this.#server = server;
 		this.#url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+	}
+
+	#keepCookies(response: Response): void {
+		for (const header of response.headers.getSetCookie()) {
+			const pair = header.split(';')[0] ?? '';
+			const separator = pair.indexOf('=');
+			const name = pair.slice(0, separator).trim();
+			const value = pair.slice(separator + 1).trim();
+			if (value === '' || /max-age=0/i.test(header)) this.#cookies.delete(name);
+			else this.#cookies.set(name, value);
+		}
 	}
 
 	#running(): App {

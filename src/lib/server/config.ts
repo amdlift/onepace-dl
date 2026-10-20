@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import type { Credentials } from './auth/service';
 import { systemClock } from './clock';
 import type { DownloadClient } from './download-client';
 import type { Runtime } from './runtime';
@@ -28,8 +29,16 @@ export function runtimeFromEnvironment(environment = process.env): Runtime {
 			downloads: resolve(environment.PACERR_DOWNLOADS_DIR ?? '/downloads')
 		},
 		catalogueRefreshInterval: numberFrom(environment.PACERR_CATALOGUE_INTERVAL_HOURS, 24, hours),
-		polls: true
+		polls: true,
+		environmentCredentials: credentialsFrom(environment)
 	};
+}
+
+function credentialsFrom(environment: NodeJS.ProcessEnv): Credentials | null {
+	const username = environment.PACERR_AUTH_USERNAME;
+	const password = environment.PACERR_AUTH_PASSWORD;
+	if (username === undefined || password === undefined) return null;
+	return { username, password };
 }
 
 function numberFrom(
