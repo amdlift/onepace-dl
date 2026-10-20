@@ -1,7 +1,16 @@
+const timestamp = new Intl.DateTimeFormat('en-CA', {
+	year: 'numeric',
+	month: '2-digit',
+	day: '2-digit',
+	hour: '2-digit',
+	minute: '2-digit',
+	hour12: false,
+	timeZoneName: 'short'
+});
+
 export function formatTimestamp(value: Date | null): string {
 	if (value === null) return 'never';
-	const iso = value.toISOString();
-	return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+	return timestamp.format(value).replace(',', '');
 }
 
 export function pluralise(count: number, singular: string, plural = `${singular}s`): string {
