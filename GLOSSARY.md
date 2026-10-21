@@ -26,8 +26,9 @@ expansion reads it to work out which Parts a Batch Release contains.
 
 This is the one place `chapter` and `episode` are legitimate as field, type and column names: they
 are *One Piece*'s units for the source material One Pace cut from, not a media server's units for
-the Library. The prohibition under Part is on naming a **Pacerr** Part an episode. `library/naming.ts`
-remains the only place Pacerr speaks a media server's Season and Episode.
+the Library. The prohibition under Part is on naming a **Pacerr** Part an episode. A media server's
+Season and Episode stay confined to the Library edge — generated filenames, season directory names,
+Sidecar contents and UI copy — and appear nowhere as a type or column name.
 _Avoid_: Range, span, extent
 
 **Unreleased Part**:
@@ -98,8 +99,10 @@ after which the Part counts as acquired.
 _Avoid_: Organise, move, file, sort
 
 **Library**:
-The destination directory tree that a media server such as Jellyfin or Plex reads. The only
-place Season and Episode appear as words, because that is the vocabulary media servers parse.
+The destination directory tree that a media server such as Jellyfin or Plex reads. Its edge is
+where Season and Episode appear as words — in generated filenames, season directory names, Sidecar
+contents and UI copy — because that is the vocabulary media servers parse. Never as a type or a
+column name: Pacerr's own words for what those describe are Arc and Part.
 _Avoid_: Media folder, output, destination
 
 **Upgrade**:

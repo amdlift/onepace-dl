@@ -1,10 +1,10 @@
 import {
 	browsableRoot,
 	importableFiles,
+	importPolicy,
 	manualImport,
 	readImportSource,
 	readSelectableParts,
-	rootDirectory,
 	suggestPart,
 	type ConfirmedImport
 } from '../../lib/server/library/manual-import';
@@ -16,13 +16,13 @@ const partField = 'part:';
 export const load: PageServerLoad = async ({ url }) => {
 	const app = getApp();
 	const root = browsableRoot(url.searchParams.get('root'));
-	const directory = rootDirectory(app.db, app.runtime.paths.library, root);
+	const policy = importPolicy(app.db, app.paths.library().path, root);
 	const parts = readSelectableParts(app.db);
-	const files = directory === null ? [] : importableFiles(directory);
+	const files = policy === null ? [] : importableFiles(policy);
 	const requested = url.searchParams.get('part');
 	return {
 		root,
-		directory,
+		directory: policy?.root ?? null,
 		importSource: readImportSource(app.db),
 		parts,
 		// Arriving from a Wanted row narrows the page to filling that one gap, which is the only
@@ -37,11 +37,13 @@ export const actions: Actions = {
 		const submitted = await request.formData();
 		const app = getApp();
 		const root = browsableRoot(submitted.get('root'));
+		const library = app.paths.library().path;
 		manualImport(
 			app.db,
 			app.runtime.clock,
-			app.runtime.paths.library,
-			rootDirectory(app.db, app.runtime.paths.library, root),
+			app.posters,
+			library,
+			importPolicy(app.db, library, root),
 			confirmedIn(submitted),
 			submitted.get('placing') === 'move' ? 'move' : 'hardlink'
 		);
@@ -55,11 +57,13 @@ export const actions: Actions = {
 		const root = browsableRoot(submitted.get('root'));
 		const path = String(submitted.get('file') ?? '');
 		const partSlug = String(submitted.get('part') ?? '');
+		const library = app.paths.library().path;
 		manualImport(
 			app.db,
 			app.runtime.clock,
-			app.runtime.paths.library,
-			rootDirectory(app.db, app.runtime.paths.library, root),
+			app.posters,
+			library,
+			importPolicy(app.db, library, root),
 			path === '' || partSlug === '' ? [] : [{ path, partSlug }],
 			submitted.get('placing') === 'move' ? 'move' : 'hardlink'
 		);

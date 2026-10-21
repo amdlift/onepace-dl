@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
+import type { Posters } from '../artwork';
+import { refreshSidecars } from '../library/sidecars';
 import { assignLibraryIndexes } from '../library/store';
+import type { PathService } from '../paths/service';
 import type { Runtime } from '../runtime';
 import { UpstreamSource, type UpstreamDocument } from '../upstream/service';
 import type { UpstreamOutcome } from '../upstream/store';
@@ -25,7 +28,11 @@ export interface CatalogueView {
 	failure: string | null;
 }
 
-const watchPage = (db: Database): UpstreamDocument<Catalogue> => ({
+const watchPage = (
+	db: Database,
+	posters: Posters,
+	paths: PathService
+): UpstreamDocument<Catalogue> => ({
 	name: 'catalogue',
 	path: '/en/watch',
 	subject: 'the watch page',
@@ -33,9 +40,12 @@ const watchPage = (db: Database): UpstreamDocument<Catalogue> => ({
 	// from a wasted one is the body Pacerr has already paid for.
 	freshnessOf: (body) => createHash('sha256').update(body).digest('hex'),
 	parse: parseCatalogue,
+	// Reached only by a scrape that fetched and parsed, so a Library is corrected from a
+	// Catalogue that arrived whole and never from a failed or half-read one.
 	replace: (catalogue, at, validators, freshness) => {
 		replaceCatalogue(db, catalogue, at, validators, freshness);
 		assignLibraryIndexes(db);
+		refreshSidecars(db, posters, paths.library().path);
 	}
 });
 
@@ -44,10 +54,10 @@ export class CatalogueService {
 	#runtime: Runtime;
 	#source: UpstreamSource<Catalogue>;
 
-	constructor(db: Database, runtime: Runtime) {
+	constructor(db: Database, runtime: Runtime, posters: Posters, paths: PathService) {
 		this.#db = db;
 		this.#runtime = runtime;
-		this.#source = new UpstreamSource(db, runtime, watchPage(db));
+		this.#source = new UpstreamSource(db, runtime, watchPage(db, posters, paths));
 	}
 
 	scrape(): Promise<UpstreamOutcome> {

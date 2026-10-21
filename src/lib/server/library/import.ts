@@ -9,17 +9,20 @@ import {
 } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
+import type { Posters } from '../artwork';
 import type { Clock } from '../clock';
 import type { DownloadClient } from '../download/client';
 import { DownloadService } from '../download/service';
 import { reasonOf } from '../failure';
 import { recordHistory, type HistoryEntry } from '../history/store';
+import type { PathService } from '../paths/service';
 import {
 	forgetSupersededRelease,
 	readSupersededReleases,
 	recordUpgradeImported
 } from '../upgrade/store';
 import { renderLibraryPath, type NamingFields } from './naming';
+import { sidecarPathFor, writeSidecars } from './sidecars';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -96,13 +99,21 @@ export class ImportService {
 	#db: Database;
 	#clock: Clock;
 	#downloads: DownloadService;
-	#library: string;
+	#posters: Posters;
+	#paths: PathService;
 
-	constructor(db: Database, clock: Clock, downloads: DownloadService, library: string) {
+	constructor(
+		db: Database,
+		clock: Clock,
+		downloads: DownloadService,
+		posters: Posters,
+		paths: PathService
+	) {
 		this.#db = db;
 		this.#clock = clock;
 		this.#downloads = downloads;
-		this.#library = library;
+		this.#posters = posters;
+		this.#paths = paths;
 	}
 
 	async run(): Promise<void> {
@@ -177,7 +188,13 @@ export class ImportService {
 			const target = grab.targets[position];
 			if (target === undefined || target.had) continue;
 			try {
-				const placed = placeIntoLibrary(this.#library, source, template, target.naming);
+				const library = this.#paths.library().path;
+				const placed = placeIntoLibrary(library, source, template, target.naming);
+				writeSidecars(this.#db, this.#posters, library, {
+					arcSlug: target.arcSlug,
+					partSlug: target.partSlug,
+					libraryPath: placed.libraryPath
+				});
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(
 					this.#db,
@@ -217,8 +234,10 @@ export class ImportService {
 	 */
 	#forgetReplaced(target: ImportTarget, libraryPath: string): void {
 		const replaced = target.replaces?.libraryPath;
-		if (replaced !== undefined && replaced !== libraryPath)
-			rmSync(join(this.#library, replaced), { force: true });
+		if (replaced === undefined || replaced === libraryPath) return;
+		const library = this.#paths.library().path;
+		rmSync(join(library, replaced), { force: true });
+		rmSync(join(library, sidecarPathFor(replaced)), { force: true });
 	}
 
 	/**
@@ -262,5 +281,5 @@ const failed = (grab: PendingImport, target: ImportTarget, reason: string): Hist
 	reason
 });
 
-const crossesFilesystems = (error: unknown): boolean =>
+export const crossesFilesystems = (error: unknown): boolean =>
 	(error as NodeJS.ErrnoException | null)?.code === 'EXDEV';

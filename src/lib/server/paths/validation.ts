@@ -46,17 +46,32 @@ const purposes: Record<DirectoryName, Purpose> = {
 	library: {
 		noun: 'Library',
 		consequence: 'Every import is filed there, so nothing can be imported.',
-		remedy: 'Mount a volume there, or set PACERR_LIBRARY_DIR to where it already is.'
+		remedy: 'Point the Library in Settings at where it already is, or mount a volume there.'
 	},
 	downloads: {
 		noun: 'download directory',
 		consequence: 'Pacerr reads completed downloads from there, so nothing can be imported.',
 		remedy:
-			'Mount a volume there, or set PACERR_DOWNLOADS_DIR to where it already is. If the ' +
-			'Download Client already holds the files somewhere Pacerr can reach under a different ' +
-			'path, add a Remote Path Mapping instead of moving the mount.'
+			'Point the download directory in Settings at where it already is, or mount a volume ' +
+			'there. If the Download Client already holds the files somewhere Pacerr can reach under ' +
+			'a different path, add a Remote Path Mapping instead of moving the mount.'
 	}
 };
+
+/** How a diagnostic names a directory mid-sentence, for anything else that has to name one. */
+export const directoryNoun = (directory: DirectoryName): string => purposes[directory].noun;
+
+/**
+ * Which of the three things is wrong with one directory as it now stands, in the sentence the
+ * standing Directories list would use for it, or null where nothing is. Saving a path answers with
+ * this, so a typo is named by the save that made it rather than only by the next page load.
+ */
+export function directoryProblem(directory: DirectoryName, paths: RuntimePaths): string | null {
+	const check = validateDirectory(directory, paths[directory]);
+	if (check.condition !== 'ok') return check.diagnostic;
+	const hardlinking = validateHardlinking(paths.library, paths.downloads);
+	return hardlinking.sameFilesystem ? null : hardlinking.diagnostic;
+}
 
 /**
  * Replaces the configured mount's wording wholesale, because the two have different fixes: moving

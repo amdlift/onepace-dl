@@ -2,7 +2,6 @@ import {
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
-	readdirSync,
 	rmSync,
 	statSync,
 	symlinkSync,
@@ -11,6 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
+import { mediaUnder } from './harness/files';
 import { fixtures, hours, startPacerr, type Pacerr, type PacerrPage } from './harness/pacerr';
 
 /** What the view proposes for each listed file: its path against the Part slug pre-filled. */
@@ -32,11 +32,8 @@ function importSource(files: string[]): string {
 	return root;
 }
 
-const libraryFiles = (pacerr: Pacerr): string[] =>
-	readdirSync(pacerr.paths.library, { recursive: true })
-		.map(String)
-		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
-		.sort();
+/** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
+const libraryMedia = (pacerr: Pacerr): string[] => mediaUnder(pacerr.paths.library);
 
 async function pacerrWith(files: string[]): Promise<{ pacerr: Pacerr; source: string }> {
 	const pacerr = await startPacerr({ feed: fixtures.feed });
@@ -114,7 +111,7 @@ describe('the bulk Manual Import view', () => {
 });
 
 describe('committing a Manual Import', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	it('files the file the user confirmed under the same naming a download gets', async () => {
 		const { pacerr, source } = await pacerrWith(['Drum Island 01.mkv']);
@@ -123,7 +120,7 @@ describe('committing a Manual Import', () => {
 			'part:Drum Island 01.mkv': 'drum-island-01'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		expect(statSync(join(pacerr.paths.library, drumIsland)).ino).toBe(
 			statSync(join(source, 'Drum Island 01.mkv')).ino
 		);
@@ -137,7 +134,7 @@ describe('committing a Manual Import', () => {
 			'part:Drum Island 02.mkv': ''
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 	});
 
 	it('shows the Part as had with no Release, because Pacerr does not know what the file is', async () => {
@@ -169,7 +166,7 @@ describe('committing a Manual Import', () => {
 });
 
 describe('moving rather than hardlinking', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	it('leaves nothing behind in the Import Source when the user asks it to move', async () => {
 		const { pacerr, source } = await pacerrWith(['Drum Island 01.mkv']);
@@ -179,7 +176,7 @@ describe('moving rather than hardlinking', () => {
 			placing: 'move'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		expect(existsSync(join(source, 'Drum Island 01.mkv'))).toBe(false);
 	});
 
@@ -222,7 +219,7 @@ describe('what Manual Import is allowed to read', () => {
 			'part:/etc/hostname': 'drum-island-02'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 		expect((await pacerr.open('/activity')).text('.history')).toContain(
 			'the Import Source and the Library and nothing else'
 		);
@@ -239,12 +236,12 @@ describe('what Manual Import is allowed to read', () => {
 		await pacerr.submit('/manual-import', 'import', {
 			'part:Drum Island 02.mkv': 'drum-island-02'
 		});
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 	});
 });
 
 describe('filling a single gap from Wanted', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	it('offers Manual Import as a row action on a Part Pacerr does not have', async () => {
 		const { pacerr } = await pacerrWith(['Drum Island 01.mkv']);
@@ -268,7 +265,7 @@ describe('filling a single gap from Wanted', () => {
 			file: 'Wano 60.mkv'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 	});
 });
 
@@ -278,7 +275,7 @@ describe('a path that never runs unattended', () => {
 
 		await pacerr.advance(hours(48));
 
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 		expect((await pacerr.open('/activity')).texts('.history .event')).not.toContain(
 			'Manually imported'
 		);
@@ -286,7 +283,7 @@ describe('a path that never runs unattended', () => {
 });
 
 describe('an Import Source on a filesystem the Library cannot be hardlinked to', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	/** A tmpfs the Library's temporary root is never on, so a hardlink between them truly fails. */
 	async function acrossFilesystems(): Promise<Pacerr> {
@@ -305,7 +302,7 @@ describe('an Import Source on a filesystem the Library cannot be hardlinked to',
 			'part:Drum Island 01.mkv': 'drum-island-01'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		const page = await pacerr.open('/activity');
 		expect(page.texts('.history .event')).toContain('Manually imported, with a warning');
 		expect(page.text('.history')).toContain('on different filesystems');
@@ -319,7 +316,7 @@ describe('an Import Source on a filesystem the Library cannot be hardlinked to',
 			placing: 'move'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		expect((await pacerr.open('/activity')).texts('.history .event')).toEqual([
 			'Manually imported'
 		]);

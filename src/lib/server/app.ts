@@ -1,11 +1,15 @@
 import { join } from 'node:path';
+import { Posters } from './artwork';
 import { AuthenticationService } from './auth/service';
+import { Background } from './background';
 import { CatalogueService } from './catalogue/service';
 import { openDatabase, type Database } from './db/database';
 import { AcquisitionService } from './download/acquisition';
 import { DownloadService } from './download/service';
 import { ImportService } from './library/import';
+import { LibraryMoveService } from './library/move';
 import { assignLibraryIndexes } from './library/store';
+import { PathService } from './paths/service';
 import { openConfigDirectory, reportPathValidation, validatePaths } from './paths/validation';
 import { ReleaseService } from './releases/service';
 import type { Runtime } from './runtime';
@@ -20,12 +24,17 @@ export interface App {
 	runtime: Runtime;
 	db: Database;
 	catalogue: CatalogueService;
+	posters: Posters;
 	releases: ReleaseService;
 	authentication: AuthenticationService;
 	downloads: DownloadService;
 	acquisition: AcquisitionService;
 	imports: ImportService;
+	paths: PathService;
+	moves: LibraryMoveService;
 	scheduler: Scheduler;
+	/** Work a request started and did not wait for; seam 1 awaits it rather than racing it. */
+	background: Background;
 	/** Resolves once the startup scrape has run; the HTTP surface waits on it. */
 	ready: Promise<void>;
 	stop(): void;
@@ -35,7 +44,9 @@ export function createApp(runtime: Runtime): App {
 	openConfigDirectory(runtime.paths.config);
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
 	assignLibraryIndexes(db);
-	const catalogue = new CatalogueService(db, runtime);
+	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
+	const posters = new Posters(runtime.paths.config);
+	const catalogue = new CatalogueService(db, runtime, posters, paths);
 	const releases = new ReleaseService(db, runtime);
 	const authentication = new AuthenticationService(
 		db,
@@ -44,7 +55,10 @@ export function createApp(runtime: Runtime): App {
 	);
 	const downloads = new DownloadService(db, runtime.downloadClients);
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
-	const imports = new ImportService(db, runtime.clock, downloads, runtime.paths.library);
+	const imports = new ImportService(db, runtime.clock, downloads, posters, paths);
+	const background = new Background();
+	const moves = new LibraryMoveService(db, runtime.clock, paths, background);
+	moves.recordInterruption();
 	const scheduler = new Scheduler(runtime.clock);
 	scheduler.add({
 		name: catalogueJob,
@@ -83,21 +97,26 @@ export function createApp(runtime: Runtime): App {
 		runtime,
 		db,
 		catalogue,
+		posters,
 		releases,
 		authentication,
 		downloads,
 		acquisition,
 		imports,
+		paths,
+		moves,
 		scheduler,
+		background,
 		ready: (async () => {
 			// Before anything else, because the download directory worth validating is the one the
 			// Download Client will report, and only asking it produces that path.
 			await downloads.test();
-			reportPathValidation(validatePaths(runtime.paths, downloads.downloadDirectory()));
+			reportPathValidation(validatePaths(paths.current(), downloads.downloadDirectory()));
 			await scheduler.tick();
 			if (runtime.polls) scheduler.startPolling();
 		})(),
 		stop() {
+			background.stop();
 			scheduler.stop();
 			db.close();
 		}

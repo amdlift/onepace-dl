@@ -6,8 +6,17 @@ import type { DownloadClientFactory } from './download/client';
 
 export interface RuntimePaths {
 	config: string;
+	/** The filesystem this install can see: `/` in the container, a temporary directory at seam 1. */
+	root: string;
+	/** Where the Library and the download directory sit until Settings says otherwise. */
 	library: string;
 	downloads: string;
+}
+
+/** Paths pinned by environment variable, which stand in for the Settings ones. */
+export interface EnvironmentPaths {
+	library: string | null;
+	downloads: string | null;
 }
 
 /** Everything Pacerr is allowed to substitute. Seam 1 replaces exactly these. */
@@ -22,6 +31,7 @@ export interface Runtime {
 	polls: boolean;
 	/** Credentials supplied by environment variable, which stand in for the Settings ones. */
 	environmentCredentials: Credentials | null;
+	environmentPaths: EnvironmentPaths;
 }
 
 interface Slot {

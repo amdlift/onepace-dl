@@ -14,13 +14,18 @@ export function runtimeFromEnvironment(environment = process.env): Runtime {
 		onePaceBaseUrl: environment.PACERR_ONEPACE_URL ?? 'https://onepace.net',
 		paths: {
 			config: resolve(environment.PACERR_CONFIG_DIR ?? '/config'),
-			library: resolve(environment.PACERR_LIBRARY_DIR ?? '/library'),
-			downloads: resolve(environment.PACERR_DOWNLOADS_DIR ?? '/downloads')
+			root: '/',
+			library: '/library',
+			downloads: '/downloads'
 		},
 		catalogueRefreshInterval: numberFrom(environment.PACERR_CATALOGUE_INTERVAL_HOURS, 24, hours),
 		feedPollInterval: numberFrom(environment.PACERR_FEED_INTERVAL_MINUTES, 15, minutes),
 		polls: true,
-		environmentCredentials: credentialsFrom(environment)
+		environmentCredentials: credentialsFrom(environment),
+		environmentPaths: {
+			library: pathFrom(environment.PACERR_LIBRARY_DIR),
+			downloads: pathFrom(environment.PACERR_DOWNLOADS_DIR)
+		}
 	};
 }
 
@@ -39,3 +44,6 @@ function numberFrom(
 	const parsed = value === undefined ? Number.NaN : Number(value);
 	return scale(Number.isFinite(parsed) ? parsed : fallback);
 }
+
+const pathFrom = (value: string | undefined): string | null =>
+	value === undefined ? null : resolve(value);

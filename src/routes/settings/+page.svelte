@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { formatResolution, formatResolutionOrder, formatVariant } from '../../lib/format';
+	import {
+		formatBytes,
+		formatResolution,
+		formatResolutionOrder,
+		formatVariant,
+		pluralise
+	} from '../../lib/format';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -12,9 +18,12 @@
 	const namingTemplate = $derived(data.namingTemplate);
 	const importSource = $derived(data.importSource);
 	const remotePathMappings = $derived(data.remotePathMappings);
+	const library = $derived(data.library);
+	const libraryMove = $derived(data.libraryMove);
+	const downloads = $derived(data.downloads);
 	const paths = $derived(data.paths);
 
-	const tokens = '{arc}, {season}, {part}, {episode}, {resolution}';
+	const tokens = '{show}, {arc}, {seasonDirectory}, {season}, {part}, {episode}, {resolution}';
 	const resolutions = [1080, 720, 480] as const;
 	const variants = ['regular', 'extended', 'alternate'] as const;
 	const ranks = [0, 1, 2] as const;
@@ -90,11 +99,22 @@
 		</label>
 		<p class="note">
 			Arcs render as seasons and Parts as episodes, which is what Jellyfin and Plex parse.
-			Available tokens: {tokens}. A slash starts a new folder, and the file keeps the extension it
-			was downloaded with. Leave this empty to go back to the default.
+			Available tokens: {tokens}, where {'{seasonDirectory}'} is Specials for the one-off entries and
+			Season followed by the number for everything else. A slash starts a new folder, and the file
+			keeps the extension it was downloaded with. Leave this empty to go back to the default.
 		</p>
 		<button class="button" type="submit">Save</button>
 	</form>
+</section>
+
+<section class="sidecars">
+	<h2>Sidecars</h2>
+
+	<p class="note">
+		The NFO documents and the Poster Pacerr writes into the Library beside the media they describe,
+		so a media server reads what only One Pace knows. Each kind has a switch of its own.
+	</p>
+	<a class="button" href="/settings/sidecars">Sidecars</a>
 </section>
 
 <section>
@@ -112,6 +132,7 @@
 		</p>
 		<div class="row">
 			<button class="button" type="submit">Save</button>
+			<a class="button" href="/settings/browse?for=importSource">Browse</a>
 			<a class="button" href="/manual-import">Manual Import</a>
 		</div>
 	</form>
@@ -150,6 +171,152 @@
 
 <section class="paths">
 	<h2>Directories</h2>
+
+	{#if form?.libraryProblem}
+		<p class="alert">{form.libraryProblem}</p>
+	{/if}
+
+	{#if library.source === 'environment'}
+		<div class="pinned">
+			<label>
+				<span>Library</span>
+				<input name="library" value={library.path} readonly />
+			</label>
+			<p class="note">
+				The Library is configured by {library.variable}, and cannot be changed here.
+			</p>
+		</div>
+	{:else}
+		<form method="POST" action="?/saveLibrary">
+			<label>
+				<span>Library</span>
+				<input name="library" autocomplete="off" value={library.path} />
+			</label>
+			<p class="note">
+				Where Pacerr files every import. Setting {library.variable} pins it from the environment
+				instead and makes this field read-only.
+			</p>
+			<div class="row">
+				<button class="button" type="submit">Save</button>
+				<a class="button" href="/settings/browse?for=library">Browse</a>
+			</div>
+		</form>
+	{/if}
+
+	{#if libraryMove !== null && (libraryMove.state !== 'dismissed' || libraryMove.sources.length > 0)}
+		<div class="move">
+			{#if libraryMove.state === 'planned'}
+				{#each libraryMove.sources as source (source.path)}
+					<p>
+						{pluralise(source.parts, 'Part')}, {formatBytes(source.bytes)}, {source.parts === 1
+							? 'is'
+							: 'are'} still under {source.path}.
+					</p>
+				{/each}
+				<p>Pacerr will move them to {libraryMove.destination}.</p>
+				{#if libraryMove.sameFilesystem}
+					<p class="note">
+						Source and destination are on the same filesystem, so Pacerr renames each file and the
+						move costs no disk.
+					</p>
+				{:else}
+					<p class="note">
+						Source and destination are on different filesystems, so Pacerr copies each file rather
+						than renaming it. That breaks the hardlinks to your seeding downloads, and the disk
+						anything still seeding occupies roughly doubles.
+					</p>
+				{/if}
+				<div class="row">
+					<form method="POST" action="?/startLibraryMove">
+						<button class="button" type="submit">Move</button>
+					</form>
+					<form method="POST" action="?/dismissLibraryMove">
+						<button class="button" type="submit">Leave them where they are</button>
+					</form>
+				</div>
+			{:else if libraryMove.state === 'moving'}
+				<p>
+					Moving the Library to {libraryMove.destination}: {libraryMove.moved} of {libraryMove.parts}
+					Parts moved.
+				</p>
+				{#each libraryMove.sources as source (source.path)}
+					<p>{pluralise(source.parts, 'Part')} still under {source.path}.</p>
+				{/each}
+			{:else if libraryMove.state === 'failed'}
+				<p class="alert">
+					Moving the Library stopped after {libraryMove.moved} of {libraryMove.parts} Parts: {libraryMove.reason}
+				</p>
+				{#each libraryMove.sources as source (source.path)}
+					<p>{pluralise(source.parts, 'Part')} are still under {source.path}:</p>
+					<ul class="stranded">
+						{#each source.files as path (path)}
+							<li>{path}</li>
+						{/each}
+					</ul>
+				{/each}
+				<div class="row">
+					<form method="POST" action="?/startLibraryMove">
+						<button class="button" type="submit">Try again</button>
+					</form>
+					<form method="POST" action="?/dismissLibraryMove">
+						<button class="button" type="submit">Dismiss</button>
+					</form>
+				</div>
+			{:else if libraryMove.state === 'dismissed'}
+				{#each libraryMove.sources as source (source.path)}
+					<p>{pluralise(source.parts, 'Part')} are still under {source.path}:</p>
+					<ul class="stranded">
+						{#each source.files as path (path)}
+							<li>{path}</li>
+						{/each}
+					</ul>
+				{/each}
+				<p class="note">
+					A move that stopped partway left your Library in more than one place, so Pacerr goes on
+					saying where each Part is until one of them holds all of it.
+				</p>
+				<form method="POST" action="?/startLibraryMove">
+					<button class="button" type="submit">Move them to {libraryMove.destination}</button>
+				</form>
+			{:else}
+				<p>Moved {pluralise(libraryMove.parts, 'Part')} to {libraryMove.destination}.</p>
+				<form method="POST" action="?/dismissLibraryMove">
+					<button class="button" type="submit">Dismiss</button>
+				</form>
+			{/if}
+		</div>
+	{/if}
+
+	{#if form?.downloadsProblem}
+		<p class="alert">{form.downloadsProblem}</p>
+	{/if}
+
+	{#if downloads.source === 'environment'}
+		<div class="pinned">
+			<label>
+				<span>Download directory</span>
+				<input name="downloads" value={downloads.path} readonly />
+			</label>
+			<p class="note">
+				The download directory is configured by {downloads.variable}, and cannot be changed here.
+			</p>
+		</div>
+	{:else}
+		<form method="POST" action="?/saveDownloads">
+			<label>
+				<span>Download directory</span>
+				<input name="downloads" autocomplete="off" value={downloads.path} />
+			</label>
+			<p class="note">
+				Where this container sees the completed downloads the Download Client writes. Setting
+				{downloads.variable} pins it from the environment instead and makes this field read-only.
+			</p>
+			<div class="row">
+				<button class="button" type="submit">Save</button>
+				<a class="button" href="/settings/browse?for=downloads">Browse</a>
+			</div>
+		</form>
+	{/if}
 
 	<ul>
 		{#each paths.directories as directory (directory.directory)}
@@ -306,6 +473,40 @@
 		gap: 0.5rem;
 	}
 
+	.pinned {
+		display: grid;
+		gap: 0.75rem;
+		max-width: 20rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.move {
+		display: grid;
+		gap: 0.5rem;
+		justify-items: start;
+		max-width: 44rem;
+		margin: 0 0 0.75rem;
+		padding: 0.75rem;
+		border: 1px solid var(--border);
+		border-radius: 2px;
+	}
+
+	.move p {
+		margin: 0;
+		font-size: 0.8rem;
+	}
+
+	.stranded {
+		max-height: 12rem;
+		overflow-y: auto;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		color: var(--ink-bright);
+		font-size: 0.8rem;
+		word-break: break-all;
+	}
+
 	.paths ul {
 		display: grid;
 		gap: 0.35rem;
@@ -323,6 +524,11 @@
 
 	.paths li.bad {
 		color: var(--danger);
+	}
+
+	.sidecars .note {
+		max-width: 44rem;
+		margin-bottom: 0.75rem;
 	}
 
 	.mapping-list {
@@ -365,6 +571,8 @@
 	input[name='username'],
 	input[name='password'],
 	input[name='template'],
+	input[name='library'],
+	input[name='downloads'],
 	input[name='remotePath'],
 	input[name='localPath'] {
 		padding: 0.35rem 0.5rem;

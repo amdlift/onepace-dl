@@ -5,7 +5,7 @@ const bootedAt = '2026-10-19 22:00 UTC';
 const aDayLater = '2026-10-20 22:00 UTC';
 
 describe('the Arcs view', () => {
-	it('lists every Arc One Pace publishes, with its Part count and cover artwork', async () => {
+	it('lists every Arc One Pace publishes, with its Part count and its Poster', async () => {
 		const pacerr = await startPacerr();
 
 		const page = await pacerr.open('/');
@@ -14,9 +14,7 @@ describe('the Arcs view', () => {
 		expect(rows).toHaveLength(38);
 		expect(rows[0]).toContain('Romance Dawn');
 		expect(rows[0]).toContain('4 Parts');
-		expect(page.attributes('tbody tr img', 'src')[0]).toBe(
-			`${pacerr.upstream.url}/_next/static/media/50-backdrop-village-cows.0s-z7zeune8vi.jpg`
-		);
+		expect(page.attributes('tbody tr img', 'src')[0]).toBe('/arcs/romance-dawn/poster');
 	});
 
 	it('lists one-off and joke entries alongside real Arcs', async () => {

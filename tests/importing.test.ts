@@ -1,14 +1,7 @@
-import {
-	mkdirSync,
-	mkdtempSync,
-	readdirSync,
-	readFileSync,
-	rmSync,
-	statSync,
-	writeFileSync
-} from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, onTestFinished } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { directoriesIn, mediaUnder, onAnotherFilesystem } from './harness/files';
 import {
 	fixtures,
 	hours,
@@ -19,32 +12,13 @@ import {
 } from './harness/pacerr';
 import { defaultNamingTemplate } from '../src/lib/server/library/naming';
 
-const firstPart = 'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv';
+const firstPart = 'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv';
 
-/** A tmpfs the temporary root is never on, so a hardlink between them genuinely fails. */
-function otherFilesystem(): string {
-	const directory = mkdtempSync('/dev/shm/pacerr-downloads-');
-	onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-	return directory;
-}
+/** The directories at the Library root. The Sidecars beside them are `sidecars.test.ts`'s. */
+const libraryDirectories = (pacerr: Pacerr): string[] => directoriesIn(pacerr.paths.library);
 
-/** Drive the download Pacerr grabbed last to completion, with real files on a real filesystem. */
-function finish(pacerr: Pacerr, fileCount: number): string {
-	const infohash = pacerr.downloadClient.added.at(-1)!.infohash;
-	const content = join(pacerr.paths.downloads, infohash);
-	mkdirSync(content, { recursive: true });
-	for (let position = 1; position <= fileCount; position += 1) {
-		writeFileSync(join(content, `${position}.mkv`), `video ${position}`);
-	}
-	pacerr.downloadClient.complete(infohash, content);
-	return infohash;
-}
-
-const libraryFiles = (pacerr: Pacerr): string[] =>
-	readdirSync(pacerr.paths.library, { recursive: true })
-		.map(String)
-		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
-		.sort();
+/** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
+const libraryMedia = (pacerr: Pacerr): string[] => mediaUnder(pacerr.paths.library);
 
 /** Reverie, monitored and downloaded: one Batch Release covering the Arc's three Parts. */
 async function reverie(options: StartOptions = {}): Promise<Pacerr> {
@@ -52,12 +26,25 @@ async function reverie(options: StartOptions = {}): Promise<Pacerr> {
 	await pacerr.connectDownloadClient();
 	pacerr.downloadClient.filesPerTorrent = 3;
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-	finish(pacerr, 3);
+	pacerr.finishDownload(3);
 	await pacerr.advance(minutes(15));
 	return pacerr;
 }
 
-const acrossFilesystems = (): Promise<Pacerr> => reverie({ downloadsDir: otherFilesystem() });
+const acrossFilesystems = (): Promise<Pacerr> =>
+	reverie({ downloadsDir: onAnotherFilesystem('pacerr-downloads-') });
+
+/** Both one-off entries the Catalogue carries, monitored and downloaded: one Part each. */
+async function specials(): Promise<Pacerr> {
+	const pacerr = await startPacerr({ feed: fixtures.feed });
+	await pacerr.connectDownloadClient();
+	for (const arc of ['one-piece-fan-letter', 'warship-island-01-april-fools-2025']) {
+		await pacerr.submit('/', 'toggleMonitoring', { arc });
+		pacerr.finishDownload(1);
+	}
+	await pacerr.advance(minutes(15));
+	return pacerr;
+}
 
 /** The watch page with one more Arc ahead of every Arc Pacerr has already seen. */
 function withAnArcInserted(watchPage: string): string {
@@ -101,11 +88,17 @@ describe('importing a completed download', () => {
 	it('files it into the Library without being asked', async () => {
 		const pacerr = await reverie();
 
-		expect(libraryFiles(pacerr)).toEqual([
-			'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv'
+		expect(libraryMedia(pacerr)).toEqual([
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
+	});
+
+	it('puts nothing but season directories at the root, so this reads as one show', async () => {
+		const pacerr = await reverie();
+
+		expect(libraryDirectories(pacerr)).toEqual(['Season 34']);
 	});
 
 	it('shows every Part it filed as had, with the Resolution and Variant it holds', async () => {
@@ -128,9 +121,9 @@ describe('importing a completed download', () => {
 		const page = await pacerr.open('/activity');
 		expect(page.texts('.history .event').filter((event) => event === 'Imported')).toHaveLength(3);
 		expect(page.texts('.history .detail')).toEqual([
-			'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv'
 		]);
 	});
 
@@ -169,7 +162,7 @@ describe('a download Pacerr cannot read', () => {
 	it('leaves the Part wanted rather than claiming it is had', async () => {
 		const pacerr = await unreadable();
 
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 		expect((await pacerr.open('/arcs/reverie')).texts('tbody .have')).toEqual([
 			'Missing',
 			'Missing',
@@ -189,10 +182,10 @@ describe('the naming template', () => {
 
 		await pacerr.submit('/settings', 'saveNamingTemplate', { template: mine });
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-		finish(pacerr, 3);
+		pacerr.finishDownload(3);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Reverie/Reverie - 34x01 - The Fifth Emperor.mkv',
 			'Reverie/Reverie - 34x02 - A Beautiful World.mkv',
 			'Reverie/Reverie - 34x03 - The Empty Throne.mkv'
@@ -215,18 +208,13 @@ describe('the naming template', () => {
 });
 
 describe('the one-off entries the Catalogue keeps alongside real Arcs', () => {
-	it('files them as specials, as the one episode they are', async () => {
-		const pacerr = await startPacerr({ feed: fixtures.feed });
-		await pacerr.connectDownloadClient();
-		for (const arc of ['one-piece-fan-letter', 'warship-island-01-april-fools-2025']) {
-			await pacerr.submit('/', 'toggleMonitoring', { arc });
-			finish(pacerr, 1);
-		}
-		await pacerr.advance(minutes(15));
+	it('files them under Specials, where a media server looks for them', async () => {
+		const pacerr = await specials();
 
-		expect(libraryFiles(pacerr)).toEqual([
-			'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [1080p].mkv',
-			'Warship Island 01 (April Fools 2025)/Season 00/Warship Island 01 (April Fools 2025) - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
+		expect(libraryDirectories(pacerr)).toEqual(['Specials']);
+		expect(libraryMedia(pacerr)).toEqual([
+			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
+			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
 	});
 });
@@ -240,14 +228,14 @@ describe('an Arc that One Pace inserts above one already in the Library', () => 
 		expect((await pacerr.open('/')).text()).toContain('Gold Roger Executed');
 
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
-			"Gaimon/Season 04/Gaimon - S04E01 - You're the Weird Animal [1080p].mkv",
-			'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv'
+		expect(libraryMedia(pacerr)).toEqual([
+			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].mkv",
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
 	});
 });
@@ -257,7 +245,7 @@ describe('a special One Pace publishes after the Library already holds one', () 
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'one-piece-fan-letter' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
 		pacerr.upstream.watchPage.publish(withASpecialInserted(fixtures.watchPage));
@@ -265,12 +253,12 @@ describe('a special One Pace publishes after the Library already holds one', () 
 		expect((await pacerr.open('/')).text()).toContain('The Tatsumaki Incident');
 
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'warship-island-01-april-fools-2025' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
-			'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [1080p].mkv',
-			'Warship Island 01 (April Fools 2025)/Season 00/Warship Island 01 (April Fools 2025) - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
+		expect(libraryMedia(pacerr)).toEqual([
+			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
+			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
 	});
 });

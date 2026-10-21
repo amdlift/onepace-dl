@@ -23,7 +23,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		downloadClient: app.downloads.connection(),
 		connection: app.downloads.health(),
 		remotePathMappings: readRemotePathMappings(app.db),
-		paths: validatePaths(app.runtime.paths, app.downloads.downloadDirectory())
+		library: app.paths.library(),
+		libraryMove: app.moves.current(),
+		downloads: app.paths.downloads(),
+		paths: validatePaths(app.paths.current(), app.downloads.downloadDirectory())
 	};
 };
 
@@ -48,10 +51,38 @@ export const actions: Actions = {
 		return { tested: true };
 	},
 
+	saveLibrary: async ({ request }) => {
+		const submitted = await request.formData();
+		const outcome = getApp().moves.relocate(String(submitted.get('library') ?? ''));
+		if (outcome.problem !== null) return { libraryProblem: outcome.problem };
+		return { saved: true };
+	},
+
+	startLibraryMove: async () => {
+		getApp().moves.start();
+		return { saved: true };
+	},
+
+	dismissLibraryMove: async () => {
+		getApp().moves.dismiss();
+		return { saved: true };
+	},
+
+	saveDownloads: async ({ request }) => {
+		const submitted = await request.formData();
+		const app = getApp();
+		const outcome = app.paths.configure('downloads', String(submitted.get('downloads') ?? ''));
+		// Only the Download Client knows where it actually writes, so re-asking is what turns a new
+		// download directory into an answer about the path imports will really read.
+		await app.downloads.test();
+		if (outcome.problem !== null) return { downloadsProblem: outcome.problem };
+		return { saved: true };
+	},
+
 	testPaths: async () => {
 		const app = getApp();
 		await app.downloads.test();
-		reportPathValidation(validatePaths(app.runtime.paths, app.downloads.downloadDirectory()));
+		reportPathValidation(validatePaths(app.paths.current(), app.downloads.downloadDirectory()));
 		return { tested: true };
 	},
 
