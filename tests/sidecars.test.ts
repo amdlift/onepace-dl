@@ -235,7 +235,7 @@ describe('a Part the user imported by hand', () => {
 		const pacerr = await startPacerr();
 		const source = anotherDirectory('pacerr-source-');
 		writeFileSync(join(source, 'Drum Island 01.mkv'), 'video');
-		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+		await pacerr.submit('/settings/manual-import', 'saveImportSource', { importSource: source });
 
 		await pacerr.submit('/manual-import', 'import', {
 			'part:Drum Island 01.mkv': 'drum-island-01'
@@ -493,7 +493,7 @@ describe('a kind of Sidecar the user switched off', () => {
 		const pacerr = await startPacerr();
 		const source = anotherDirectory('pacerr-source-');
 		writeFileSync(join(source, 'Drum Island 01.mkv'), 'video');
-		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+		await pacerr.submit('/settings/manual-import', 'saveImportSource', { importSource: source });
 		await turnOff(pacerr, ...sidecarKinds);
 
 		await pacerr.submit('/manual-import', 'import', {

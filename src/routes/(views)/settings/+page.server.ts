@@ -1,6 +1,5 @@
 import { getApp } from '../../../lib/server/runtime';
 import { readNamingTemplate, writeNamingTemplate } from '../../../lib/server/library/store';
-import { readImportSource, writeImportSource } from '../../../lib/server/library/manual-import';
 import {
 	addRemotePathMapping,
 	readRemotePathMappings,
@@ -16,7 +15,6 @@ export const load: PageServerLoad = async () => {
 	return {
 		profile: readProfile(app.db),
 		namingTemplate: readNamingTemplate(app.db),
-		importSource: readImportSource(app.db),
 		remotePathMappings: readRemotePathMappings(app.db),
 		library: app.paths.library(),
 		libraryMove: app.moves.current(),
@@ -92,12 +90,6 @@ export const actions: Actions = {
 	saveNamingTemplate: async ({ request }) => {
 		const submitted = await request.formData();
 		writeNamingTemplate(getApp().db, String(submitted.get('template') ?? ''));
-		return { saved: true };
-	},
-
-	saveImportSource: async ({ request }) => {
-		const submitted = await request.formData();
-		writeImportSource(getApp().db, String(submitted.get('importSource') ?? ''));
 		return { saved: true };
 	}
 };

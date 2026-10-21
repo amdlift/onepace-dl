@@ -60,7 +60,7 @@ export const actions: Actions = {
 		if (chosen === null) return { problem: policy.refusal };
 		if (target === 'importSource') {
 			writeImportSource(app.db, chosen);
-			redirect(303, '/settings');
+			redirect(303, '/settings/manual-import');
 		}
 		const outcome = app.paths.configure(target, chosen);
 		if (!outcome.ok) return { problem: outcome.problem };

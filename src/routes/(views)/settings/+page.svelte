@@ -13,7 +13,6 @@
 
 	const profile = $derived(data.profile);
 	const namingTemplate = $derived(data.namingTemplate);
-	const importSource = $derived(data.importSource);
 	const remotePathMappings = $derived(data.remotePathMappings);
 	const library = $derived(data.library);
 	const libraryMove = $derived(data.libraryMove);
@@ -109,27 +108,6 @@
 			so a media server reads what only One Pace knows. Each kind has a switch of its own.
 		</p>
 		<a class="button" href="/settings/sidecars">Sidecars</a>
-	</section>
-
-	<section>
-		<h2>Manual Import</h2>
-
-		<form method="POST" action="?/saveImportSource">
-			<label>
-				<span>Import Source</span>
-				<input class="input" name="importSource" autocomplete="off" value={importSource ?? ''} />
-			</label>
-			<p class="note">
-				The directory Manual Import browses for One Pace files you already have. Pacerr reads this
-				directory and the Library and nowhere else, and never scans either on its own. Leave this
-				empty to give Manual Import nowhere to look.
-			</p>
-			<div class="row">
-				<button class="button" type="submit">Save</button>
-				<a class="button" href="/settings/browse?for=importSource">Browse</a>
-				<a class="button" href="/manual-import">Manual Import</a>
-			</div>
-		</form>
 	</section>
 
 	<section class="paths">

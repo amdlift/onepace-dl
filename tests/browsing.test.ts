@@ -20,8 +20,21 @@ const browse = (pacerr: Pacerr, target: string, at?: string): Promise<PacerrPage
 
 const offered = (page: PacerrPage): string[] => page.texts('.directories .name');
 
+/** Which Settings page each path field now lives on. */
+const settingsPage: Record<string, string> = {
+	library: '/settings',
+	downloads: '/settings',
+	importSource: '/settings/manual-import'
+};
+
 const settingsValue = async (pacerr: Pacerr, field: string): Promise<string | null> =>
-	(await pacerr.open('/settings')).attributes(`input[name="${field}"]`, 'value')[0] ?? null;
+	(await pacerr.open(settingsPage[field] ?? '/settings')).attributes(
+		`input[name="${field}"]`,
+		'value'
+	)[0] ?? null;
+
+const browseLinks = async (pacerr: Pacerr, path: string): Promise<(string | null)[]> =>
+	(await pacerr.open(path)).attributes('a[href^="/settings/browse"]', 'href');
 
 describe('browsing for the Library', () => {
 	it('lists the directories it can see and descends into the one picked', async () => {
@@ -80,10 +93,10 @@ describe('picking a directory for a Settings field', () => {
 	it('offers a browser beside every path field Settings holds', async () => {
 		const pacerr = await startPacerr();
 
-		expect(
-			(await pacerr.open('/settings')).attributes('a[href^="/settings/browse"]', 'href')
-		).toEqual([
-			'/settings/browse?for=importSource',
+		expect(await browseLinks(pacerr, '/settings/manual-import')).toEqual([
+			'/settings/browse?for=importSource'
+		]);
+		expect(await browseLinks(pacerr, '/settings')).toEqual([
 			'/settings/browse?for=library',
 			'/settings/browse?for=downloads'
 		]);
@@ -203,9 +216,10 @@ describe('a path field the environment pinned', () => {
 		const pacerr = await startPacerr({ libraryFromEnvironment: pinned });
 		mounted(pacerr, 'srv/media');
 
-		expect(
-			(await pacerr.open('/settings')).attributes('a[href^="/settings/browse"]', 'href')
-		).toEqual(['/settings/browse?for=importSource', '/settings/browse?for=downloads']);
+		expect(await browseLinks(pacerr, '/settings/manual-import')).toEqual([
+			'/settings/browse?for=importSource'
+		]);
+		expect(await browseLinks(pacerr, '/settings')).toEqual(['/settings/browse?for=downloads']);
 
 		await pacerr.submit('/settings/browse', 'select', {
 			for: 'library',

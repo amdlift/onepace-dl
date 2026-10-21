@@ -32,3 +32,18 @@ describe('the Download Client', () => {
 		expect((await pacerr.open('/settings')).texts('h2')).not.toContain('Download Client');
 	});
 });
+
+describe('Manual Import', () => {
+	it('is a page of its own that saves the Import Source', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.submit('/settings/manual-import', 'saveImportSource', {
+			importSource: pacerr.paths.downloads
+		});
+
+		expect(page.attributes('input[name="importSource"]', 'value')).toEqual([
+			pacerr.paths.downloads
+		]);
+		expect((await pacerr.open('/settings')).texts('h2')).not.toContain('Manual Import');
+	});
+});

@@ -300,7 +300,7 @@ describe('a manually imported Part', () => {
 		onTestFinished(() => rmSync(source, { recursive: true, force: true }));
 		writeFileSync(join(source, theFile), 'the file the user already had');
 
-		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+		await pacerr.submit('/settings/manual-import', 'saveImportSource', { importSource: source });
 		await pacerr.submit('/manual-import', 'import', {
 			[`part:${theFile}`]: 'one-piece-fan-letter-01'
 		});
