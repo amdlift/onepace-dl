@@ -24,6 +24,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		connection: app.downloads.health(),
 		remotePathMappings: readRemotePathMappings(app.db),
 		library: app.paths.library(),
+		libraryMove: app.moves.current(),
 		downloads: app.paths.downloads(),
 		paths: validatePaths(app.paths.current(), app.downloads.downloadDirectory())
 	};
@@ -52,8 +53,18 @@ export const actions: Actions = {
 
 	saveLibrary: async ({ request }) => {
 		const submitted = await request.formData();
-		const outcome = getApp().paths.configure('library', String(submitted.get('library') ?? ''));
+		const outcome = getApp().moves.relocate(String(submitted.get('library') ?? ''));
 		if (!outcome.ok) return { libraryProblem: outcome.problem };
+		return { saved: true };
+	},
+
+	startLibraryMove: async () => {
+		getApp().moves.start();
+		return { saved: true };
+	},
+
+	dismissLibraryMove: async () => {
+		getApp().moves.dismiss();
 		return { saved: true };
 	},
 

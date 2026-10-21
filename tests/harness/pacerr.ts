@@ -146,6 +146,16 @@ export class Pacerr {
 		await this.#running().scheduler.tick();
 	}
 
+	/** Let whatever a form action started in the background run to completion. */
+	async settle(): Promise<void> {
+		await this.#running().background.settle();
+	}
+
+	/** Park background work at its next pause, so a test can read a job that is still running. */
+	async hold(): Promise<void> {
+		await this.#running().background.hold();
+	}
+
 	async fetch(path: string, init?: RequestInit): Promise<Response> {
 		const headers = new Headers(init?.headers);
 		if (this.#cookies.size > 0 && !headers.has('cookie')) {
