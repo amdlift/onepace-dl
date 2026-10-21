@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatResolution, formatVariant, formatWantedState } from '../../lib/format';
+	import StateIcon from '../../lib/StateIcon.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -19,6 +20,7 @@
 	<table class="table">
 		<thead>
 			<tr>
+				<th class="state-icon"><span class="visually-hidden">State</span></th>
 				<th>Arc</th>
 				<th>Part</th>
 				<th>Title</th>
@@ -30,9 +32,13 @@
 		<tbody>
 			{#each wanted as row (`${row.arcSlug}/${row.number}`)}
 				<tr>
+					<StateIcon state={row.legend} />
 					<td><a href="/arcs/{row.arcSlug}">{row.arcTitle}</a></td>
 					<td>{row.number}</td>
-					<td>{row.title ?? ''}</td>
+					<td>
+						{row.title ?? ''}
+						{#if row.toBeRedone}<span class="badge redone">To Be Redone</span>{/if}
+					</td>
 					<td
 						class="state"
 						class:missing={row.state === 'missing'}
@@ -99,5 +105,13 @@
 	.state.unreleased {
 		color: var(--ink-dim);
 		font-style: italic;
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
 	}
 </style>

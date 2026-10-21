@@ -35,3 +35,36 @@ describe('the state of a Part', () => {
 		expect(stateLabels(page)).toEqual(Array(3).fill('Missing, monitored'));
 	});
 });
+
+describe('the state of a wanted Part', () => {
+	it('carries the same legend down the Wanted list', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'egghead' });
+
+		const labels = stateLabels(await pacerr.open('/wanted'));
+
+		expect(labels).toHaveLength(38);
+		expect(labels.slice(0, 22)).toEqual(Array(22).fill('Missing, monitored'));
+		expect(labels.slice(22)).toEqual(Array(16).fill('Unreleased Part'));
+	});
+	it('shows progress on a wanted Part without opening Activity', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+
+		expect(stateLabels(await pacerr.open('/wanted'))).toEqual(Array(3).fill('Downloading'));
+	});
+});
+
+describe('a Release One Pace means to recut', () => {
+	it('is marked on the Wanted list too, not only on the Arc it belongs to', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'zou' });
+
+		const badges = (await pacerr.open('/wanted')).texts('tbody .badge');
+
+		expect(badges).toHaveLength(10);
+		expect(badges[0]).toBe('To Be Redone');
+	});
+});
