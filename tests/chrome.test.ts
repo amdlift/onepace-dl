@@ -30,7 +30,7 @@ describe('the page header', () => {
 			['/manual-import', 'Manual Import'],
 			['/settings', 'Settings'],
 			['/system', 'System'],
-			['/settings/sidecars', 'Sidecars'],
+			['/settings/metadata', 'Settings'],
 			['/arcs/reverie', 'Reverie']
 		];
 
@@ -66,7 +66,7 @@ describe('the toolbar', () => {
 		expect((await pacerr.open('/arcs/reverie')).texts('.page-toolbar .actions button')).toEqual([
 			'Not monitored'
 		]);
-		expect((await pacerr.open('/settings/sidecars')).texts('.page-toolbar .actions a')).toEqual([
+		expect((await pacerr.open('/settings/browse')).texts('.page-toolbar .actions a')).toEqual([
 			'Back to Settings'
 		]);
 	});
@@ -95,7 +95,7 @@ describe('the sidebar', () => {
 		const marked = async (path: string): Promise<string[]> =>
 			(await pacerr.open(path)).texts('nav[aria-label="Sections"] a[aria-current="page"]');
 
-		expect(await marked('/settings/sidecars')).toEqual(['Settings']);
+		expect(await marked('/settings/metadata')).toEqual(['Settings']);
 		expect(await marked('/arcs/reverie')).toEqual(['Arcs']);
 	});
 });
@@ -114,7 +114,7 @@ describe('a view', () => {
 describe('the login screen', () => {
 	it('has neither the sidebar nor the health banner', async () => {
 		const pacerr = await startPacerr();
-		await pacerr.submit('/settings', 'saveAuthentication', {
+		await pacerr.submit('/settings/security', 'saveAuthentication', {
 			enabled: 'on',
 			username: 'captain',
 			password: 'all-blue-or-bust'

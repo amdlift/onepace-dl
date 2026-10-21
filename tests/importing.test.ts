@@ -180,7 +180,7 @@ describe('the naming template', () => {
 		await pacerr.connectDownloadClient();
 		pacerr.downloadClient.filesPerTorrent = 3;
 
-		await pacerr.submit('/settings', 'saveNamingTemplate', { template: mine });
+		await pacerr.submit('/settings/media-management', 'saveNamingTemplate', { template: mine });
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
 		pacerr.finishDownload(3);
 		await pacerr.advance(minutes(15));
@@ -194,14 +194,14 @@ describe('the naming template', () => {
 
 	it('is the default until it is changed, and survives a restart once it is', async () => {
 		const pacerr = await startPacerr();
-		expect((await pacerr.open('/settings')).attributes('input[name="template"]', 'value')).toEqual(
+		expect((await pacerr.open('/settings/media-management')).attributes('input[name="template"]', 'value')).toEqual(
 			[defaultNamingTemplate]
 		);
 
-		await pacerr.submit('/settings', 'saveNamingTemplate', { template: mine });
+		await pacerr.submit('/settings/media-management', 'saveNamingTemplate', { template: mine });
 		await pacerr.restart();
 
-		expect((await pacerr.open('/settings')).attributes('input[name="template"]', 'value')).toEqual(
+		expect((await pacerr.open('/settings/media-management')).attributes('input[name="template"]', 'value')).toEqual(
 			[mine]
 		);
 	});

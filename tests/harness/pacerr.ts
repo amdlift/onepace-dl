@@ -238,7 +238,7 @@ export class Pacerr {
 
 	/** Point Pacerr at a Download Client, the way a user does before anything can be grabbed. */
 	async connectDownloadClient(): Promise<void> {
-		await this.submit('/settings', 'saveDownloadClient', {
+		await this.submit('/settings/download-client', 'saveDownloadClient', {
 			url: 'http://qbittorrent.test:8080',
 			username: 'admin',
 			password: 'adminadmin'
@@ -252,8 +252,8 @@ export class Pacerr {
 	async #configureDirectories(): Promise<void> {
 		const credentials = this.environmentCredentials;
 		if (credentials !== null) await this.submit('/login', 'logIn', credentials);
-		await this.submit('/settings', 'saveLibrary', { library: this.paths.library });
-		await this.submit('/settings', 'saveDownloads', { downloads: this.paths.downloads });
+		await this.submit('/settings/media-management', 'saveLibrary', { library: this.paths.library });
+		await this.submit('/settings/media-management', 'saveDownloads', { downloads: this.paths.downloads });
 		if (credentials !== null) this.forget();
 	}
 

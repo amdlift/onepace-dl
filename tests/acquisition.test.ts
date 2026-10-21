@@ -5,14 +5,14 @@ describe('the Download Client connection', () => {
 	it('is configured in Settings and survives a restart', async () => {
 		const pacerr = await startPacerr();
 
-		await pacerr.submit('/settings', 'saveDownloadClient', {
+		await pacerr.submit('/settings/download-client', 'saveDownloadClient', {
 			url: 'http://qbittorrent.lan:8080',
 			username: 'admin',
 			password: 'hunter2'
 		});
 		await pacerr.restart();
 
-		const page = await pacerr.open('/settings');
+		const page = await pacerr.open('/settings/download-client');
 		expect(page.attributes('input[name="url"]', 'value')).toEqual([
 			'http://qbittorrent.lan:8080'
 		]);
@@ -25,7 +25,7 @@ describe('the Download Client connection', () => {
 		const pacerr = await startPacerr();
 		await pacerr.connectDownloadClient();
 
-		const page = await pacerr.submit('/settings', 'testDownloadClient');
+		const page = await pacerr.submit('/settings/download-client', 'testDownloadClient');
 
 		expect(page.text('.connection')).toContain('Connected to qBittorrent');
 	});
@@ -35,7 +35,7 @@ describe('the Download Client connection', () => {
 		await pacerr.connectDownloadClient();
 		pacerr.downloadClient.failing = 'credentials';
 
-		const page = await pacerr.submit('/settings', 'testDownloadClient');
+		const page = await pacerr.submit('/settings/download-client', 'testDownloadClient');
 
 		expect(page.text('.connection')).toContain('rejected that username and password');
 	});
@@ -45,19 +45,19 @@ describe('the Download Client connection', () => {
 		await pacerr.connectDownloadClient();
 		pacerr.downloadClient.reachable = false;
 
-		const down = await pacerr.submit('/settings', 'testDownloadClient');
+		const down = await pacerr.submit('/settings/download-client', 'testDownloadClient');
 		expect(down.text('.connection')).toContain('unreachable');
 
 		pacerr.downloadClient.reachable = true;
 		pacerr.downloadClient.failing = 'banned';
-		const banned = await pacerr.submit('/settings', 'testDownloadClient');
+		const banned = await pacerr.submit('/settings/download-client', 'testDownloadClient');
 		expect(banned.text('.connection')).toContain('banned');
 	});
 
 	it('says nothing is configured rather than reporting a connection failure', async () => {
 		const pacerr = await startPacerr();
 
-		const page = await pacerr.submit('/settings', 'testDownloadClient');
+		const page = await pacerr.submit('/settings/download-client', 'testDownloadClient');
 
 		expect(page.text('.connection')).toBe('No Download Client is configured.');
 	});

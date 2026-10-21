@@ -8,7 +8,7 @@ const account = { username: 'captain', password: 'all-blue-or-bust' };
 
 async function requiringLogin(): Promise<Pacerr> {
 	const pacerr = await startPacerr();
-	await pacerr.submit('/settings', 'saveAuthentication', { enabled: 'on', ...account });
+	await pacerr.submit('/settings/security', 'saveAuthentication', { enabled: 'on', ...account });
 	pacerr.forget();
 	return pacerr;
 }
@@ -134,7 +134,7 @@ describe('authentication', () => {
 		const pacerr = await requiringLogin();
 		await pacerr.submit('/login', 'logIn', account);
 
-		await pacerr.submit('/settings', 'saveAuthentication', {});
+		await pacerr.submit('/settings/security', 'saveAuthentication', {});
 		pacerr.forget();
 
 		expect((await pacerr.open('/')).text()).toContain('Romance Dawn');
@@ -162,7 +162,7 @@ describe('credentials given by environment variable', () => {
 		const pacerr = await startPacerr({ authentication: account });
 		await pacerr.submit('/login', 'logIn', account);
 
-		const page = await pacerr.submit('/settings', 'saveAuthentication', {
+		const page = await pacerr.submit('/settings/security', 'saveAuthentication', {
 			enabled: 'on',
 			username: 'impostor',
 			password: 'sneaky'
@@ -180,7 +180,7 @@ describe('the one account', () => {
 		const pacerr = await requiringLogin();
 		await pacerr.submit('/login', 'logIn', account);
 
-		await pacerr.submit('/settings', 'saveAuthentication', {
+		await pacerr.submit('/settings/security', 'saveAuthentication', {
 			enabled: 'on',
 			username: 'navigator',
 			password: 'tangerines'
