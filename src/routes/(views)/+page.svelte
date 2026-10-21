@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { arcsLayouts, formatArcsLayout } from '../../lib/arcs-layout';
+	import ArcOverview from '../../lib/components/ArcOverview.svelte';
 	import ArcPosters from '../../lib/components/ArcPosters.svelte';
 	import ArcTable from '../../lib/components/ArcTable.svelte';
 	import Chrome from '../../lib/components/Chrome.svelte';
@@ -65,6 +66,8 @@
 		<p class="empty">No Catalogue yet. One Pace has not been scraped successfully.</p>
 	{:else if layout === 'poster'}
 		<ArcPosters arcs={catalogue.arcs} />
+	{:else if layout === 'overview'}
+		<ArcOverview arcs={catalogue.arcs} />
 	{:else}
 		<ArcTable arcs={catalogue.arcs} />
 	{/if}

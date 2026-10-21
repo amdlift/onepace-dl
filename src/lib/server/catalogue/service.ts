@@ -13,6 +13,7 @@ import { parseCatalogue, type Catalogue } from './watch-page';
 export interface ArcListing {
 	slug: string;
 	title: string;
+	description: string | null;
 	partCount: number;
 	unreleasedPartCount: number;
 	coverImageUrl: string | null;
@@ -70,6 +71,7 @@ export class CatalogueService {
 			arcs: readArcs(this.#db).map((arc) => ({
 				slug: arc.slug,
 				title: arc.title,
+				description: arc.description,
 				partCount: arc.partCount,
 				unreleasedPartCount: arc.unreleasedPartCount,
 				coverImageUrl:

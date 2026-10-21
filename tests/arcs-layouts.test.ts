@@ -29,3 +29,18 @@ describe('the Poster layout', () => {
 		expect(page.document.querySelector('table')).toBeNull();
 	});
 });
+
+describe('the Overview layout', () => {
+	it('pairs every Arc with its artwork and what One Pace says about it', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.submit('/', 'chooseLayout', { layout: 'overview' });
+
+		const arcs = page.texts('.overview .arc');
+		expect(arcs).toHaveLength(38);
+		expect(arcs[0]).toContain('Romance Dawn');
+		expect(arcs[0]).toContain('Monkey D. Luffy sets out on an adventure to form a crew');
+		expect(page.attributes('.overview .arc img', 'src')[0]).toBe('/arcs/romance-dawn/poster');
+		expect(page.document.querySelector('table')).toBeNull();
+	});
+});
