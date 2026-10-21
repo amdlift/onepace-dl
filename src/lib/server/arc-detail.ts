@@ -1,8 +1,9 @@
-import type { Database } from 'better-sqlite3';
 import type { State } from '../state';
+import type { App } from './app';
 import { readArcDetail } from './catalogue/store';
 import { readHadParts, type HadPart } from './library/store';
 import { readMonitoredArcs, readNotWantedParts } from './monitoring/store';
+import { downloadingParts } from './downloading';
 import { readReleasesCovering, type ReleaseListing } from './releases/store';
 import { grabRow, type GrabRow } from './selection/grab-row';
 import { select } from './selection/selection';
@@ -38,7 +39,8 @@ export interface ArcDetail {
  * Where the two sources meet. Parts come from the Catalogue, Releases from the feed, and infohash
  * is the only thing that joins them — per ADR-0002 and ADR-0004, never a title or a filename.
  */
-export function arcDetailView(db: Database, slug: string): ArcDetail | null {
+export async function arcDetailView(app: App, slug: string): Promise<ArcDetail | null> {
+	const db = app.db;
 	const arc = readArcDetail(db, slug);
 	if (arc === null) return null;
 
@@ -50,6 +52,7 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 	);
 	const had = readHadParts(db);
 	const selection = select(db);
+	const downloading = await downloadingParts(app);
 
 	return {
 		slug: arc.slug,
@@ -69,7 +72,7 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 					toBeRedone: releases.some((release) => release.status === 'to-be-redone'),
 					had: holding,
 					wanted,
-					state: partState(holding, wanted),
+					state: partState(holding, wanted, downloading.has(part.slug)),
 					grab: grabRow(selection.parts.get(part.slug))
 				};
 			}),
@@ -82,5 +85,8 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 	};
 }
 
-const partState = (had: HadPart | null, wanted: boolean): State =>
-	had !== null ? 'had' : wanted ? 'missing' : 'unmonitored';
+const partState = (had: HadPart | null, wanted: boolean, downloading: boolean): State => {
+	if (had !== null) return 'had';
+	if (downloading) return 'downloading';
+	return wanted ? 'missing' : 'unmonitored';
+};
