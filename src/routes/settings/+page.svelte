@@ -233,16 +233,28 @@
 			{:else if libraryMove.state === 'moving'}
 				<p>
 					Moving the Library to {libraryMove.destination}: {libraryMove.moved} of {libraryMove.parts}
-					Parts moved, {libraryMove.remaining} still under {libraryMove.source}.
+					Parts moved, {libraryMove.stranded.length} still under {libraryMove.source}.
 				</p>
 			{:else if libraryMove.state === 'failed'}
 				<p class="alert">
 					Moving the Library stopped after {libraryMove.moved} of {libraryMove.parts} Parts: {libraryMove.reason}
 				</p>
-				<p>{pluralise(libraryMove.remaining, 'Part')} are still under {libraryMove.source}.</p>
-				<form method="POST" action="?/dismissLibraryMove">
-					<button class="button" type="submit">Dismiss</button>
-				</form>
+				<p>
+					{pluralise(libraryMove.stranded.length, 'Part')} are still under {libraryMove.source}:
+				</p>
+				<ul class="stranded">
+					{#each libraryMove.stranded as path (path)}
+						<li>{path}</li>
+					{/each}
+				</ul>
+				<div class="row">
+					<form method="POST" action="?/startLibraryMove">
+						<button class="button" type="submit">Try again</button>
+					</form>
+					<form method="POST" action="?/dismissLibraryMove">
+						<button class="button" type="submit">Dismiss</button>
+					</form>
+				</div>
 			{:else}
 				<p>Moved {pluralise(libraryMove.parts, 'Part')} to {libraryMove.destination}.</p>
 				<form method="POST" action="?/dismissLibraryMove">
@@ -459,6 +471,17 @@
 	.move p {
 		margin: 0;
 		font-size: 0.8rem;
+	}
+
+	.stranded {
+		max-height: 12rem;
+		overflow-y: auto;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		color: var(--ink-bright);
+		font-size: 0.8rem;
+		word-break: break-all;
 	}
 
 	.paths ul {
