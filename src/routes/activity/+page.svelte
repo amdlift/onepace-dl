@@ -6,7 +6,7 @@
 		formatTimestamp
 	} from '../../lib/format';
 	import StateIcon from '../../lib/StateIcon.svelte';
-	import type { State } from '../../lib/state';
+	import { transferTreatment } from '../../lib/state';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -14,11 +14,6 @@
 	const activity = $derived(data.activity);
 	const connection = $derived(activity.connection);
 	const problem = $derived(connection !== null && !connection.ok ? connection.detail : null);
-
-	const treatmentOf = (state: 'downloading' | 'completed' | 'failed' | 'unknown'): State =>
-		({ downloading: 'downloading', completed: 'had', failed: 'missing', unknown: 'unreleased' })[
-			state
-		];
 </script>
 
 <svelte:head><title>Activity - Pacerr</title></svelte:head>
@@ -50,7 +45,7 @@
 			<tbody>
 				{#each activity.queue as row (row.infohash)}
 					<tr>
-						<StateIcon state={treatmentOf(row.state)} label={formatDownloadState(row.state)} />
+						<StateIcon state={transferTreatment(row.state)} label={formatDownloadState(row.state)} />
 						<td>
 							{row.releaseTitle}
 							{#if row.batch}<span class="badge">Batch</span>{/if}

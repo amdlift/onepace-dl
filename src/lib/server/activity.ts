@@ -1,3 +1,4 @@
+import type { TransferState } from '../state';
 import type { App } from './app';
 import type { ConnectionTest } from './download/client';
 import { readGrabs } from './download/store';
@@ -10,7 +11,7 @@ export interface QueueRow {
 	batch: boolean;
 	partTitles: string[];
 	/** Unknown while the Download Client is not saying; it is the one that knows. */
-	state: 'downloading' | 'completed' | 'failed' | 'unknown';
+	state: TransferState;
 	progress: number | null;
 }
 

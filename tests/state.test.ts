@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { fixtures, startPacerr } from './harness/pacerr';
+import type { PacerrPage } from './harness/page';
+import { fixtures, minutes, startPacerr } from './harness/pacerr';
 
-const stateLabels = (page: { attributes(selector: string, name: string): (string | null)[] }) =>
+const stateLabels = (page: PacerrPage): (string | null)[] =>
 	page.attributes('tbody .state-icon svg', 'aria-label');
 
 describe('the state of a Part', () => {
@@ -13,16 +17,39 @@ describe('the state of a Part', () => {
 		expect(labels).toHaveLength(38);
 		expect(labels.slice(22)).toEqual(Array(16).fill('Unreleased Part'));
 	});
+
+	it('makes a gap in a monitored Arc stand out from one in an Arc nobody asked for', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+
+		const unmonitored = stateLabels(await pacerr.open('/arcs/reverie'));
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+		const monitored = stateLabels(await pacerr.open('/arcs/reverie'));
+
+		expect(unmonitored).toEqual(Array(3).fill('Missing, not monitored'));
+		expect(monitored).toEqual(Array(3).fill('Missing, monitored'));
+	});
+
 	it('tells a Part being downloaded apart from one that is merely missing', async () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
 
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
 
-		expect(stateLabels(await pacerr.open('/arcs/reverie'))).toEqual(
-			Array(3).fill('Downloading')
-		);
+		expect(stateLabels(await pacerr.open('/arcs/reverie'))).toEqual(Array(3).fill('Downloading'));
 	});
+
+	it('reads a Part Pacerr holds as had', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+		pacerr.downloadClient.filesPerTorrent = 3;
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+		pacerr.finishDownload(3);
+
+		await pacerr.advance(minutes(15));
+
+		expect(stateLabels(await pacerr.open('/arcs/reverie'))).toEqual(Array(3).fill('Had'));
+	});
+
 	it('keeps saying what it knows while the Download Client is unreachable', async () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
@@ -47,6 +74,7 @@ describe('the state of a wanted Part', () => {
 		expect(labels.slice(0, 22)).toEqual(Array(22).fill('Missing, monitored'));
 		expect(labels.slice(22)).toEqual(Array(16).fill('Unreleased Part'));
 	});
+
 	it('shows progress on a wanted Part without opening Activity', async () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
@@ -54,6 +82,18 @@ describe('the state of a wanted Part', () => {
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
 
 		expect(stateLabels(await pacerr.open('/wanted'))).toEqual(Array(3).fill('Downloading'));
+	});
+
+	it('keeps listing what is wanted while the Download Client is unreachable', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+		pacerr.downloadClient.reachable = false;
+
+		const page = await pacerr.open('/wanted');
+
+		expect(page.status).toBe(200);
+		expect(stateLabels(page)).toEqual(Array(3).fill('Missing, monitored'));
 	});
 });
 
@@ -81,5 +121,76 @@ describe('the state of a Release in the Queue', () => {
 
 		expect(inFlight).toEqual(['Downloading']);
 		expect(finished).toEqual(['Completed']);
+	});
+});
+
+const sourceDirectory = fileURLToPath(new URL('../src', import.meta.url));
+
+// Every file that styles a view where a Part or a Release is listed, and so where the legend has
+// to hold. System is left out deliberately: a Health check and a History outcome are their own
+// vocabularies, not this one.
+const legendViews = [
+	'app.css',
+	join('routes', '+page.svelte'),
+	join('routes', 'arcs', '[slug]', '+page.svelte'),
+	join('routes', 'wanted', '+page.svelte'),
+	join('routes', 'activity', '+page.svelte')
+];
+
+function everyRule(): { selector: string; declarations: string }[] {
+	return legendViews
+		.flatMap((file) => {
+			const contents = readFileSync(join(sourceDirectory, file), 'utf8');
+			if (file.endsWith('.css')) return [contents];
+			return [...contents.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(([, css]) => css ?? '');
+		})
+		.flatMap((css) => [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)])
+		.map((rule) => ({ selector: (rule[1] ?? '').trim(), declarations: rule[2] ?? '' }));
+}
+
+const colourOf = (selector: string): string | undefined =>
+	everyRule()
+		.find((rule) => rule.selector === selector)
+		?.declarations.match(/color:\s*([^;]+);/)?.[1]
+		?.trim();
+
+const selectorsPainted = (token: string): string[] =>
+	everyRule()
+		.filter((rule) => new RegExp(`color:\\s*var\\(${token}\\)`).test(rule.declarations))
+		.map((rule) => rule.selector)
+		.sort();
+
+describe('the legend', () => {
+	it('gives each of the six states a treatment of its own, every one a token', () => {
+		const treatments = {
+			had: colourOf('.state-icon.had'),
+			missing: colourOf('.state-icon.missing'),
+			unmonitored: colourOf('.state-icon.unmonitored'),
+			downloading: colourOf('.state-icon.downloading'),
+			unreleased: colourOf('.state-icon.unreleased'),
+			toBeRedone: colourOf('.state-icon.to-be-redone')
+		};
+
+		expect(treatments).toEqual({
+			had: 'var(--success)',
+			missing: 'var(--danger)',
+			unmonitored: 'var(--warning)',
+			downloading: 'var(--downloading)',
+			unreleased: 'var(--ink-dim)',
+			toBeRedone: 'var(--brand)'
+		});
+	});
+
+	it('names a to-be-redone Release in the same cyan wherever it is named', () => {
+		expect(colourOf('.badge.redone')).toBe(colourOf('.state-icon.to-be-redone'));
+	});
+
+	it('spends warning orange on nothing but a gap nobody is monitoring', () => {
+		expect(everyRule().length).toBeGreaterThan(0);
+		expect(selectorsPainted('--warning')).toEqual(['.badge.unfinished', '.state-icon.unmonitored']);
+	});
+
+	it('spends danger red on nothing but a gap somebody is monitoring', () => {
+		expect(selectorsPainted('--danger')).toEqual(['.event.bad', '.state-icon.missing']);
 	});
 });

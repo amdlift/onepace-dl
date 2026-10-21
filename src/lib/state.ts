@@ -15,3 +15,20 @@ export function formatState(state: State): string {
 		'to-be-redone': 'To Be Redone'
 	}[state];
 }
+
+/** What the Download Client says about a transfer. Unknown while it is not saying. */
+export type TransferState = 'downloading' | 'completed' | 'failed' | 'unknown';
+
+/**
+ * How a transfer reads in the legend. The Queue lists Releases rather than Parts, so it borrows
+ * the treatments and keeps the Download Client's own words for them.
+ */
+export function transferTreatment(state: TransferState): State {
+	const treatments: Record<TransferState, State> = {
+		downloading: 'downloading',
+		completed: 'had',
+		failed: 'missing',
+		unknown: 'unreleased'
+	};
+	return treatments[state];
+}

@@ -1,3 +1,5 @@
+import type { TransferState } from './state';
+
 const timestamp = new Intl.DateTimeFormat('en-CA', {
 	year: 'numeric',
 	month: '2-digit',
@@ -73,9 +75,7 @@ export function formatProgress(progress: number | null): string {
 	return progress === null ? '—' : `${Math.floor(progress * 100)}%`;
 }
 
-export function formatDownloadState(
-	state: 'downloading' | 'completed' | 'failed' | 'unknown'
-): string {
+export function formatDownloadState(state: TransferState): string {
 	return {
 		downloading: 'Downloading',
 		completed: 'Completed',

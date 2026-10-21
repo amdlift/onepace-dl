@@ -39,11 +39,7 @@
 						{row.title ?? ''}
 						{#if row.toBeRedone}<span class="badge redone">To Be Redone</span>{/if}
 					</td>
-					<td
-						class="state"
-						class:missing={row.state === 'missing'}
-						class:unreleased={row.state === 'unreleased'}
-					>
+					<td class="state" class:unreleased={row.state === 'unreleased'}>
 						{formatWantedState(row.state)}
 					</td>
 					<td>
@@ -96,10 +92,6 @@
 	.none {
 		color: var(--ink-dim);
 		font-style: italic;
-	}
-
-	.state.missing {
-		color: var(--warning);
 	}
 
 	.state.unreleased {
