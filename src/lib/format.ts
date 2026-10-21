@@ -17,6 +17,18 @@ export function pluralise(count: number, singular: string, plural = `${singular}
 	return `${count} ${count === 1 ? singular : plural}`;
 }
 
+const byteUnits = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+export function formatBytes(bytes: number): string {
+	let scaled = bytes;
+	let unit = 0;
+	while (scaled >= 1024 && unit < byteUnits.length - 1) {
+		scaled /= 1024;
+		unit += 1;
+	}
+	return `${unit === 0 ? scaled : scaled.toFixed(1)} ${byteUnits[unit]}`;
+}
+
 export function formatResolution(resolution: number | null): string {
 	return resolution === null ? 'unknown' : `${resolution}p`;
 }

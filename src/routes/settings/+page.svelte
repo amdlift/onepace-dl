@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { formatResolution, formatResolutionOrder, formatVariant } from '../../lib/format';
+	import {
+		formatBytes,
+		formatResolution,
+		formatResolutionOrder,
+		formatVariant,
+		pluralise
+	} from '../../lib/format';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -13,6 +19,7 @@
 	const importSource = $derived(data.importSource);
 	const remotePathMappings = $derived(data.remotePathMappings);
 	const library = $derived(data.library);
+	const libraryMove = $derived(data.libraryMove);
 	const downloads = $derived(data.downloads);
 	const paths = $derived(data.paths);
 
@@ -184,6 +191,55 @@
 				<a class="button" href="/settings/browse?for=library">Browse</a>
 			</div>
 		</form>
+	{/if}
+
+	{#if libraryMove !== null && libraryMove.state !== 'dismissed'}
+		<div class="move">
+			{#if libraryMove.state === 'planned'}
+				<p>
+					{pluralise(libraryMove.parts, 'Part')}, {formatBytes(libraryMove.bytes)}, are still under
+					{libraryMove.source}. Pacerr will move them to {libraryMove.destination}.
+				</p>
+				{#if libraryMove.sameFilesystem}
+					<p class="note">
+						The two are on the same filesystem, so Pacerr renames each file and the move costs no
+						disk.
+					</p>
+				{:else}
+					<p class="note">
+						The two are on different filesystems, so Pacerr copies each file rather than renaming
+						it. That breaks the hardlinks to your seeding downloads, and the disk anything still
+						seeding occupies roughly doubles.
+					</p>
+				{/if}
+				<div class="row">
+					<form method="POST" action="?/startLibraryMove">
+						<button class="button" type="submit">Move</button>
+					</form>
+					<form method="POST" action="?/dismissLibraryMove">
+						<button class="button" type="submit">Leave them where they are</button>
+					</form>
+				</div>
+			{:else if libraryMove.state === 'moving'}
+				<p>
+					Moving the Library to {libraryMove.destination}: {libraryMove.moved} of {libraryMove.parts}
+					Parts moved, {libraryMove.remaining} still under {libraryMove.source}.
+				</p>
+			{:else if libraryMove.state === 'failed'}
+				<p class="alert">
+					Moving the Library stopped after {libraryMove.moved} of {libraryMove.parts} Parts: {libraryMove.reason}
+				</p>
+				<p>{pluralise(libraryMove.remaining, 'Part')} are still under {libraryMove.source}.</p>
+				<form method="POST" action="?/dismissLibraryMove">
+					<button class="button" type="submit">Dismiss</button>
+				</form>
+			{:else}
+				<p>Moved {pluralise(libraryMove.parts, 'Part')} to {libraryMove.destination}.</p>
+				<form method="POST" action="?/dismissLibraryMove">
+					<button class="button" type="submit">Dismiss</button>
+				</form>
+			{/if}
+		</div>
 	{/if}
 
 	{#if form?.downloadsProblem}
@@ -377,6 +433,22 @@
 		gap: 0.75rem;
 		max-width: 20rem;
 		margin-bottom: 0.75rem;
+	}
+
+	.move {
+		display: grid;
+		gap: 0.5rem;
+		justify-items: start;
+		max-width: 44rem;
+		margin: 0 0 0.75rem;
+		padding: 0.75rem;
+		border: 1px solid var(--border);
+		border-radius: 2px;
+	}
+
+	.move p {
+		margin: 0;
+		font-size: 0.8rem;
 	}
 
 	.paths ul {
