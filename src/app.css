@@ -196,8 +196,6 @@ h2 {
 
 .table th {
 	padding: var(--cell-padding);
-	border-bottom: var(--hairline) solid var(--border);
-	color: var(--ink-dim);
 	font-weight: var(--weight-bold);
 	font-size: var(--type-base);
 	text-align: left;
@@ -206,18 +204,15 @@ h2 {
 .table td {
 	height: var(--row-height);
 	padding: var(--cell-padding);
-	border-bottom: var(--hairline) solid var(--border);
 	vertical-align: middle;
+}
+
+.table tbody tr {
+	border-top: var(--hairline) solid var(--border);
 }
 
 .table tbody tr:hover {
 	background: var(--surface-hover);
-}
-
-.table .numeric {
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
 }
 
 .badge {

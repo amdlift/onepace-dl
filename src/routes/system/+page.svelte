@@ -48,7 +48,7 @@
 							<span>Episodes {formatCoverage(release.episodes)}</span>
 						{/if}
 					</td>
-					<td class="numeric">{formatTimestamp(new Date(release.publishedAt))}</td>
+					<td>{formatTimestamp(new Date(release.publishedAt))}</td>
 				</tr>
 			{/each}
 		</tbody>
@@ -125,7 +125,7 @@
 			<tbody>
 				{#each history.entries as entry (entry.id)}
 					<tr>
-						<td class="numeric">{formatTimestamp(new Date(entry.at))}</td>
+						<td>{formatTimestamp(new Date(entry.at))}</td>
 						<td class="event {entry.outcome}">{formatHistoryEvent(entry.event, entry.outcome)}</td>
 						<td>{entry.partTitle ?? ''}</td>
 						<td>

@@ -20,7 +20,7 @@
 		<thead>
 			<tr>
 				<th>Arc</th>
-				<th class="numeric">Part</th>
+				<th>Part</th>
 				<th>Title</th>
 				<th>Status</th>
 				<th>Would grab</th>
@@ -31,7 +31,7 @@
 			{#each wanted as row (`${row.arcSlug}/${row.number}`)}
 				<tr>
 					<td><a href="/arcs/{row.arcSlug}">{row.arcTitle}</a></td>
-					<td class="numeric">{row.number}</td>
+					<td>{row.number}</td>
 					<td>{row.title ?? ''}</td>
 					<td
 						class="state"

@@ -50,8 +50,8 @@
 			<tr>
 				<th class="poster"><span class="visually-hidden">Poster</span></th>
 				<th>Arc</th>
-				<th class="numeric">Parts</th>
-				<th class="numeric">Had</th>
+				<th>Parts</th>
+				<th>Had</th>
 				<th class="monitoring">Monitoring</th>
 			</tr>
 		</thead>
@@ -77,13 +77,13 @@
 							</span>
 						{/if}
 					</td>
-					<td class="numeric">
+					<td>
 						{pluralise(arc.partCount, 'Part')}
 						{#if arc.unreleasedPartCount > 0}
 							<span class="badge">+{arc.unreleasedPartCount} unreleased</span>
 						{/if}
 					</td>
-					<td class="numeric had">{arc.hadCount} of {arc.partCount}</td>
+					<td class="had">{arc.hadCount} of {arc.partCount}</td>
 					<td class="monitoring">
 						<form method="POST" action="?/toggleMonitoring">
 							<input type="hidden" name="arc" value={arc.slug} />
