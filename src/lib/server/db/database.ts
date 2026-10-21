@@ -254,13 +254,13 @@ const migrations = [
 	-- partway through makes true of some Parts and not others. Null means the configured Library.
 	alter table had_part add column library_root text;
 	-- A move outlives the request that started it and the process that was running it, so one
-	-- stopped partway still knows where it was going and why it stopped.
+	-- stopped partway still knows where it was going and why it stopped. Where the files still
+	-- are is read back from had_part rather than recorded here, because a move stopped partway and
+	-- then pointed somewhere else again leaves them under more than one root.
 	create table library_move (
 		id integer primary key autoincrement,
-		source text not null,
 		destination text not null,
 		parts integer not null,
-		bytes integer not null,
 		same_filesystem integer not null,
 		state text not null,
 		reason text,

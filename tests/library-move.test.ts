@@ -98,6 +98,18 @@ describe('changing the Library that already holds Parts', () => {
 	});
 });
 
+describe('a Library a stopped move left in two places', () => {
+	it('is planned from where each Part actually is, not from the one Settings last named', async () => {
+		const { pacerr, media } = await aMoveStoppedAfterOnePart();
+		const elsewhere = anotherDirectory();
+
+		const page = await pacerr.submit('/settings', 'saveLibrary', { library: elsewhere });
+
+		expect(page.text('.move')).toContain(`2 Parts, 14 B, are still under ${pacerr.paths.library}`);
+		expect(page.text('.move')).toContain(`1 Part, 7 B, is still under ${media}`);
+	});
+});
+
 describe('a Library moved to another filesystem', () => {
 	it('says the files will be copied, the hardlinks will break and the disk will double', async () => {
 		const pacerr = await aLibraryHoldingReverie();
@@ -226,6 +238,39 @@ describe('a confirmed move', () => {
 		await pacerr.settle();
 
 		expect(everythingUnder(pacerr.paths.library)).toEqual([]);
+	});
+});
+
+describe('a move the user chose to leave alone', () => {
+	it('points the Library back at the directory those Parts are actually in', async () => {
+		const pacerr = await aLibraryHoldingReverie();
+		await pacerr.submit('/settings', 'saveLibrary', { library: anotherDirectory() });
+
+		const page = await pacerr.submit('/settings', 'dismissLibraryMove');
+
+		expect(page.attributes('input[name="library"]', 'value')).toEqual([pacerr.paths.library]);
+	});
+
+	it('files the next import beside them, rather than splitting the Library in two', async () => {
+		const pacerr = await aLibraryHoldingReverie();
+		const media = anotherDirectory();
+		await pacerr.submit('/settings', 'saveLibrary', { library: media });
+
+		await pacerr.submit('/settings', 'dismissLibraryMove');
+		await alsoHoldingGaimon(pacerr);
+
+		expect(partsUnder(pacerr.paths.library)).toHaveLength(4);
+		expect(partsUnder(media)).toEqual([]);
+	});
+});
+
+describe('a move stopped partway and then dismissed', () => {
+	it('goes on saying where the Parts it left behind are, rather than hiding the split', async () => {
+		const { pacerr } = await aMoveStoppedAfterOnePart();
+
+		const page = await pacerr.submit('/settings', 'dismissLibraryMove');
+
+		expect(page.text('.move')).toContain(`2 Parts are still under ${pacerr.paths.library}`);
 	});
 });
 
