@@ -238,7 +238,7 @@ export class Pacerr {
 
 	/** Point Pacerr at a Download Client, the way a user does before anything can be grabbed. */
 	async connectDownloadClient(): Promise<void> {
-		await this.submit('/settings', 'saveDownloadClient', {
+		await this.submit('/settings/download-client', 'saveDownloadClient', {
 			url: 'http://qbittorrent.test:8080',
 			username: 'admin',
 			password: 'adminadmin'

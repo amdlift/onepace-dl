@@ -12,8 +12,6 @@
 	let { data, form }: PageProps = $props();
 
 	const profile = $derived(data.profile);
-	const downloadClient = $derived(data.downloadClient);
-	const connection = $derived(data.connection);
 	const namingTemplate = $derived(data.namingTemplate);
 	const importSource = $derived(data.importSource);
 	const remotePathMappings = $derived(data.remotePathMappings);
@@ -132,37 +130,6 @@
 				<a class="button" href="/manual-import">Manual Import</a>
 			</div>
 		</form>
-	</section>
-
-	<section>
-		<h2>Download Client</h2>
-
-		<form method="POST" action="?/saveDownloadClient">
-			<label>
-				<span>qBittorrent address</span>
-				<input class="input" name="url" placeholder="http://localhost:8080" value={downloadClient.url} />
-			</label>
-			<label>
-				<span>Username</span>
-				<input class="input" name="username" autocomplete="off" value={downloadClient.username} />
-			</label>
-			<label>
-				<span>Password</span>
-				<input class="input" name="password" type="password" autocomplete="off" placeholder="Unchanged" />
-			</label>
-			<p class="note">
-				Pacerr hands every Release to this client and never moves bytes over BitTorrent itself, so
-				the seeding, ratio and VPN rules you already set there keep applying.
-			</p>
-			<div class="row">
-				<button class="button" type="submit">Save</button>
-				<button class="button" type="submit" formaction="?/testDownloadClient">Test</button>
-			</div>
-		</form>
-
-		{#if connection !== null}
-			<p class="connection" class:bad={!connection.ok}>{connection.detail}</p>
-		{/if}
 	</section>
 
 	<section class="paths">
@@ -497,12 +464,4 @@
 		max-width: none;
 	}
 
-	.connection {
-		margin: var(--space-2) 0 0;
-		color: var(--ink-bright);
-	}
-
-	.connection.bad {
-		color: var(--danger);
-	}
 </style>
