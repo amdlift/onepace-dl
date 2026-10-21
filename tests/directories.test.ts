@@ -79,6 +79,37 @@ describe('saving a path Pacerr cannot use', () => {
 		expect(page.text('.paths')).not.toContain('cannot write to it');
 	});
 
+	it('says so on the save itself, rather than only on the page load after it', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.answer('/settings', 'saveLibrary', { library: '/no/such/place' });
+
+		expect(page.text('.paths .alert')).toContain('cannot find the Library at /no/such/place');
+	});
+
+	it('names the problem the save has, where that one is a directory it cannot write', async () => {
+		const pacerr = await startPacerr();
+		const media = anotherDirectory();
+		chmodSync(media, 0o555);
+		onTestFinished(() => chmodSync(media, 0o755));
+
+		const page = await pacerr.answer('/settings', 'saveLibrary', { library: media });
+
+		expect(page.text('.paths .alert')).toContain(`can see the Library at ${media}`);
+		expect(page.text('.paths .alert')).toContain('cannot write to it');
+	});
+
+	it('names it again where it is one the downloads cannot be hardlinked from', async () => {
+		const pacerr = await startPacerr();
+		const media = mkdtempSync('/dev/shm/pacerr-media-');
+		onTestFinished(() => rmSync(media, { recursive: true, force: true }));
+
+		const page = await pacerr.answer('/settings', 'saveLibrary', { library: media });
+
+		expect(page.text('.paths .alert')).toContain('on different filesystems');
+		expect(page.text('.paths .alert')).not.toContain('cannot find the Library');
+	});
+
 	it('reads differently for one it can see but not write to', async () => {
 		const pacerr = await startPacerr();
 		const media = anotherDirectory();

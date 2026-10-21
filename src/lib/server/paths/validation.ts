@@ -62,6 +62,18 @@ const purposes: Record<DirectoryName, Purpose> = {
 export const directoryNoun = (directory: DirectoryName): string => purposes[directory].noun;
 
 /**
+ * Which of the three things is wrong with one directory as it now stands, in the sentence the
+ * standing Directories list would use for it, or null where nothing is. Saving a path answers with
+ * this, so a typo is named by the save that made it rather than only by the next page load.
+ */
+export function directoryProblem(directory: DirectoryName, paths: RuntimePaths): string | null {
+	const check = validateDirectory(directory, paths[directory]);
+	if (check.condition !== 'ok') return check.diagnostic;
+	const hardlinking = validateHardlinking(paths.library, paths.downloads);
+	return hardlinking.sameFilesystem ? null : hardlinking.diagnostic;
+}
+
+/**
  * Replaces the configured mount's wording wholesale, because the two have different fixes: moving
  * a path the Download Client chose is a Remote Path Mapping or a matching mount, never
  * PACERR_DOWNLOADS_DIR.

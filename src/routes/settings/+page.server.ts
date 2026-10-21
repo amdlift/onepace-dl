@@ -54,7 +54,7 @@ export const actions: Actions = {
 	saveLibrary: async ({ request }) => {
 		const submitted = await request.formData();
 		const outcome = getApp().moves.relocate(String(submitted.get('library') ?? ''));
-		if (!outcome.ok) return { libraryProblem: outcome.problem };
+		if (outcome.problem !== null) return { libraryProblem: outcome.problem };
 		return { saved: true };
 	},
 
@@ -75,7 +75,7 @@ export const actions: Actions = {
 		// Only the Download Client knows where it actually writes, so re-asking is what turns a new
 		// download directory into an answer about the path imports will really read.
 		await app.downloads.test();
-		if (!outcome.ok) return { downloadsProblem: outcome.problem };
+		if (outcome.problem !== null) return { downloadsProblem: outcome.problem };
 		return { saved: true };
 	},
 
