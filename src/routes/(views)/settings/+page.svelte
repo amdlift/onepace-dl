@@ -11,8 +11,6 @@
 
 	let { data, form }: PageProps = $props();
 
-	const authentication = $derived(data.authentication);
-	const fromEnvironment = $derived(authentication.source === 'environment');
 	const profile = $derived(data.profile);
 	const downloadClient = $derived(data.downloadClient);
 	const connection = $derived(data.connection);
@@ -369,47 +367,6 @@
 		</form>
 	</section>
 
-	<section>
-		<h2>Security</h2>
-
-		{#if form?.problem}
-			<p class="alert">{form.problem}</p>
-		{/if}
-
-		{#if fromEnvironment}
-			<p class="note">
-				Authentication is configured by environment variable as <strong
-					>{authentication.username}</strong
-				>, and cannot be changed here.
-			</p>
-		{:else}
-			<form method="POST" action="?/saveAuthentication">
-				<label class="toggle">
-					<input type="checkbox" name="enabled" checked={authentication.enabled} />
-					<span>Require a login</span>
-				</label>
-				<label>
-					<span>Username</span>
-					<input class="input" name="username" autocomplete="username" value={authentication.username ?? ''} />
-				</label>
-				<label>
-					<span>Password</span>
-					<input class="input" name="password" type="password" autocomplete="new-password" placeholder="Unchanged" />
-				</label>
-				<p class="note">
-					Pacerr has one account, and saving replaces it. Setting PACERR_AUTH_USERNAME and
-					PACERR_AUTH_PASSWORD configures it from the environment instead.
-				</p>
-				<button class="button" type="submit">Save</button>
-			</form>
-		{/if}
-
-		{#if authentication.signedIn}
-			<form method="POST" action="?/logOut">
-				<button class="button" type="submit">Log out</button>
-			</form>
-		{/if}
-	</section>
 </Chrome>
 
 <style>

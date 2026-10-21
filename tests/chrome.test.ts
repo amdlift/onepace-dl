@@ -114,7 +114,7 @@ describe('a view', () => {
 describe('the login screen', () => {
 	it('has neither the sidebar nor the health banner', async () => {
 		const pacerr = await startPacerr();
-		await pacerr.submit('/settings', 'saveAuthentication', {
+		await pacerr.submit('/settings/security', 'saveAuthentication', {
 			enabled: 'on',
 			username: 'captain',
 			password: 'all-blue-or-bust'
