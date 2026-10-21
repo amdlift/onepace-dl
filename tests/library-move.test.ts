@@ -4,10 +4,11 @@ import { join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { fixtures, minutes, startPacerr, type Pacerr } from './harness/pacerr';
 
-const filesUnder = (directory: string): string[] =>
+/** The Parts a directory holds. Sidecars travel with the media under a ticket of their own. */
+const partsUnder = (directory: string): string[] =>
 	readdirSync(directory, { recursive: true })
 		.map(String)
-		.filter((entry) => statSync(join(directory, entry)).isFile())
+		.filter((entry) => entry.endsWith('.mkv') && statSync(join(directory, entry)).isFile())
 		.sort();
 
 /** Somewhere a user might point the Library at, outside anything Pacerr chose for them. */
@@ -53,8 +54,8 @@ describe('changing the Library that already holds Parts', () => {
 		expect(page.text('.move')).toContain('21 B');
 		expect(page.text('.move')).toContain(pacerr.paths.library);
 		expect(page.text('.move')).toContain(media);
-		expect(filesUnder(media)).toEqual([]);
-		expect(filesUnder(pacerr.paths.library)).toHaveLength(3);
+		expect(partsUnder(media)).toEqual([]);
+		expect(partsUnder(pacerr.paths.library)).toHaveLength(3);
 	});
 });
 
@@ -81,7 +82,7 @@ describe('a Library moved to another filesystem', () => {
 		await pacerr.submit('/settings', 'startLibraryMove');
 		await pacerr.settle();
 
-		expect(filesUnder(media)).toHaveLength(3);
+		expect(partsUnder(media)).toHaveLength(3);
 		expect(statSync(join(media, firstPart)).nlink).toBe(1);
 	});
 
@@ -106,26 +107,26 @@ describe('a confirmed move', () => {
 		const started = await pacerr.submit('/settings', 'startLibraryMove');
 
 		expect(started.text('.move')).toContain('0 of 3 Parts moved');
-		expect(filesUnder(media)).toEqual([]);
+		expect(partsUnder(media)).toEqual([]);
 
 		await pacerr.settle();
 
 		const finished = await pacerr.open('/settings');
 		expect(finished.text('.move')).toContain('Moved 3 Parts');
-		expect(filesUnder(media)).toHaveLength(3);
-		expect(filesUnder(pacerr.paths.library)).toEqual([]);
+		expect(partsUnder(media)).toHaveLength(3);
+		expect(partsUnder(pacerr.paths.library)).toEqual([]);
 	});
 
 	it('leaves every filename exactly as it was', async () => {
 		const pacerr = await aLibraryHoldingReverie();
-		const before = filesUnder(pacerr.paths.library);
+		const before = partsUnder(pacerr.paths.library);
 		const media = anotherDirectory();
 
 		await pacerr.submit('/settings', 'saveLibrary', { library: media });
 		await pacerr.submit('/settings', 'startLibraryMove');
 		await pacerr.settle();
 
-		expect(filesUnder(media)).toEqual(before);
+		expect(partsUnder(media)).toEqual(before);
 	});
 });
 
@@ -144,10 +145,10 @@ describe('a move stopped partway', () => {
 		expect(page.text('.move')).toContain('stopped after 1 of 3 Parts');
 		expect(page.text('.move')).toContain(inTheWay);
 		expect(page.text('.move')).toContain(`2 Parts are still under ${pacerr.paths.library}`);
-		expect(filesUnder(media)).toEqual([
+		expect(partsUnder(media)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv'
 		]);
-		expect(filesUnder(pacerr.paths.library)).toEqual([
+		expect(partsUnder(pacerr.paths.library)).toEqual([
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
 			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
@@ -167,7 +168,7 @@ describe('a move the container was recreated in the middle of', () => {
 		const page = await pacerr.open('/settings');
 		expect(page.text('.move')).toContain('Pacerr stopped while it was moving the Library');
 		expect(page.text('.move')).toContain(`3 Parts are still under ${pacerr.paths.library}`);
-		expect(filesUnder(media)).toEqual([]);
-		expect(filesUnder(pacerr.paths.library)).toHaveLength(3);
+		expect(partsUnder(media)).toEqual([]);
+		expect(partsUnder(pacerr.paths.library)).toHaveLength(3);
 	});
 });

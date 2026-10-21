@@ -94,11 +94,17 @@ long as that volume survives. That includes any Poster you supply yourself — s
 
 Those two paths are only where the image mounts them. Point Pacerr at an existing layout —
 `/zfspool/media/Anime/One Pace`, say — in **Settings → Directories**, and mount it in the container
-at whatever path you type there. The setting lives in `/config` and survives being recreated.
-Changing it shows you what moving the Parts already there would do — how many, how much data, from
-where to where, and whether a copy is involved — and moves them in the background once you
-confirm. The config directory is the exception: Pacerr cannot read a setting out of a database it
-has not opened yet, so that one stays an environment variable.
+at whatever path you type there. **Browse**, beside either field, walks the directories this
+container can see, so a deep path is clicked down to rather than retyped, and a path you already
+know is pasted into the field above the listing. It leaves out the container's own system
+directories — `/app`, `/proc`, `/sys`, `/dev`, `/bin`, `/sbin`, `/lib*`, `/usr`, `/etc`, `/var`,
+`/run` and `/tmp` — so what you are looking at is effectively your mounts.
+
+The setting lives in `/config` and survives being recreated. Changing the Library shows you what
+moving the Parts already there would do — how many, how much data, from where to where, and
+whether a copy is involved — and moves them in the background once you confirm. The config
+directory is the exception: Pacerr cannot read a setting out of a database it has not opened yet,
+so that one stays an environment variable.
 
 Keep `/library` and `/downloads` **on the same filesystem** if you can. Pacerr hardlinks imports so
 a Part does not occupy disk twice while it seeds; across a filesystem boundary it falls back to
@@ -139,6 +145,14 @@ Authentication is **off by default**, so a first run behind a VPN or a reverse p
 behind creating an account. Setting both `PACERR_AUTH_*` variables turns it on and takes the account
 out of Settings; otherwise enable it in **Settings → Security**. There is at most one account, and
 no registration flow.
+
+Authentication is all of Pacerr or none of it, and that includes the **filesystem browser**. With a
+login required it sits behind that one gate like every other view. With authentication off it is
+reachable by anyone who can reach Pacerr, and it will tell them the name of every directory this
+container can see. That is the deliberate consequence of the default, not an oversight: the browser
+is not separately gated. It lists directory names only — never file contents — and the only thing it
+writes is the path you pick, into Settings. If Pacerr is reachable from a network you do not trust,
+turn authentication on.
 
 ## How your Library ends up looking
 

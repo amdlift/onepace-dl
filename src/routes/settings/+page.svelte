@@ -122,6 +122,7 @@
 		</p>
 		<div class="row">
 			<button class="button" type="submit">Save</button>
+			<a class="button" href="/settings/browse?for=importSource">Browse</a>
 			<a class="button" href="/manual-import">Manual Import</a>
 		</div>
 	</form>
@@ -185,7 +186,10 @@
 				Where Pacerr files every import. Setting {library.variable} pins it from the environment
 				instead and makes this field read-only.
 			</p>
-			<button class="button" type="submit">Save</button>
+			<div class="row">
+				<button class="button" type="submit">Save</button>
+				<a class="button" href="/settings/browse?for=library">Browse</a>
+			</div>
 		</form>
 	{/if}
 
@@ -262,7 +266,10 @@
 				Where this container sees the completed downloads the Download Client writes. Setting
 				{downloads.variable} pins it from the environment instead and makes this field read-only.
 			</p>
-			<button class="button" type="submit">Save</button>
+			<div class="row">
+				<button class="button" type="submit">Save</button>
+				<a class="button" href="/settings/browse?for=downloads">Browse</a>
+			</div>
 		</form>
 	{/if}
 

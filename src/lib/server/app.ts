@@ -55,7 +55,7 @@ export function createApp(runtime: Runtime): App {
 	const downloads = new DownloadService(db, runtime.downloadClients);
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
 	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
-	const imports = new ImportService(db, runtime.clock, downloads, paths);
+	const imports = new ImportService(db, runtime.clock, downloads, posters, paths);
 	const background = new Background();
 	const moves = new LibraryMoveService(db, runtime.clock, paths, background);
 	moves.recordInterruption();

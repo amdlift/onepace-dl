@@ -51,6 +51,8 @@ export interface StartOptions {
 }
 
 export interface PacerrPaths {
+	/** The filesystem this instance runs under, which is all the Settings browser can see. */
+	root: string;
 	config: string;
 	library: string;
 	downloads: string;
@@ -100,6 +102,7 @@ export class Pacerr {
 	static async start(options: StartOptions = {}): Promise<Pacerr> {
 		const root = mkdtempSync(join(tmpdir(), 'pacerr-'));
 		const paths: PacerrPaths = {
+			root,
 			config: options.configDir ?? join(root, 'config'),
 			library: join(root, 'library'),
 			downloads: options.downloadsDir ?? join(root, 'downloads')
@@ -237,6 +240,7 @@ export class Pacerr {
 			onePaceBaseUrl: this.upstream.url,
 			paths: {
 				config: this.paths.config,
+				root: this.paths.root,
 				library: this.#unconfigured,
 				downloads: this.#unconfigured
 			},

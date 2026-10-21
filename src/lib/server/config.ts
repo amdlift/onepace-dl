@@ -14,6 +14,7 @@ export function runtimeFromEnvironment(environment = process.env): Runtime {
 		onePaceBaseUrl: environment.PACERR_ONEPACE_URL ?? 'https://onepace.net',
 		paths: {
 			config: resolve(environment.PACERR_CONFIG_DIR ?? '/config'),
+			root: '/',
 			library: '/library',
 			downloads: '/downloads'
 		},

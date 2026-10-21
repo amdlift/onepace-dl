@@ -177,6 +177,55 @@ export function readArcDetail(db: Database, slug: string): StoredArcDetail | nul
 	};
 }
 
+/** Everything One Pace says about one Arc, which is everything a Sidecar describes it with. */
+export interface StoredArcDescription {
+	title: string;
+	description: string | null;
+	special: boolean;
+}
+
+interface ArcDescriptionRow {
+	title: string;
+	description: string | null;
+	special: number;
+}
+
+export function readArcDescription(db: Database, slug: string): StoredArcDescription | null {
+	const row = db
+		.prepare('select title, description, special from arc where slug = ?')
+		.get(slug) as ArcDescriptionRow | undefined;
+	if (row === undefined) return null;
+	return { title: row.title, description: row.description, special: row.special === 1 };
+}
+
+/** Everything One Pace says about one Part, which is everything a Sidecar describes it with. */
+export interface StoredPartDescription {
+	title: string;
+	description: string | null;
+	chapters: Coverage | null;
+	episodes: Coverage | null;
+}
+
+interface PartDescriptionRow {
+	title: string;
+	description: string | null;
+	chapters: string | null;
+	episodes: string | null;
+}
+
+export function readPartDescription(db: Database, slug: string): StoredPartDescription | null {
+	const row = db
+		.prepare('select title, description, chapters, episodes from part where slug = ?')
+		.get(slug) as PartDescriptionRow | undefined;
+	if (row === undefined) return null;
+	return {
+		title: row.title,
+		description: row.description,
+		chapters: parseCoverage(row.chapters),
+		episodes: parseCoverage(row.episodes)
+	};
+}
+
 interface FullArcRow {
 	slug: string;
 	title: string;

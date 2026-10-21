@@ -9,7 +9,7 @@ import {
 	writeFileSync
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import {
 	fixtures,
@@ -117,10 +117,18 @@ async function recut(pacerr: Pacerr): Promise<Pacerr> {
 const upgraded = async (options: StartOptions = {}): Promise<Pacerr> =>
 	recut(await holdingTheEarlierCut(options));
 
-const libraryFiles = (pacerr: Pacerr): string[] =>
+/** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
+const libraryMedia = (pacerr: Pacerr): string[] => libraryEntries(pacerr, '.mkv');
+
+const librarySidecars = (pacerr: Pacerr): string[] => libraryEntries(pacerr, '.nfo');
+
+const libraryEntries = (pacerr: Pacerr, extension: string): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
-		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
+		.filter(
+			(entry) =>
+				extname(entry) === extension && statSync(join(pacerr.paths.library, entry)).isFile()
+		)
 		.sort();
 
 const contentOf = (pacerr: Pacerr, file: string): string =>
@@ -147,8 +155,27 @@ describe('a Release that drops out of the watch page current set', () => {
 	it('leaves the new cut in the Library where the old one was', async () => {
 		const pacerr = await upgraded();
 
-		expect(libraryFiles(pacerr)).toEqual(reverieInTheLibrary);
+		expect(libraryMedia(pacerr)).toEqual(reverieInTheLibrary);
 		expect(contentOf(pacerr, firstPart)).toBe('the current cut 1');
+	});
+});
+
+describe('an Upgrade that renders a different name', () => {
+	it('leaves no Sidecar behind describing a file that is gone', async () => {
+		const pacerr = await holdingSevenTwenty();
+
+		pacerr.upstream.watchPage.publish(bothCutsOffered());
+		await pacerr.advance(hours(24));
+		finish(pacerr, currentCut, 'the 1080p cut');
+		await pacerr.advance(minutes(15));
+
+		expect(librarySidecars(pacerr)).toEqual([
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
+			'Season 34/season.nfo',
+			'tvshow.nfo'
+		]);
 	});
 });
 
@@ -178,7 +205,7 @@ describe('the torrent an Upgrade superseded', () => {
 		const pacerr = await upgraded();
 
 		expect(existsSync(join(pacerr.paths.downloads, earlierCut))).toBe(false);
-		expect(libraryFiles(pacerr).map((file) => contentOf(pacerr, file))).toEqual([
+		expect(libraryMedia(pacerr).map((file) => contentOf(pacerr, file))).toEqual([
 			'the current cut 1',
 			'the current cut 2',
 			'the current cut 3'
@@ -199,14 +226,14 @@ describe('an Upgrade where the Library and the download directory cannot be hard
 describe('the Cutoff', () => {
 	it('leaves a Part below it open to a higher Resolution appearing', async () => {
 		const pacerr = await holdingSevenTwenty();
-		expect(libraryFiles(pacerr)).toEqual(reverieAt720);
+		expect(libraryMedia(pacerr)).toEqual(reverieAt720);
 
 		pacerr.upstream.watchPage.publish(bothCutsOffered());
 		await pacerr.advance(hours(24));
 		finish(pacerr, currentCut, 'the 1080p cut');
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual(reverieInTheLibrary);
+		expect(libraryMedia(pacerr)).toEqual(reverieInTheLibrary);
 		expect(contentOf(pacerr, firstPart)).toBe('the 1080p cut 1');
 	});
 
@@ -218,7 +245,7 @@ describe('the Cutoff', () => {
 		await pacerr.advance(hours(24));
 
 		expect(pacerr.downloadClient.added.map((download) => download.infohash)).toEqual([earlierCut]);
-		expect(libraryFiles(pacerr)).toEqual(reverieAt720);
+		expect(libraryMedia(pacerr)).toEqual(reverieAt720);
 	});
 
 	it('does not withhold a Part that has met it from a Release going outdated', async () => {
