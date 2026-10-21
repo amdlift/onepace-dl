@@ -107,6 +107,25 @@ Replacing an already-imported Part with a Release that better satisfies the user
 typically because the earlier Release became outdated or a higher Resolution appeared.
 _Avoid_: Update, refresh, replace
 
+### Artwork and metadata
+
+**Backdrop**:
+The landscape still the One Pace watch page provides for an Arc. Pacerr shows it in its own views
+and never writes it to the Library.
+_Avoid_: Cover, poster, art, thumbnail
+
+**Poster**:
+The portrait artwork for an Arc, which Pacerr ships rather than scrapes, and writes into the Arc's
+season directory for a media server to display. Distinct from the Backdrop in shape, source and
+purpose: one is Pacerr's own chrome, the other is Library output.
+_Avoid_: Cover (that is the filename, not the concept), backdrop, artwork
+
+**Sidecar**:
+A metadata file Pacerr writes into the Library beside what it describes, for a media server to read
+instead of consulting an online metadata provider. Covers both the Poster written as `cover.jpg`
+and the NFO files describing the show, an Arc and a Part.
+_Avoid_: Metadata file (ambiguous with the Catalogue), NFO (that is one format, not the concept)
+
 ### Selection
 
 **Profile**:
