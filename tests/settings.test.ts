@@ -100,3 +100,66 @@ describe('the Settings sub-navigation', () => {
 		}
 	});
 });
+
+describe('a setting that was refused', () => {
+	it('says so on the page the save was made from', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.answer('/settings/media-management', 'addRemotePathMapping', {
+			remotePath: '/data/torrents',
+			localPath: ''
+		});
+
+		expect(page.text('.alert')).toBe('A Remote Path Mapping needs both paths.');
+	});
+});
+
+describe('settings saved before Settings was split into pages', () => {
+	it('are all still in effect once the container is recreated', async () => {
+		const pacerr = await startPacerr();
+		await pacerr.submit('/settings', 'saveProfile', {
+			'resolution-1': '720',
+			variant: 'extended',
+			cutoff: '720'
+		});
+		await pacerr.submit('/settings/media-management', 'saveNamingTemplate', {
+			template: '{arc}/{part}'
+		});
+		await pacerr.submit('/settings/media-management', 'addRemotePathMapping', {
+			remotePath: '/data/torrents',
+			localPath: '/downloads'
+		});
+		await pacerr.submit('/settings/download-client', 'saveDownloadClient', {
+			url: 'http://qbittorrent.lan:8080',
+			username: 'admin',
+			password: 'hunter2'
+		});
+		await pacerr.submit('/settings/metadata', 'saveSidecars', { showNfo: 'on' });
+		await pacerr.submit('/settings/manual-import', 'saveImportSource', {
+			importSource: pacerr.paths.downloads
+		});
+
+		await pacerr.restart();
+
+		const profile = await pacerr.open('/settings');
+		expect(profile.attributes('select[name="variant"] option[selected]', 'value')).toEqual([
+			'extended'
+		]);
+		const media = await pacerr.open('/settings/media-management');
+		expect(media.attributes('input[name="template"]', 'value')).toEqual(['{arc}/{part}']);
+		expect(media.attributes('input[name="library"]', 'value')).toEqual([pacerr.paths.library]);
+		expect(media.text('.mapping-list')).toContain('/data/torrents');
+		expect(
+			(await pacerr.open('/settings/download-client')).attributes('input[name="url"]', 'value')
+		).toEqual(['http://qbittorrent.lan:8080']);
+		const metadata = await pacerr.open('/settings/metadata');
+		expect(metadata.attributes('input[name="showNfo"]', 'checked')).toEqual(['']);
+		expect(metadata.attributes('input[name="partNfo"]', 'checked')).toEqual([null]);
+		expect(
+			(await pacerr.open('/settings/manual-import')).attributes(
+				'input[name="importSource"]',
+				'value'
+			)
+		).toEqual([pacerr.paths.downloads]);
+	});
+});
