@@ -1,5 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import type { App } from './app';
+import { arcArtwork, type ArcArtwork } from './artwork';
 import type { ArcListing, CatalogueView } from './catalogue/service';
 import type { Resolution } from './catalogue/watch-page';
 import { readHadPartCountsByArc } from './library/store';
@@ -17,6 +18,7 @@ export interface BatchOnlyCoverage {
 }
 
 export interface ArcSummary extends ArcListing {
+	artwork: ArcArtwork;
 	monitored: boolean;
 	hadCount: number;
 	batchOnly: BatchOnlyCoverage | null;
@@ -35,6 +37,7 @@ export function arcsView(app: App): ArcsView {
 		...catalogue,
 		arcs: catalogue.arcs.map((arc) => ({
 			...arc,
+			artwork: arcArtwork(app.posters, arc.slug, arc.coverImageUrl),
 			monitored: monitored.has(arc.slug),
 			hadCount: had.get(arc.slug) ?? 0,
 			batchOnly: batchOnly.get(arc.slug) ?? null

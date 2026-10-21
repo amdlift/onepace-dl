@@ -59,10 +59,10 @@
 			{#each catalogue.arcs as arc (arc.slug)}
 				<tr>
 					<td class="cover">
-						{#if arc.coverImageUrl !== null}
-							<img src={arc.coverImageUrl} alt="" width="64" height="36" loading="lazy" />
-						{:else}
+						{#if arc.artwork.kind === 'placeholder'}
 							<span class="no-cover" aria-hidden="true"></span>
+						{:else}
+							<img src={arc.artwork.url} alt="" width="40" height="60" loading="lazy" />
 						{/if}
 					</td>
 					<td>
@@ -105,15 +105,15 @@
 	}
 
 	.cover {
-		width: 64px;
+		width: 40px;
 		padding-right: 0;
 	}
 
 	img,
 	.no-cover {
 		display: block;
-		width: 64px;
-		height: 36px;
+		width: 40px;
+		height: 60px;
 		object-fit: cover;
 		border-radius: 2px;
 		background: var(--surface-hover);
