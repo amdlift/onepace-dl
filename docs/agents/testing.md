@@ -68,6 +68,9 @@ The instance stops itself when the test finishes.
 - `pacerr.paths` — `config`, `library`, `downloads`, all under a temporary directory. Assert on
   the Library by reading it. Starting up points Pacerr at the Library and the download directory
   through its own Settings, so every test runs against paths configured the way a person does.
+  Sidecar content is asserted with `toMatchFileSnapshot` against the golden documents under
+  `tests/fixtures/sidecars/`, read off the Library the application wrote; a diff there is a signal
+  to read rather than noise to regenerate.
 - `pacerr.restart()` — recreate the container: same config volume, everything else new.
 
 The suite builds the app once (`tests/harness/build.ts`) because seam 1 drives the real

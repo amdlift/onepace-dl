@@ -50,7 +50,7 @@ describe('a Library set in Settings', () => {
 		await pacerr.submit('/settings', 'saveLibrary', { library: media });
 		await pacerr.advance(minutes(15));
 
-		expect(filesUnder(media)).toHaveLength(3);
+		expect(filesUnder(media).filter((file) => file.endsWith('.mkv'))).toHaveLength(3);
 		expect(filesUnder(pacerr.paths.library)).toEqual([]);
 	});
 
