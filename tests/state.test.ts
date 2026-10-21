@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { PacerrPage } from './harness/page';
 import { fixtures, minutes, startPacerr } from './harness/pacerr';
+import { formatState, type State } from '../src/lib/state';
 
 const stateLabels = (page: PacerrPage): (string | null)[] =>
 	page.attributes('tbody .state-icon svg', 'aria-label');
@@ -226,5 +227,39 @@ describe('the legend', () => {
 
 	it('spends danger red on nothing but a gap somebody is monitoring', () => {
 		expect(selectorsPainted('--danger')).toEqual(['.event.bad', '.state-icon.missing']);
+	});
+});
+
+const everyState: State[] = [
+	'had',
+	'downloading',
+	'missing',
+	'unmonitored',
+	'unreleased',
+	'to-be-redone'
+];
+
+describe('the legend in the glossary', () => {
+	const glossary = readFileSync(new URL('../GLOSSARY.md', import.meta.url), 'utf8');
+
+	it('can be learned once rather than inferred from colour', () => {
+		const undocumented = everyState
+			.map((state) => formatState(state))
+			.filter((label) => !glossary.includes(label));
+
+		expect(everyState).toHaveLength(6);
+		expect(undocumented).toEqual([]);
+	});
+
+	it('names the token each state is painted with, so the two cannot drift apart', () => {
+		const unnamed = everyState
+			.map((state) => colourOf(`.state-icon.${state}`))
+			.filter((treatment) => treatment === undefined || !glossary.includes(treatment));
+
+		expect(unnamed).toEqual([]);
+	});
+
+	it('says what Pacerr means by a Part it has', () => {
+		expect(glossary).toContain('**Had**:');
 	});
 });
