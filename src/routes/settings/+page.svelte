@@ -14,7 +14,7 @@
 	const remotePathMappings = $derived(data.remotePathMappings);
 	const paths = $derived(data.paths);
 
-	const tokens = '{arc}, {season}, {part}, {episode}, {resolution}';
+	const tokens = '{show}, {arc}, {seasonDirectory}, {season}, {part}, {episode}, {resolution}';
 	const resolutions = [1080, 720, 480] as const;
 	const variants = ['regular', 'extended', 'alternate'] as const;
 	const ranks = [0, 1, 2] as const;
@@ -90,8 +90,9 @@
 		</label>
 		<p class="note">
 			Arcs render as seasons and Parts as episodes, which is what Jellyfin and Plex parse.
-			Available tokens: {tokens}. A slash starts a new folder, and the file keeps the extension it
-			was downloaded with. Leave this empty to go back to the default.
+			Available tokens: {tokens}, where {'{seasonDirectory}'} is Specials for the one-off entries and
+			Season followed by the number for everything else. A slash starts a new folder, and the file
+			keeps the extension it was downloaded with. Leave this empty to go back to the default.
 		</p>
 		<button class="button" type="submit">Save</button>
 	</form>
