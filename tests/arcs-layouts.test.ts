@@ -15,3 +15,17 @@ describe('the Arcs view', () => {
 		expect(page.texts('.page-toolbar .controls button[aria-pressed="true"]')).toEqual(['Table']);
 	});
 });
+
+describe('the Poster layout', () => {
+	it('shows every Arc the Catalogue holds as portrait artwork', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.submit('/', 'chooseLayout', { layout: 'poster' });
+
+		const arcs = page.texts('.poster-grid .arc');
+		expect(arcs).toHaveLength(38);
+		expect(arcs[0]).toContain('Romance Dawn');
+		expect(page.attributes('.poster-grid .arc img', 'src')[0]).toBe('/arcs/romance-dawn/poster');
+		expect(page.document.querySelector('table')).toBeNull();
+	});
+});
