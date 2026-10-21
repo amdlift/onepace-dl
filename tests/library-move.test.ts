@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
-import { fixtures, minutes, startPacerr, type Pacerr } from './harness/pacerr';
+import { fixtures, hours, minutes, startPacerr, type Pacerr } from './harness/pacerr';
 
 /** Everything a Library holds: the Parts, the Sidecars beside them, and the directories. */
 const everythingUnder = (directory: string): string[] =>
@@ -246,6 +246,41 @@ describe('a move stopped partway', () => {
 		await pacerr.submit('/settings', 'saveLibrary', { library: media });
 		await pacerr.submit('/settings', 'startLibraryMove');
 		await pacerr.settle();
+
+		expect(sidecarsUnder(media)).toEqual([
+			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].nfo",
+			'Season 04/cover.jpg',
+			'Season 04/season.nfo',
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
+			'Season 34/cover.jpg',
+			'Season 34/season.nfo',
+			'tvshow.nfo'
+		]);
+		expect(sidecarsUnder(pacerr.paths.library)).toEqual([
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
+			'Season 34/cover.jpg',
+			'Season 34/season.nfo',
+			'tvshow.nfo'
+		]);
+	});
+
+	it('keeps them there when a scrape refreshes them, rather than filing them ahead', async () => {
+		const pacerr = await aLibraryHoldingReverie();
+		await alsoHoldingGaimon(pacerr);
+		const media = anotherDirectory();
+		mkdirSync(join(media, 'Season 34', 'One Pace - S34E02 - A Beautiful World [1080p].mkv'), {
+			recursive: true
+		});
+		await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.settle();
+
+		// Same length, because the payload the watch page carries is chunked by byte count.
+		pacerr.upstream.watchPage.publish(
+			fixtures.watchPage.replaceAll('a vicious band of pirates', 'a brutish band of pirates')
+		);
+		await pacerr.advance(hours(24));
 
 		expect(sidecarsUnder(media)).toEqual([
 			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].nfo",

@@ -11,7 +11,7 @@ import {
 } from '../catalogue/store';
 import type { Coverage } from '../catalogue/watch-page';
 import { showTitle } from './naming';
-import { readHadParts } from './store';
+import { readHadParts, type HadPart } from './store';
 
 /**
  * Sidecars are the Library edge, so this is one of the few places `season` and `episode` are a
@@ -58,11 +58,13 @@ const alreadySays = (destination: string, rendered: string): boolean =>
  */
 export function refreshSidecars(db: Database, library: string): void {
 	const had = [...readHadParts(db).values()];
-	if (had.length === 0) return;
-	writeShowSidecar(library);
+	// A Part a half-finished move has left behind is described in the Library still holding it,
+	// so a correction upstream never files metadata into one the media has not reached.
+	const rootOf = (part: HadPart): string => part.libraryRoot ?? library;
+	for (const root of new Set(had.map(rootOf))) writeShowSidecar(root);
 	for (const part of had) {
-		writeSeasonSidecar(db, library, part.arcSlug, part.libraryPath);
-		writeEpisodeSidecar(db, library, part.partSlug, part.libraryPath);
+		writeSeasonSidecar(db, rootOf(part), part.arcSlug, part.libraryPath);
+		writeEpisodeSidecar(db, rootOf(part), part.partSlug, part.libraryPath);
 	}
 }
 
