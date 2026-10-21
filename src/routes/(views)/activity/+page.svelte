@@ -34,7 +34,7 @@
 						<th>Release</th>
 						<th>Parts</th>
 						<th>Status</th>
-						<th class="numeric">Progress</th>
+						<th>Progress</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -46,7 +46,7 @@
 							</td>
 							<td class="parts">{row.partTitles.join(', ')}</td>
 							<td class="state">{formatDownloadState(row.state)}</td>
-							<td class="numeric progress">{formatProgress(row.progress)}</td>
+							<td class="progress">{formatProgress(row.progress)}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -72,7 +72,7 @@
 				<tbody>
 					{#each activity.history as entry (entry.id)}
 						<tr>
-							<td class="numeric">{formatTimestamp(new Date(entry.at))}</td>
+							<td>{formatTimestamp(new Date(entry.at))}</td>
 							<td class="event" class:bad={entry.outcome === 'failed'}>
 								{formatHistoryEvent(entry.event, entry.outcome)}
 							</td>
