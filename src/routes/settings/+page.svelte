@@ -49,7 +49,7 @@
 			{#each ranks as rank (rank)}
 				<label>
 					<span>{rankLabels[rank]}</span>
-					<select name="resolution-{rank + 1}">
+					<select class="input" name="resolution-{rank + 1}">
 						<option value="" selected={profile.resolutions[rank] === undefined}>None</option>
 						{#each resolutions as resolution (resolution)}
 							<option value={resolution} selected={profile.resolutions[rank] === resolution}>
@@ -63,7 +63,7 @@
 		</fieldset>
 		<label>
 			<span>Preferred Variant</span>
-			<select name="variant">
+			<select class="input" name="variant">
 				{#each variants as variant (variant)}
 					<option value={variant} selected={profile.variant === variant}>
 						{formatVariant(variant)}
@@ -73,7 +73,7 @@
 		</label>
 		<label>
 			<span>Cutoff</span>
-			<select name="cutoff">
+			<select class="input" name="cutoff">
 				{#each resolutions as resolution (resolution)}
 					<option value={resolution} selected={profile.cutoff === resolution}>
 						{formatResolution(resolution)}
@@ -95,7 +95,7 @@
 	<form method="POST" action="?/saveNamingTemplate">
 		<label>
 			<span>Naming template</span>
-			<input name="template" autocomplete="off" value={namingTemplate} />
+			<input class="input" name="template" autocomplete="off" value={namingTemplate} />
 		</label>
 		<p class="note">
 			Arcs render as seasons and Parts as episodes, which is what Jellyfin and Plex parse.
@@ -123,7 +123,7 @@
 	<form method="POST" action="?/saveImportSource">
 		<label>
 			<span>Import Source</span>
-			<input name="importSource" autocomplete="off" value={importSource ?? ''} />
+			<input class="input" name="importSource" autocomplete="off" value={importSource ?? ''} />
 		</label>
 		<p class="note">
 			The directory Manual Import browses for One Pace files you already have. Pacerr reads this
@@ -144,15 +144,15 @@
 	<form method="POST" action="?/saveDownloadClient">
 		<label>
 			<span>qBittorrent address</span>
-			<input name="url" placeholder="http://localhost:8080" value={downloadClient.url} />
+			<input class="input" name="url" placeholder="http://localhost:8080" value={downloadClient.url} />
 		</label>
 		<label>
 			<span>Username</span>
-			<input name="username" autocomplete="off" value={downloadClient.username} />
+			<input class="input" name="username" autocomplete="off" value={downloadClient.username} />
 		</label>
 		<label>
 			<span>Password</span>
-			<input name="password" type="password" autocomplete="off" placeholder="Unchanged" />
+			<input class="input" name="password" type="password" autocomplete="off" placeholder="Unchanged" />
 		</label>
 		<p class="note">
 			Pacerr hands every Release to this client and never moves bytes over BitTorrent itself, so
@@ -180,7 +180,7 @@
 		<div class="pinned">
 			<label>
 				<span>Library</span>
-				<input name="library" value={library.path} readonly />
+				<input class="input" name="library" value={library.path} readonly />
 			</label>
 			<p class="note">
 				The Library is configured by {library.variable}, and cannot be changed here.
@@ -190,7 +190,7 @@
 		<form method="POST" action="?/saveLibrary">
 			<label>
 				<span>Library</span>
-				<input name="library" autocomplete="off" value={library.path} />
+				<input class="input" name="library" autocomplete="off" value={library.path} />
 			</label>
 			<p class="note">
 				Where Pacerr files every import. Setting {library.variable} pins it from the environment
@@ -295,7 +295,7 @@
 		<div class="pinned">
 			<label>
 				<span>Download directory</span>
-				<input name="downloads" value={downloads.path} readonly />
+				<input class="input" name="downloads" value={downloads.path} readonly />
 			</label>
 			<p class="note">
 				The download directory is configured by {downloads.variable}, and cannot be changed here.
@@ -305,7 +305,7 @@
 		<form method="POST" action="?/saveDownloads">
 			<label>
 				<span>Download directory</span>
-				<input name="downloads" autocomplete="off" value={downloads.path} />
+				<input class="input" name="downloads" autocomplete="off" value={downloads.path} />
 			</label>
 			<p class="note">
 				Where this container sees the completed downloads the Download Client writes. Setting
@@ -356,11 +356,11 @@
 	<form method="POST" action="?/addRemotePathMapping">
 		<label>
 			<span>Path on the Download Client</span>
-			<input name="remotePath" autocomplete="off" placeholder="/data/torrents" />
+			<input class="input" name="remotePath" autocomplete="off" placeholder="/data/torrents" />
 		</label>
 		<label>
 			<span>The same place as Pacerr sees it</span>
-			<input name="localPath" autocomplete="off" placeholder="/downloads" />
+			<input class="input" name="localPath" autocomplete="off" placeholder="/downloads" />
 		</label>
 		<p class="note">
 			Only needed when the two do not share a mount layout. The Download Client reports where it
@@ -392,11 +392,11 @@
 			</label>
 			<label>
 				<span>Username</span>
-				<input name="username" autocomplete="username" value={authentication.username ?? ''} />
+				<input class="input" name="username" autocomplete="username" value={authentication.username ?? ''} />
 			</label>
 			<label>
 				<span>Password</span>
-				<input name="password" type="password" autocomplete="new-password" placeholder="Unchanged" />
+				<input class="input" name="password" type="password" autocomplete="new-password" placeholder="Unchanged" />
 			</label>
 			<p class="note">
 				Pacerr has one account, and saving replaces it. Setting PACERR_AUTH_USERNAME and
@@ -414,108 +414,94 @@
 </section>
 
 <style>
-	h2 {
-		margin: 1rem 0 0.5rem;
-		font-size: 0.9rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--ink-dim);
-	}
-
 	form {
 		display: grid;
-		gap: 0.75rem;
+		gap: var(--space-3);
 		justify-items: start;
-		max-width: 20rem;
+		max-width: var(--form-width);
 	}
 
 	label {
 		display: grid;
-		gap: 0.25rem;
+		gap: var(--space-1);
 		width: 100%;
 	}
 
 	label.toggle {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 
 	label span {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	fieldset {
 		display: grid;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		width: 100%;
 		margin: 0;
-		padding: 0.75rem;
-		border: 1px solid var(--border);
-		border-radius: 2px;
+		padding: var(--space-3);
+		border: var(--hairline) solid var(--border);
+		border-radius: var(--radius-control);
 	}
 
 	legend {
-		padding: 0 0.35rem;
+		padding: 0 var(--space-1);
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.order {
 		margin: 0;
 		color: var(--ink-bright);
-		font-size: 0.8rem;
 	}
 
 	.row {
 		display: flex;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 
 	.pinned {
 		display: grid;
-		gap: 0.75rem;
-		max-width: 20rem;
-		margin-bottom: 0.75rem;
+		gap: var(--space-3);
+		max-width: var(--form-width);
+		margin-bottom: var(--space-3);
 	}
 
 	.move {
 		display: grid;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		justify-items: start;
-		max-width: 44rem;
-		margin: 0 0 0.75rem;
-		padding: 0.75rem;
-		border: 1px solid var(--border);
-		border-radius: 2px;
+		max-width: var(--prose-width);
+		margin: 0 0 var(--space-3);
+		padding: var(--space-3);
+		border: var(--hairline) solid var(--border);
+		border-radius: var(--radius-control);
 	}
 
 	.move p {
 		margin: 0;
-		font-size: 0.8rem;
 	}
 
 	.stranded {
-		max-height: 12rem;
+		max-height: var(--scroll-height);
 		overflow-y: auto;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 		color: var(--ink-bright);
-		font-size: 0.8rem;
 		word-break: break-all;
 	}
 
 	.paths ul {
 		display: grid;
-		gap: 0.35rem;
-		max-width: 44rem;
-		margin: 0 0 0.75rem;
+		gap: var(--space-1);
+		max-width: var(--prose-width);
+		margin: 0 0 var(--space-3);
 		padding: 0;
 		list-style: none;
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.paths li.warned {
@@ -527,14 +513,14 @@
 	}
 
 	.sidecars .note {
-		max-width: 44rem;
-		margin-bottom: 0.75rem;
+		max-width: var(--prose-width);
+		margin-bottom: var(--space-3);
 	}
 
 	.mapping-list {
 		display: grid;
-		gap: 0.35rem;
-		margin: 0 0 0.75rem;
+		gap: var(--space-1);
+		margin: 0 0 var(--space-3);
 		padding: 0;
 		list-style: none;
 	}
@@ -543,8 +529,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.8rem;
+		gap: var(--space-2);
 	}
 
 	.mapping-list code {
@@ -557,34 +542,11 @@
 	}
 
 	.connection {
-		margin: 0.5rem 0 0;
+		margin: var(--space-2) 0 0;
 		color: var(--ink-bright);
-		font-size: 0.8rem;
 	}
 
 	.connection.bad {
 		color: var(--danger);
-	}
-
-	select,
-	input[name='url'],
-	input[name='username'],
-	input[name='password'],
-	input[name='template'],
-	input[name='library'],
-	input[name='downloads'],
-	input[name='remotePath'],
-	input[name='localPath'] {
-		padding: 0.35rem 0.5rem;
-		border: 1px solid var(--border);
-		border-radius: 2px;
-		background: var(--surface-panel);
-		color: var(--ink);
-	}
-
-	.note {
-		margin: 0;
-		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 </style>

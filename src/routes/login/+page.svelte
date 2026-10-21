@@ -15,11 +15,11 @@
 <form method="POST" action="?/logIn">
 	<label>
 		<span>Username</span>
-		<input name="username" autocomplete="username" required />
+		<input class="input" name="username" autocomplete="username" required />
 	</label>
 	<label>
 		<span>Password</span>
-		<input name="password" type="password" autocomplete="current-password" required />
+		<input class="input" name="password" type="password" autocomplete="current-password" required />
 	</label>
 	<button class="button" type="submit">Log in</button>
 </form>
@@ -27,26 +27,17 @@
 <style>
 	form {
 		display: grid;
-		gap: 0.75rem;
-		max-width: 18rem;
-		margin-top: 1rem;
+		gap: var(--space-3);
+		max-width: var(--form-width);
+		margin-top: var(--space-4);
 	}
 
 	label {
 		display: grid;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 
 	span {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
-	}
-
-	input {
-		padding: 0.35rem 0.5rem;
-		border: 1px solid var(--border);
-		border-radius: 2px;
-		background: var(--surface-panel);
-		color: var(--ink);
 	}
 </style>

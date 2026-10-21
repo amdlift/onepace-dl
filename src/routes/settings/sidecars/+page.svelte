@@ -63,34 +63,30 @@
 <style>
 	form {
 		display: grid;
-		gap: 0.25rem;
+		gap: var(--space-1);
 		justify-items: start;
-		max-width: 32rem;
+		max-width: var(--control-width);
 	}
 
 	label.toggle {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		margin-top: 0.75rem;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
 	}
 
 	label span {
 		color: var(--ink-bright);
-		font-size: 0.9rem;
 	}
 
 	.detail {
-		margin: 0 0 0.25rem 1.6rem;
+		margin: 0 0 var(--space-1) var(--space-6);
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.note {
-		max-width: 44rem;
-		margin: 0 0 0.75rem;
-		color: var(--ink-dim);
-		font-size: 0.8rem;
+		max-width: var(--prose-width);
+		margin: 0 0 var(--space-3);
 	}
 
 	.saved {
@@ -98,6 +94,6 @@
 	}
 
 	button {
-		margin-top: 1rem;
+		margin-top: var(--space-4);
 	}
 </style>

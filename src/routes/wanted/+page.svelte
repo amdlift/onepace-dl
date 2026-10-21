@@ -74,9 +74,8 @@
 	.grab {
 		display: inline-flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.resolution {
@@ -86,7 +85,6 @@
 	.flag {
 		display: block;
 		color: var(--ink-dim);
-		font-size: 0.75rem;
 	}
 
 	.none {

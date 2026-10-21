@@ -17,9 +17,9 @@ const rootBlock = (): string => {
 
 const declaredTokens = (): Record<string, string> =>
 	Object.fromEntries(
-		[...rootBlock().matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)].map(([, token, value]) => [
-			token,
-			value.trim()
+		[...rootBlock().matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)].map((declaration) => [
+			declaration[1] ?? '',
+			(declaration[2] ?? '').trim()
 		])
 	);
 
@@ -47,6 +47,11 @@ function stylesheetsOutsideTheTokenSheet(): { file: string; css: string }[] {
 const colours =
 	/#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|color-mix)\(|(?<![\w-])(?:white|black|red|green|blue|gray|grey|silver|orange|yellow|purple|cyan|magenta)(?![\w-])/gi;
 
+const sizedProperties =
+	/(?:^|[\s;{])(font-family|font-size|line-height|letter-spacing|padding(?:-[a-z]+)?|margin(?:-[a-z]+)?|(?:row-|column-)?gap|border-radius)\s*:\s*([^;}]+)/g;
+
+const keywords = ['0', 'auto', 'inherit', 'initial', 'normal', 'none'];
+
 describe('the token sheet', () => {
 	it('declares every token at the measured value, and declares nothing else', () => {
 		const reference = Object.fromEntries(
@@ -66,6 +71,25 @@ describe('a stylesheet outside the token sheet', () => {
 		);
 
 		expect(rootBlock().match(colours) ?? []).not.toHaveLength(0);
+		expect(stylesheets.length).toBeGreaterThan(1);
+		expect(hardcoded).toEqual([]);
+	});
+
+	it('names no size, spacing or typeface of its own', () => {
+		const stylesheets = stylesheetsOutsideTheTokenSheet();
+
+		const hardcoded = stylesheets.flatMap(({ file, css }) =>
+			[...css.matchAll(sizedProperties)]
+				.map((declaration) => ({
+					property: declaration[1] ?? '',
+					value: (declaration[2] ?? '').trim()
+				}))
+				.filter(({ value }) =>
+					value.split(/\s+/).some((part) => !part.startsWith('var(') && !keywords.includes(part))
+				)
+				.map(({ property, value }) => `${file}: ${property}: ${value}`)
+		);
+
 		expect(stylesheets.length).toBeGreaterThan(1);
 		expect(hardcoded).toEqual([]);
 	});
