@@ -137,7 +137,7 @@ describe('turning Monitoring off', () => {
 
 		expect(readdirSync(pacerr.paths.library)).toEqual([]);
 		expect(arcRow(await pacerr.open('/'), 'Reverie')).toContain('0 of 3');
-		expect((await pacerr.open('/arcs/reverie')).texts('tbody tr td:first-child')).toEqual([
+		expect((await pacerr.open('/arcs/reverie')).texts('tbody tr td:nth-child(2)')).toEqual([
 			'1',
 			'2',
 			'3'

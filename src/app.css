@@ -63,6 +63,7 @@
 	--column-narrow: 176px;
 	--form-width: 320px;
 	--prose-width: 704px;
+	--icon-size: 14px;
 	--poster-width: 40px;
 	--poster-height: 60px;
 	--scroll-height: 192px;
@@ -231,7 +232,51 @@ h2 {
 	color: var(--warning);
 }
 
+.badge.redone {
+	color: var(--brand);
+}
+
 .empty {
 	padding: var(--space-8) 0;
 	color: var(--ink-dim);
+}
+
+.state-icon {
+	width: 1%;
+	color: var(--ink-dim);
+}
+
+.state-icon svg {
+	display: block;
+	width: var(--icon-size);
+	height: var(--icon-size);
+	fill: none;
+	stroke: currentcolor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.state-icon.had {
+	color: var(--success);
+}
+
+.state-icon.downloading {
+	color: var(--downloading);
+}
+
+.state-icon.missing {
+	color: var(--danger);
+}
+
+.state-icon.unmonitored {
+	color: var(--warning);
+}
+
+.state-icon.unreleased {
+	color: var(--ink-dim);
+}
+
+.state-icon.to-be-redone {
+	color: var(--brand);
 }

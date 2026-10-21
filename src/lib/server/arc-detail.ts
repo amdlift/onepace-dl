@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import type { State } from '../state';
 import { readArcDetail } from './catalogue/store';
 import { readHadParts, type HadPart } from './library/store';
 import { readMonitoredArcs, readNotWantedParts } from './monitoring/store';
@@ -15,11 +16,13 @@ export interface PartRow {
 	/** What Pacerr holds for this Part, and the Release it came from. Null while it is missing. */
 	had: HadPart | null;
 	wanted: boolean;
+	state: State;
 	grab: GrabRow;
 }
 
 export interface UnreleasedPartRow {
 	number: number;
+	state: State;
 }
 
 export type ArcRow = ({ released: true } & PartRow) | ({ released: false } & UnreleasedPartRow);
@@ -55,6 +58,8 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 		rows: [
 			...arc.parts.map((part) => {
 				const releases = covering.get(part.slug) ?? [];
+				const holding = had.get(part.slug) ?? null;
+				const wanted = monitored && !notWanted.has(part.slug);
 				return {
 					released: true as const,
 					slug: part.slug,
@@ -62,12 +67,20 @@ export function arcDetailView(db: Database, slug: string): ArcDetail | null {
 					title: part.title,
 					releases,
 					toBeRedone: releases.some((release) => release.status === 'to-be-redone'),
-					had: had.get(part.slug) ?? null,
-					wanted: monitored && !notWanted.has(part.slug),
+					had: holding,
+					wanted,
+					state: partState(holding, wanted),
 					grab: grabRow(selection.parts.get(part.slug))
 				};
 			}),
-			...arc.unreleasedPartNumbers.map((number) => ({ released: false as const, number }))
+			...arc.unreleasedPartNumbers.map((number) => ({
+				released: false as const,
+				number,
+				state: 'unreleased' as const
+			}))
 		]
 	};
 }
+
+const partState = (had: HadPart | null, wanted: boolean): State =>
+	had !== null ? 'had' : wanted ? 'missing' : 'unmonitored';

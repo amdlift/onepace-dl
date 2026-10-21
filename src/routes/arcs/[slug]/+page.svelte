@@ -5,6 +5,7 @@
 		formatTimestamp,
 		formatVariant
 	} from '../../../lib/format';
+	import StateIcon from '../../../lib/StateIcon.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -26,6 +27,7 @@
 <table class="table">
 	<thead>
 		<tr>
+			<th class="state-icon"><span class="visually-hidden">State</span></th>
 			<th>Part</th>
 			<th>Title</th>
 			<th>Would grab</th>
@@ -37,6 +39,7 @@
 	<tbody>
 		{#each arc.rows as row (row.number)}
 			<tr class={{ gap: !row.released }}>
+				<StateIcon state={row.state} />
 				<td>{row.number}</td>
 				{#if row.released}
 					<td>
@@ -99,7 +102,7 @@
 						{/if}
 					</td>
 				{:else}
-					<td colspan="4"><span class="none">Not released yet</span></td>
+					<td colspan="5"><span class="none">Not released yet</span></td>
 				{/if}
 			</tr>
 		{/each}
@@ -161,7 +164,11 @@
 		);
 	}
 
-	.badge.redone {
-		color: var(--warning);
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
 	}
 </style>
