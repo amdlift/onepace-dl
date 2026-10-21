@@ -32,12 +32,14 @@
 	] as const;
 </script>
 
-<svelte:head><title>Sidecars - Pacerr</title></svelte:head>
+<svelte:head><title>Metadata - Pacerr</title></svelte:head>
 
-<Chrome title="Sidecars">
+<Chrome title="Settings">
 	{#snippet actions()}
 		<a class="button" href="/settings">Back to Settings</a>
 	{/snippet}
+
+	<h2>Sidecars</h2>
 
 	{#if form?.saved}
 		<p class="note saved">Saved.</p>

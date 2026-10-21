@@ -62,7 +62,7 @@ type SidecarKind = (typeof sidecarKinds)[number];
 /** Save the Sidecars page with every switch on except the kinds named. */
 const turnOff = (pacerr: Pacerr, ...off: SidecarKind[]): Promise<PacerrPage> =>
 	pacerr.submit(
-		'/settings/sidecars',
+		'/settings/metadata',
 		'saveSidecars',
 		Object.fromEntries(
 			sidecarKinds.filter((kind) => !off.includes(kind)).map((kind) => [kind, 'on'])
@@ -410,7 +410,7 @@ describe('the Sidecars Pacerr writes', () => {
 	it('each have a switch of their own in Settings, and every one of them starts on', async () => {
 		const pacerr = await startPacerr();
 
-		const page = await pacerr.open('/settings/sidecars');
+		const page = await pacerr.open('/settings/metadata');
 
 		expect(switchesOn(page)).toEqual({
 			showNfo: true,
@@ -425,7 +425,7 @@ describe('the Sidecars Pacerr writes', () => {
 
 		const page = await pacerr.open('/settings');
 
-		expect(page.attributes('a', 'href')).toContain('/settings/sidecars');
+		expect(page.attributes('a', 'href')).toContain('/settings/metadata');
 	});
 });
 
@@ -527,7 +527,7 @@ describe('switching a kind of Sidecar off', () => {
 
 		await pacerr.restart();
 
-		expect(switchesOn(await pacerr.open('/settings/sidecars'))).toEqual({
+		expect(switchesOn(await pacerr.open('/settings/metadata'))).toEqual({
 			showNfo: true,
 			arcNfo: true,
 			partNfo: false,

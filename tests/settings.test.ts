@@ -63,3 +63,14 @@ describe('Media Management', () => {
 		expect(settings.attributes('input[name="downloads"]', 'value')).toEqual([]);
 	});
 });
+
+describe('Metadata', () => {
+	it('is where the Sidecar switches live', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.submit('/settings/metadata', 'saveSidecars', { arcNfo: 'on' });
+
+		expect(page.attributes('input[name="arcNfo"]', 'checked')).toEqual(['']);
+		expect(page.attributes('input[name="showNfo"]', 'checked')).toEqual([null]);
+	});
+});

@@ -76,7 +76,7 @@
 			The NFO documents and the Poster Pacerr writes into the Library beside the media they describe,
 			so a media server reads what only One Pace knows. Each kind has a switch of its own.
 		</p>
-		<a class="button" href="/settings/sidecars">Sidecars</a>
+		<a class="button" href="/settings/metadata">Sidecars</a>
 	</section>
 </Chrome>
 
