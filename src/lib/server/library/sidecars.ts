@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import { formatCoverage } from '../../format';
@@ -11,6 +11,7 @@ import {
 } from '../catalogue/store';
 import type { Coverage } from '../catalogue/watch-page';
 import { showTitle } from './naming';
+import { readHadParts } from './store';
 
 /**
  * Sidecars are the Library edge, so this is one of the few places `season` and `episode` are a
@@ -31,15 +32,38 @@ const rootElement: Record<SidecarKind, string> = {
 	episode: 'episodedetails'
 };
 
-/** Writes one document into the Library at a path relative to its root. */
+/** Writes one document into the Library, unless what is there already says exactly that. */
 export function writeSidecar(
 	library: string,
 	sidecarPath: string,
 	document: SidecarDocument
 ): void {
 	const destination = join(library, sidecarPath);
+	const rendered = render(document);
+	if (alreadySays(destination, rendered)) return;
 	mkdirSync(dirname(destination), { recursive: true });
-	writeFileSync(destination, render(document));
+	writeFileSync(destination, rendered);
+}
+
+// Every Sidecar is offered again after every clean scrape, so rewriting one whose content has not
+// moved would restamp most of the Library for a correction to a single description.
+const alreadySays = (destination: string, rendered: string): boolean =>
+	existsSync(destination) && readFileSync(destination, 'utf8') === rendered;
+
+/**
+ * Offers every Sidecar again from the Catalogue as it now stands, so a description One Pace
+ * corrected reaches the Library instead of going stale in it. Only a Part Pacerr holds a file for
+ * is described, and the show only once the Library holds one, so a correction upstream never
+ * conjures a season of metadata and no video.
+ */
+export function refreshSidecars(db: Database, library: string): void {
+	const had = [...readHadParts(db).values()];
+	if (had.length === 0) return;
+	writeShowSidecar(library);
+	for (const part of had) {
+		writeSeasonSidecar(db, library, part.arcSlug, part.libraryPath);
+		writeEpisodeSidecar(db, library, part.partSlug, part.libraryPath);
+	}
 }
 
 /** Where the Sidecar describing the file at one Library path lives. */
