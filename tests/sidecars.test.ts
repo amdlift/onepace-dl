@@ -31,6 +31,12 @@ const libraryFiles = (pacerr: Pacerr): string[] =>
 		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
 		.sort();
 
+const libraryDirectories = (pacerr: Pacerr): string[] =>
+	readdirSync(pacerr.paths.library, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name)
+		.sort();
+
 const inLibrary = (pacerr: Pacerr, path: string): string =>
 	readFileSync(join(pacerr.paths.library, path), 'utf8');
 
@@ -66,7 +72,9 @@ describe('a Part Pacerr files into the Library', () => {
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
 			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
 			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
-			'Season 34/cover.jpg'
+			'Season 34/cover.jpg',
+			'Season 34/season.nfo',
+			'tvshow.nfo'
 		]);
 	});
 
@@ -98,8 +106,30 @@ describe('a Part Pacerr does not hold', () => {
 
 		expect(libraryFiles(pacerr)).toEqual([
 			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv',
-			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].nfo'
+			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].nfo',
+			'Specials/season.nfo',
+			'tvshow.nfo'
 		]);
+	});
+});
+
+describe('an Arc Pacerr holds no Part of', () => {
+	it('is described nowhere, so a media server is shown no season it cannot play', async () => {
+		const pacerr = await reverie();
+
+		expect(libraryFiles(pacerr).filter((file) => file.endsWith('season.nfo'))).toEqual([
+			'Season 34/season.nfo'
+		]);
+	});
+});
+
+describe('the one season every special shares', () => {
+	it('is described as the Specials rather than as whichever special landed last', async () => {
+		const pacerr = await warshipIsland();
+
+		await expect(inLibrary(pacerr, 'Specials/season.nfo')).toMatchFileSnapshot(
+			'./fixtures/sidecars/specials-season.nfo'
+		);
 	});
 });
 
@@ -122,7 +152,9 @@ describe('a Library filed under a naming template the user set', () => {
 			'Reverie/Reverie - 34x02 - A Beautiful World.nfo',
 			'Reverie/Reverie - 34x03 - The Empty Throne.mkv',
 			'Reverie/Reverie - 34x03 - The Empty Throne.nfo',
-			'Reverie/cover.jpg'
+			'Reverie/cover.jpg',
+			'Reverie/season.nfo',
+			'tvshow.nfo'
 		]);
 	});
 });
@@ -146,6 +178,25 @@ describe('a description One Pace writes a markup character into', () => {
 		expect(
 			inLibrary(pacerr, 'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo')
 		).toContain('a raid by a &lt;vicious&gt; band &amp; pirate on the Kingdom');
+	});
+
+	it('reaches a season the same way, because an Arc is described by One Pace too', async () => {
+		const pacerr = await startPacerr({
+			watchPage: fixtures.watchPage.replaceAll(
+				'a mutually agreed upon path',
+				'a <mutual> & agreed pathway'
+			),
+			feed: fixtures.feed
+		});
+		await pacerr.connectDownloadClient();
+		pacerr.downloadClient.filesPerTorrent = 3;
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+		finish(pacerr, 3);
+		await pacerr.advance(minutes(15));
+
+		expect(inLibrary(pacerr, 'Season 34/season.nfo')).toContain(
+			'discuss a &lt;mutual&gt; &amp; agreed pathway for the government'
+		);
 	});
 });
 
@@ -172,10 +223,30 @@ describe('the date One Pace published a Release', () => {
 		const pacerr = await reverie();
 
 		const sidecars = libraryFiles(pacerr).filter((file) => file.endsWith('.nfo'));
-		expect(sidecars).toHaveLength(3);
+		expect(sidecars).toHaveLength(5);
 		for (const sidecar of sidecars) {
 			expect(inLibrary(pacerr, sidecar)).not.toMatch(/<(aired|premiered|year|dateadded)>/);
 		}
+	});
+});
+
+describe('the Library a media server is pointed at', () => {
+	it('says at its root what show it is holding', async () => {
+		const pacerr = await reverie();
+
+		await expect(inLibrary(pacerr, 'tvshow.nfo')).toMatchFileSnapshot(
+			'./fixtures/sidecars/tvshow.nfo'
+		);
+	});
+});
+
+describe('a season a media server browses', () => {
+	it('is titled and described by the Arc its Parts recut, rather than by its number', async () => {
+		const pacerr = await reverie();
+
+		await expect(inLibrary(pacerr, 'Season 34/season.nfo')).toMatchFileSnapshot(
+			'./fixtures/sidecars/reverie-season.nfo'
+		);
 	});
 });
 
@@ -208,7 +279,7 @@ describe('the Poster a media server shows for a season', () => {
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
 		await pacerr.advance(minutes(15));
 
-		expect(readdirSync(pacerr.paths.library).sort()).toEqual(['Season 34']);
+		expect(libraryDirectories(pacerr)).toEqual(['Season 34']);
 		expect(libraryFiles(pacerr).filter((file) => file.endsWith('cover.jpg'))).toEqual([
 			'Season 34/cover.jpg'
 		]);

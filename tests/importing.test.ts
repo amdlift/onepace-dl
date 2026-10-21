@@ -40,7 +40,12 @@ function finish(pacerr: Pacerr, fileCount: number): string {
 	return infohash;
 }
 
-const libraryEntries = (pacerr: Pacerr): string[] => readdirSync(pacerr.paths.library).sort();
+/** The directories at the Library root. The Sidecars beside them are `sidecars.test.ts`'s. */
+const libraryDirectories = (pacerr: Pacerr): string[] =>
+	readdirSync(pacerr.paths.library, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name)
+		.sort();
 
 /** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
 const libraryMedia = (pacerr: Pacerr): string[] =>
@@ -129,7 +134,7 @@ describe('importing a completed download', () => {
 	it('puts nothing but season directories at the root, so this reads as one show', async () => {
 		const pacerr = await reverie();
 
-		expect(libraryEntries(pacerr)).toEqual(['Season 34']);
+		expect(libraryDirectories(pacerr)).toEqual(['Season 34']);
 	});
 
 	it('shows every Part it filed as had, with the Resolution and Variant it holds', async () => {
@@ -242,7 +247,7 @@ describe('the one-off entries the Catalogue keeps alongside real Arcs', () => {
 	it('files them under Specials, where a media server looks for them', async () => {
 		const pacerr = await specials();
 
-		expect(libraryEntries(pacerr)).toEqual(['Specials']);
+		expect(libraryDirectories(pacerr)).toEqual(['Specials']);
 		expect(libraryMedia(pacerr)).toEqual([
 			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
 			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'

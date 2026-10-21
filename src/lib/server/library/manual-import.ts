@@ -8,7 +8,12 @@ import { recordHistory, type HistoryEntry } from '../history/store';
 import { hidesNothing, permit, type BrowsePolicy } from '../paths/browse';
 import { copiedInsteadOfLinked, placeIntoLibrary, type Placing } from './import';
 import type { NamingFields } from './naming';
-import { writeEpisodeSidecar, writeSeasonPoster } from './sidecars';
+import {
+	writeEpisodeSidecar,
+	writeSeasonPoster,
+	writeSeasonSidecar,
+	writeShowSidecar
+} from './sidecars';
 import { partLibraryIndex, readNamingTemplate, recordHadPart } from './store';
 
 const videoExtensions = new Set([
@@ -240,6 +245,8 @@ export function manualImport(
 
 		try {
 			const placed = placeIntoLibrary(library, source, template, target.naming, placing);
+			writeShowSidecar(library);
+			writeSeasonSidecar(db, library, target.arcSlug, placed.libraryPath);
 			writeSeasonPoster(posters, library, placed.libraryPath, target.arcSlug);
 			writeEpisodeSidecar(db, library, target.partSlug, placed.libraryPath);
 			// No infohash: Pacerr did not download this file and has no Release to attribute it to,

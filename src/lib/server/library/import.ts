@@ -22,7 +22,13 @@ import {
 	recordUpgradeImported
 } from '../upgrade/store';
 import { renderLibraryPath, type NamingFields } from './naming';
-import { sidecarPathFor, writeEpisodeSidecar, writeSeasonPoster } from './sidecars';
+import {
+	sidecarPathFor,
+	writeEpisodeSidecar,
+	writeSeasonPoster,
+	writeSeasonSidecar,
+	writeShowSidecar
+} from './sidecars';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -190,6 +196,8 @@ export class ImportService {
 			try {
 				const library = this.#paths.library().path;
 				const placed = placeIntoLibrary(library, source, template, target.naming);
+				writeShowSidecar(library);
+				writeSeasonSidecar(this.#db, library, target.arcSlug, placed.libraryPath);
 				writeSeasonPoster(this.#posters, library, placed.libraryPath, target.arcSlug);
 				writeEpisodeSidecar(this.#db, library, target.partSlug, placed.libraryPath);
 				this.#forgetReplaced(target, placed.libraryPath);

@@ -172,7 +172,9 @@ describe('an Upgrade that renders a different name', () => {
 		expect(librarySidecars(pacerr)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
-			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
+			'Season 34/season.nfo',
+			'tvshow.nfo'
 		]);
 	});
 });
