@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const sourceDirectory = fileURLToPath(new URL('../src', import.meta.url));
+const tokenSheet = join(sourceDirectory, 'app.css');
 
 function everyFileUnder(directory: string): string[] {
 	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
@@ -25,19 +26,6 @@ const occurrences = (pattern: RegExp): string[] =>
 		[...contents.matchAll(pattern)].map(() => file)
 	);
 
-describe('a table column', () => {
-	it('is never right-aligned', () => {
-		expect(occurrences(/text-align:\s*left/g)).not.toHaveLength(0);
-		expect(occurrences(/text-align:\s*right/g)).toEqual([]);
-	});
-
-	it('has no right-aligning class left to reach for', () => {
-		expect(occurrences(/\bnumeric\b/g)).toEqual([]);
-	});
-});
-
-const tokenSheet = join(sourceDirectory, 'app.css');
-
 function declarationsFor(selector: string): Record<string, string> {
 	const rule = readFileSync(tokenSheet, 'utf8')
 		.split('}')
@@ -51,6 +39,17 @@ function declarationsFor(selector: string): Record<string, string> {
 		])
 	);
 }
+
+describe('a table column', () => {
+	it('is never right-aligned', () => {
+		expect(occurrences(/text-align:\s*left/g)).not.toHaveLength(0);
+		expect(occurrences(/text-align:\s*right/g)).toEqual([]);
+	});
+
+	it('has no right-aligning class left to reach for', () => {
+		expect(occurrences(/\bnumeric\b/g)).toEqual([]);
+	});
+});
 
 describe('a table row', () => {
 	it('is the height the reference gives a row, with its cell padding', () => {
@@ -75,5 +74,20 @@ describe('a table row', () => {
 		expect(declarationsFor('.table tbody tr:hover')).toMatchObject({
 			background: 'var(--surface-hover)'
 		});
+	});
+});
+
+describe('a table header', () => {
+	it('is bold at the body size, left-aligned, with the reference cell padding', () => {
+		expect(declarationsFor('.table th')).toMatchObject({
+			padding: 'var(--cell-padding)',
+			'font-weight': 'var(--weight-bold)',
+			'font-size': 'var(--type-base)',
+			'text-align': 'left'
+		});
+	});
+
+	it('carries the body colour rather than the dimmed one help text uses', () => {
+		expect(declarationsFor('.table th').color).toBeUndefined();
 	});
 });

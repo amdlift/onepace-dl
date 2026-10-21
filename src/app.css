@@ -196,7 +196,6 @@ h2 {
 
 .table th {
 	padding: var(--cell-padding);
-	color: var(--ink-dim);
 	font-weight: var(--weight-bold);
 	font-size: var(--type-base);
 	text-align: left;
