@@ -11,7 +11,7 @@ import {
 } from '../catalogue/store';
 import type { Coverage } from '../catalogue/watch-page';
 import { showTitle } from './naming';
-import { readHadParts, type HadPart } from './store';
+import { readHadParts } from './store';
 
 /**
  * What one Sidecar is about, in Pacerr's words: the show, an Arc, a Part. The element a media
@@ -82,12 +82,7 @@ const flag = (value: boolean): number => (value ? 1 : 0);
  */
 const writes = (db: Database, kind: SidecarSwitch): boolean => readSidecarSwitches(db)[kind];
 
-/** Writes one document into the Library, unless what is there already says exactly that. */
-export function writeSidecar(
-	library: string,
-	sidecarPath: string,
-	document: SidecarDocument
-): void {
+function writeDocument(library: string, sidecarPath: string, document: SidecarDocument): void {
 	const destination = join(library, sidecarPath);
 	const rendered = render(document);
 	if (alreadySays(destination, rendered)) return;
@@ -100,25 +95,46 @@ export function writeSidecar(
 const alreadySays = (destination: string, rendered: string): boolean =>
 	existsSync(destination) && readFileSync(destination, 'utf8') === rendered;
 
+const alreadyHolds = (destination: string, source: string): boolean =>
+	existsSync(destination) && readFileSync(destination).equals(readFileSync(source));
+
+/** The Part one set of Sidecars is about, and where in the Library its file landed. */
+export interface SidecarTarget {
+	arcSlug: string;
+	partSlug: string;
+	libraryPath: string;
+}
+
+/**
+ * Every Sidecar describing one Part the Library holds, written beside it. The one way metadata
+ * reaches the Library: an import, a Manual Import and a refresh after a scrape all come through
+ * here, so no kind of Sidecar can end up written down one path and skipped down another.
+ */
+export function writeSidecars(
+	db: Database,
+	posters: Posters,
+	library: string,
+	target: SidecarTarget
+): void {
+	writeShowSidecar(db, library);
+	writeArcSidecar(db, library, target);
+	writeArcPoster(db, posters, library, target);
+	writePartSidecar(db, library, target);
+}
+
 /**
  * Offers every Sidecar again from the Catalogue as it now stands, so a description One Pace
  * corrected reaches the Library instead of going stale in it. Only a Part Pacerr holds a file for
- * is described, and the show only once the Library holds one, so a correction upstream never
- * conjures a season of metadata and no video.
+ * is described, so a correction upstream never conjures a season of metadata and no video.
  */
-export function refreshSidecars(db: Database, library: string): void {
-	const had = [...readHadParts(db).values()];
-	// A Part a half-finished move has left behind is described in the Library still holding it,
-	// so a correction upstream never files metadata into one the media has not reached.
-	const rootOf = (part: HadPart): string => part.libraryRoot ?? library;
-	for (const root of new Set(had.map(rootOf))) writeShowSidecar(db, root);
-	for (const part of had) {
-		writeArcSidecar(db, rootOf(part), part.arcSlug, part.libraryPath);
-		writePartSidecar(db, rootOf(part), part.partSlug, part.libraryPath);
+export function refreshSidecars(db: Database, posters: Posters, library: string): void {
+	for (const part of readHadParts(db).values()) {
+		// A Part a half-finished move has left behind is described in the Library still holding it,
+		// so a correction upstream never files metadata into one the media has not reached.
+		writeSidecars(db, posters, part.libraryRoot ?? library, part);
 	}
 }
 
-/** Where the Sidecar describing the file at one Library path lives. */
 export const sidecarPathFor = (libraryPath: string): string =>
 	`${libraryPath.slice(0, libraryPath.length - extname(libraryPath).length)}.nfo`;
 
@@ -134,9 +150,9 @@ export const sharedSidecarPaths = (libraryPath: string): string[] => [
 ];
 
 /** Describes the one show the Library holds, at its root, where a media server looks for it. */
-export function writeShowSidecar(db: Database, library: string): void {
+function writeShowSidecar(db: Database, library: string): void {
 	if (!writes(db, 'showNfo')) return;
-	writeSidecar(library, 'tvshow.nfo', {
+	writeDocument(library, 'tvshow.nfo', {
 		kind: 'show',
 		title: showTitle,
 		plot: showDescription
@@ -152,16 +168,11 @@ const showDescription =
 	'correcting subtitles.';
 
 /** Describes the Arc a Part belongs to, in the season directory that Part's file landed in. */
-export function writeArcSidecar(
-	db: Database,
-	library: string,
-	arcSlug: string,
-	libraryPath: string
-): void {
+function writeArcSidecar(db: Database, library: string, target: SidecarTarget): void {
 	if (!writes(db, 'arcNfo')) return;
-	const arc = readArcDescription(db, arcSlug);
+	const arc = readArcDescription(db, target.arcSlug);
 	if (arc === null) return;
-	writeSidecar(library, join(dirname(libraryPath), 'season.nfo'), describing(arc));
+	writeDocument(library, join(dirname(target.libraryPath), 'season.nfo'), describing(arc));
 }
 
 // Every special shares one season, so naming that season after an Arc would retitle the whole of
@@ -171,17 +182,12 @@ const describing = (arc: StoredArcDescription): SidecarDocument =>
 		? { kind: 'arc', title: 'Specials', plot: null }
 		: { kind: 'arc', title: arc.title, plot: arc.description };
 
-/** Describes the Part whose file has just landed at `libraryPath`, beside that file. */
-export function writePartSidecar(
-	db: Database,
-	library: string,
-	partSlug: string,
-	libraryPath: string
-): void {
+/** Describes the Part whose file landed at `target.libraryPath`, beside that file. */
+function writePartSidecar(db: Database, library: string, target: SidecarTarget): void {
 	if (!writes(db, 'partNfo')) return;
-	const part = readPartDescription(db, partSlug);
+	const part = readPartDescription(db, target.partSlug);
 	if (part === null) return;
-	writeSidecar(library, sidecarPathFor(libraryPath), {
+	writeDocument(library, sidecarPathFor(target.libraryPath), {
 		kind: 'part',
 		title: part.title,
 		plot: plotOf(part)
@@ -195,17 +201,18 @@ export function writePartSidecar(
  * is written at all until a Part is there to be shown, so a media server is never offered a season
  * of artwork and no video.
  */
-export function writeArcPoster(
+function writeArcPoster(
 	db: Database,
 	posters: Posters,
 	library: string,
-	libraryPath: string,
-	arcSlug: string
+	target: SidecarTarget
 ): void {
 	if (!writes(db, 'arcPoster')) return;
-	const poster = posters.library(arcSlug);
+	const poster = posters.library(target.arcSlug);
 	if (poster === null) return;
-	copyFileSync(poster.path, join(library, dirname(libraryPath), 'cover.jpg'));
+	const destination = join(library, dirname(target.libraryPath), 'cover.jpg');
+	if (alreadyHolds(destination, poster.path)) return;
+	copyFileSync(poster.path, destination);
 }
 
 /**

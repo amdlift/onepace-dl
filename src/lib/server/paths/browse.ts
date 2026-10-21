@@ -82,7 +82,6 @@ export function browsableDirectories(policy: BrowsePolicy, directory: string): s
 	return found.sort((left, right) => basename(left).localeCompare(basename(right)));
 }
 
-/** The directory above `directory`, or null where climbing further would leave the policy. */
 export function parentOf(policy: BrowsePolicy, directory: string): string | null {
 	const above = dirname(directory);
 	return above === directory ? null : permit(policy, above);

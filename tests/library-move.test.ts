@@ -1,49 +1,14 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, onTestFinished } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import {
+	anotherDirectory,
+	everythingUnder,
+	mediaUnder,
+	onAnotherFilesystem,
+	sidecarsUnder
+} from './harness/files';
 import { fixtures, hours, minutes, startPacerr, type Pacerr } from './harness/pacerr';
-
-/** Everything a Library holds: the Parts, the Sidecars beside them, and the directories. */
-const everythingUnder = (directory: string): string[] =>
-	readdirSync(directory, { recursive: true }).map(String).sort();
-
-/** The Parts alone, where how far a move has got is what the test is asking about. */
-const partsUnder = (directory: string): string[] =>
-	everythingUnder(directory).filter(
-		(entry) => entry.endsWith('.mkv') && statSync(join(directory, entry)).isFile()
-	);
-
-/** Somewhere a user might point the Library at, outside anything Pacerr chose for them. */
-function anotherDirectory(): string {
-	const directory = mkdtempSync(join(tmpdir(), 'pacerr-media-'));
-	onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-	return directory;
-}
-
-/** A tmpfs nothing under tmpdir() is on, so moving between the two genuinely copies. */
-function onAnotherFilesystem(): string {
-	const directory = mkdtempSync('/dev/shm/pacerr-media-');
-	onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-	return directory;
-}
-
-/** The Sidecars a Library holds: the NFOs, and the Posters written as cover.jpg. */
-const sidecarsUnder = (directory: string): string[] =>
-	everythingUnder(directory).filter(
-		(entry) => entry.endsWith('.nfo') || entry.endsWith('cover.jpg')
-	);
-
-/** Drive the download Pacerr grabbed last to completion, with real files on a real filesystem. */
-function finish(pacerr: Pacerr, fileCount: number): void {
-	const infohash = pacerr.downloadClient.added.at(-1)!.infohash;
-	const content = join(pacerr.paths.downloads, infohash);
-	mkdirSync(content, { recursive: true });
-	for (let position = 1; position <= fileCount; position += 1) {
-		writeFileSync(join(content, `${position}.mkv`), `video ${position}`);
-	}
-	pacerr.downloadClient.complete(infohash, content);
-}
 
 /** Reverie imported: three Parts in the Library Settings was first pointed at. */
 async function aLibraryHoldingReverie(): Promise<Pacerr> {
@@ -51,7 +16,7 @@ async function aLibraryHoldingReverie(): Promise<Pacerr> {
 	await pacerr.connectDownloadClient();
 	pacerr.downloadClient.filesPerTorrent = 3;
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-	finish(pacerr, 3);
+	pacerr.finishDownload(3);
 	await pacerr.advance(minutes(15));
 	return pacerr;
 }
@@ -60,7 +25,7 @@ async function aLibraryHoldingReverie(): Promise<Pacerr> {
 async function alsoHoldingGaimon(pacerr: Pacerr): Promise<void> {
 	pacerr.downloadClient.filesPerTorrent = 1;
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
-	finish(pacerr, 1);
+	pacerr.finishDownload(1);
 	await pacerr.advance(minutes(15));
 }
 
@@ -93,13 +58,13 @@ describe('changing the Library that already holds Parts', () => {
 		expect(page.text('.move')).toContain('21 B');
 		expect(page.text('.move')).toContain(pacerr.paths.library);
 		expect(page.text('.move')).toContain(media);
-		expect(partsUnder(media)).toEqual([]);
-		expect(partsUnder(pacerr.paths.library)).toHaveLength(3);
+		expect(mediaUnder(media)).toEqual([]);
+		expect(mediaUnder(pacerr.paths.library)).toHaveLength(3);
 	});
 });
 
 describe('a Library a stopped move left in two places', () => {
-	it('is planned from where each Part actually is, not from the one Settings last named', async () => {
+	it('is planned from where each Part is, not from the one Settings last named', async () => {
 		const { pacerr, media } = await aMoveStoppedAfterOnePart();
 		const elsewhere = anotherDirectory();
 
@@ -133,7 +98,7 @@ describe('a Library moved to another filesystem', () => {
 		await pacerr.submit('/settings', 'startLibraryMove');
 		await pacerr.settle();
 
-		expect(partsUnder(media)).toHaveLength(3);
+		expect(mediaUnder(media)).toHaveLength(3);
 		expect(statSync(join(media, firstPart)).nlink).toBe(1);
 	});
 
@@ -158,26 +123,26 @@ describe('a confirmed move', () => {
 		const started = await pacerr.submit('/settings', 'startLibraryMove');
 
 		expect(started.text('.move')).toContain('0 of 3 Parts moved');
-		expect(partsUnder(media)).toEqual([]);
+		expect(mediaUnder(media)).toEqual([]);
 
 		await pacerr.settle();
 
 		const finished = await pacerr.open('/settings');
 		expect(finished.text('.move')).toContain('Moved 3 Parts');
-		expect(partsUnder(media)).toHaveLength(3);
-		expect(partsUnder(pacerr.paths.library)).toEqual([]);
+		expect(mediaUnder(media)).toHaveLength(3);
+		expect(mediaUnder(pacerr.paths.library)).toEqual([]);
 	});
 
 	it('leaves every filename exactly as it was', async () => {
 		const pacerr = await aLibraryHoldingReverie();
-		const before = partsUnder(pacerr.paths.library);
+		const before = mediaUnder(pacerr.paths.library);
 		const media = anotherDirectory();
 
 		await pacerr.submit('/settings', 'saveLibrary', { library: media });
 		await pacerr.submit('/settings', 'startLibraryMove');
 		await pacerr.settle();
 
-		expect(partsUnder(media)).toEqual(before);
+		expect(mediaUnder(media)).toEqual(before);
 	});
 
 	it('carries the Sidecars to the new Library, beside the media they describe', async () => {
@@ -210,7 +175,7 @@ describe('a confirmed move', () => {
 			template: '{arc}/{arc} - {season}x{episode} - {part}'
 		});
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-		finish(pacerr, 3);
+		pacerr.finishDownload(3);
 		await pacerr.advance(minutes(15));
 		const media = anotherDirectory();
 
@@ -259,8 +224,8 @@ describe('a move the user chose to leave alone', () => {
 		await pacerr.submit('/settings', 'dismissLibraryMove');
 		await alsoHoldingGaimon(pacerr);
 
-		expect(partsUnder(pacerr.paths.library)).toHaveLength(4);
-		expect(partsUnder(media)).toEqual([]);
+		expect(mediaUnder(pacerr.paths.library)).toHaveLength(4);
+		expect(mediaUnder(media)).toEqual([]);
 	});
 });
 
@@ -289,10 +254,10 @@ describe('a move stopped partway', () => {
 		expect(page.text('.move')).toContain('stopped after 1 of 3 Parts');
 		expect(page.text('.move')).toContain(inTheWay);
 		expect(page.text('.move')).toContain(`2 Parts are still under ${pacerr.paths.library}`);
-		expect(partsUnder(media)).toEqual([
+		expect(mediaUnder(media)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv'
 		]);
-		expect(partsUnder(pacerr.paths.library)).toEqual([
+		expect(mediaUnder(pacerr.paths.library)).toEqual([
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
 			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
@@ -403,8 +368,8 @@ describe('a move the container was recreated in the middle of', () => {
 		const page = await pacerr.open('/settings');
 		expect(page.text('.move')).toContain('Pacerr stopped while it was moving the Library');
 		expect(page.text('.move')).toContain(`3 Parts are still under ${pacerr.paths.library}`);
-		expect(partsUnder(media)).toEqual([]);
-		expect(partsUnder(pacerr.paths.library)).toHaveLength(3);
+		expect(mediaUnder(media)).toEqual([]);
+		expect(mediaUnder(pacerr.paths.library)).toHaveLength(3);
 	});
 });
 
@@ -424,8 +389,8 @@ describe('a move run again once the problem is fixed', () => {
 
 		const finished = await pacerr.open('/settings');
 		expect(finished.text('.move')).toContain('Moved 3 Parts');
-		expect(partsUnder(media)).toHaveLength(3);
-		expect(partsUnder(pacerr.paths.library)).toEqual([]);
+		expect(mediaUnder(media)).toHaveLength(3);
+		expect(mediaUnder(pacerr.paths.library)).toEqual([]);
 	});
 
 	it('takes up the Sidecars it left behind too, and empties the old Library', async () => {

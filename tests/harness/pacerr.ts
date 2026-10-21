@@ -4,7 +4,7 @@ import {
 	type Server,
 	type ServerResponse
 } from 'node:http';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -222,6 +222,18 @@ export class Pacerr {
 		const body = await response.text();
 		if (response.status >= 400) throw new Error(`${action} failed: ${response.status} ${body}`);
 		return { status: response.status, body };
+	}
+
+	/** Drive the download Pacerr grabbed last to completion, with real files on a real disk. */
+	finishDownload(fileCount: number): string {
+		const infohash = this.downloadClient.added.at(-1)!.infohash;
+		const content = join(this.paths.downloads, infohash);
+		mkdirSync(content, { recursive: true });
+		for (let position = 1; position <= fileCount; position += 1) {
+			writeFileSync(join(content, `${position}.mkv`), `video ${position}`);
+		}
+		this.downloadClient.complete(infohash, content);
+		return infohash;
 	}
 
 	/** Point Pacerr at a Download Client, the way a user does before anything can be grabbed. */

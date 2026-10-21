@@ -22,13 +22,7 @@ import {
 	recordUpgradeImported
 } from '../upgrade/store';
 import { renderLibraryPath, type NamingFields } from './naming';
-import {
-	sidecarPathFor,
-	writePartSidecar,
-	writeArcPoster,
-	writeArcSidecar,
-	writeShowSidecar
-} from './sidecars';
+import { sidecarPathFor, writeSidecars } from './sidecars';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -196,10 +190,11 @@ export class ImportService {
 			try {
 				const library = this.#paths.library().path;
 				const placed = placeIntoLibrary(library, source, template, target.naming);
-				writeShowSidecar(this.#db, library);
-				writeArcSidecar(this.#db, library, target.arcSlug, placed.libraryPath);
-				writeArcPoster(this.#db, this.#posters, library, placed.libraryPath, target.arcSlug);
-				writePartSidecar(this.#db, library, target.partSlug, placed.libraryPath);
+				writeSidecars(this.#db, this.#posters, library, {
+					arcSlug: target.arcSlug,
+					partSlug: target.partSlug,
+					libraryPath: placed.libraryPath
+				});
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(
 					this.#db,
