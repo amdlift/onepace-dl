@@ -227,7 +227,7 @@
 						<tr>
 							<td>{mapping.remotePath}</td>
 							<td>{mapping.localPath}</td>
-							<td class="remove">
+							<td>
 								<form method="POST" action="?/removeRemotePathMapping">
 									<input type="hidden" name="id" value={mapping.id} />
 									<button class="button" type="submit">Remove</button>
@@ -310,7 +310,8 @@
 	}
 
 	.mapping-list,
-	.add-mapping {
+	.add-mapping,
+	.mappings > .note {
 		max-width: calc(var(--label-width) + var(--label-gutter) + var(--control-width));
 		margin-bottom: var(--space-3);
 	}
