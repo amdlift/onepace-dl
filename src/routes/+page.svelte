@@ -83,7 +83,11 @@
 							<span class="badge">+{arc.unreleasedPartCount} unreleased</span>
 						{/if}
 					</td>
-					<td class="had">{arc.hadCount} of {arc.partCount}</td>
+					<td class="had">
+						<span class="pill" class:complete={arc.hadCount === arc.partCount}>
+							{arc.hadCount} of {arc.partCount}
+						</span>
+					</td>
 					<td class="monitoring">
 						<form method="POST" action="?/toggleMonitoring">
 							<input type="hidden" name="arc" value={arc.slug} />

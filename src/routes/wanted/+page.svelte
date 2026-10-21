@@ -48,7 +48,7 @@
 						{:else if row.grab.chosen}
 							<span class="grab">
 								<span>{row.grab.title}</span>
-								<span class="resolution">{formatResolution(row.grab.resolution)}</span>
+								<span class="pill resolution">{formatResolution(row.grab.resolution)}</span>
 								<span>{formatVariant(row.grab.variant)}</span>
 							</span>
 							{#if row.grab.batch}
@@ -78,10 +78,6 @@
 		flex-wrap: wrap;
 		gap: var(--space-2);
 		color: var(--ink-dim);
-	}
-
-	.resolution {
-		color: var(--ink-bright);
 	}
 
 	.flag {

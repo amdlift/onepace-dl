@@ -124,6 +124,40 @@ describe('the state of a Release in the Queue', () => {
 	});
 });
 
+describe('a count and a quality', () => {
+	it('reads as a pill rather than as running text', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+
+		const page = await pacerr.open('/');
+
+		expect(page.texts('tbody .had .pill')[0]).toBe('0 of 4');
+		expect(page.texts('tbody .had .pill.complete')).toEqual([]);
+	});
+
+	it('marks an Arc Pacerr holds in full', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+		pacerr.downloadClient.filesPerTorrent = 3;
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+		pacerr.finishDownload(3);
+		await pacerr.advance(minutes(15));
+
+		const page = await pacerr.open('/');
+
+		expect(page.texts('tbody .had .pill.complete')).toEqual(['3 of 3']);
+	});
+
+	it('shows the Resolution of a Release as a pill wherever one is described', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+
+		const page = await pacerr.open('/arcs/zou');
+
+		const qualities = page.texts('tbody .resolution');
+		expect(qualities.length).toBeGreaterThan(0);
+		expect(page.texts('tbody .resolution:not(.pill)')).toEqual([]);
+	});
+});
+
 const sourceDirectory = fileURLToPath(new URL('../src', import.meta.url));
 
 // Every file that styles a view where a Part or a Release is listed, and so where the legend has

@@ -50,7 +50,7 @@
 						{#if row.grab.chosen}
 							<span class="grab">
 								<span>{row.grab.title}</span>
-								<span class="resolution">{formatResolution(row.grab.resolution)}</span>
+								<span class="pill resolution">{formatResolution(row.grab.resolution)}</span>
 								<span>{formatVariant(row.grab.variant)}</span>
 							</span>
 							{#if row.grab.batch}
@@ -69,7 +69,7 @@
 						{:else}
 							{row.had.releaseTitle ?? 'Imported'}
 							{#if row.had.resolution !== null}
-								<span class="resolution">{formatResolution(row.had.resolution)}</span>
+								<span class="pill resolution">{formatResolution(row.had.resolution)}</span>
 							{/if}
 							{#if row.had.variant !== null}<span>{formatVariant(row.had.variant)}</span>{/if}
 						{/if}
@@ -81,7 +81,7 @@
 							<ul class="releases">
 								{#each row.releases as release (release.infohash)}
 									<li>
-										<span class="resolution">{formatResolution(release.resolution)}</span>
+										<span class="pill resolution">{formatResolution(release.resolution)}</span>
 										<span>{formatVariant(release.variant)}</span>
 										<span>{formatReleaseStatus(release.status)}</span>
 										<span>{formatTimestamp(new Date(release.publishedAt))}</span>
@@ -121,10 +121,6 @@
 		flex-wrap: wrap;
 		gap: var(--space-3);
 		color: var(--ink-dim);
-	}
-
-	.resolution {
-		color: var(--ink-bright);
 	}
 
 	.grab {
