@@ -89,7 +89,8 @@ containers, or add a **Remote Path Mapping** in Settings. See
 | `/downloads` | The download directory the Download Client writes into    | `PACERR_DOWNLOADS_DIR` |
 
 Everything Pacerr must not lose lives in `/config`, so recreating the container loses nothing as
-long as that volume survives.
+long as that volume survives. That includes any Poster you supply yourself — see
+[Artwork](#artwork).
 
 Keep `/library` and `/downloads` **on the same filesystem** if you can. Pacerr hardlinks imports so
 a Part does not occupy disk twice while it seeds; across a filesystem boundary it falls back to
@@ -143,6 +144,37 @@ An Arc's season number is assigned the first time Pacerr sees that Arc and then 
 recomputed from its position in the Catalogue — so an Arc appearing upstream cannot renumber a
 Library you already have. Specials and one-off entries take season zero, each with its own episode
 number. The template is configurable in Settings.
+
+## Artwork
+
+Pacerr ships a Poster for every Arc One Pace has finished, so artwork works offline and on a fresh
+install without you sourcing anything. Each Arc resolves in this order, and the last step means an
+Arc appearing upstream never renders as a broken image:
+
+1. a Poster you supplied, at `/config/posters/<arc-slug>.jpg` — `.jpeg`, `.png` and `.webp` work
+   too, and the slug is the last part of the Arc's URL in Pacerr, as in `/arcs/alabasta`
+2. the Poster Pacerr ships
+3. the Backdrop One Pace publishes for the Arc
+4. a neutral placeholder
+
+Drop a file in and reload; nothing needs restarting.
+
+### Re-deriving the shipped Posters
+
+The sources are a quarter of a gigabyte of PNGs that deliberately stay out of the repository, so
+what is committed is the two derived sets — a Library JPEG sized for a media server and a smaller
+WebP these views serve — plus `artwork/posters.json`, which maps each one to an Arc slug. That
+mapping is written and reviewed by a human and is the only thing that says which Arc a Poster
+belongs to: the source filenames carry One Pace's own season numbering, which is not Pacerr's, per
+[ADR-0004](docs/adr/0004-never-parse-filenames-to-identify-a-release.md).
+
+```sh
+scripts/fetch-poster-sources.sh   # into artwork-sources/, which is gitignored
+node scripts/derive-posters.js
+```
+
+The derivation refuses to run on a source no manifest entry names, so new artwork is a line someone
+adds by hand rather than a guess the script makes.
 
 ## What Pacerr costs One Pace
 

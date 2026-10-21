@@ -1,0 +1,184 @@
+{
+	"posters": [
+		{
+			"arc": "romance-dawn",
+			"name": "season-01-romance-dawn",
+			"source": "Season 1 - Romance Dawn [ALT].png"
+		},
+		{
+			"arc": "orange-town",
+			"name": "season-02-orange-town",
+			"source": "Season 2 - Orange Town [ALT].png"
+		},
+		{
+			"arc": "syrup-village",
+			"name": "season-03-syrup-village",
+			"source": "Season 3 - Syrup Village [ALT].png"
+		},
+		{
+			"arc": "gaimon",
+			"name": "season-04-gaimon",
+			"source": "Season 4 - Gaimon [ALT].png"
+		},
+		{
+			"arc": "baratie",
+			"name": "season-05-baratie",
+			"source": "Season 5 - Baratie [ALT].png"
+		},
+		{
+			"arc": "arlong-park",
+			"name": "season-06-arlong-park",
+			"source": "Season 6 - Arlong Park [ALT].png"
+		},
+		{
+			"arc": "the-adventures-of-buggys-crew",
+			"name": "season-07-the-adventures-of-buggy-s-crew",
+			"source": "Season 7 - The Adventures of Buggy's Crew [ALT].png"
+		},
+		{
+			"arc": "loguetown",
+			"name": "season-08-loguetown",
+			"source": "Season 8 - Loguetown [ALT 2].png"
+		},
+		{
+			"arc": "reverse-mountain",
+			"name": "season-09-reverse-mountain",
+			"source": "Season 9 - Reverse Mountain [ALT 2].png"
+		},
+		{
+			"arc": "whisky-peak",
+			"name": "season-10-whiskey-peak",
+			"source": "Season 10 - Whiskey Peak [ALT 2].png"
+		},
+		{
+			"arc": "the-trials-of-koby-meppo",
+			"name": "season-11-the-trials-of-koby-meppo",
+			"source": "Season 11 - The Trials of Koby-Meppo [ALT].png"
+		},
+		{
+			"arc": "little-garden",
+			"name": "season-12-little-garden",
+			"source": "Season 12 - Little Garden [ALT 2].png"
+		},
+		{
+			"arc": "drum-island",
+			"name": "season-13-drum-island",
+			"source": "Season 13 - Drum Island [ALT 2].png"
+		},
+		{
+			"arc": "alabasta",
+			"name": "season-14-alabasta",
+			"source": "Season 14 - Alabasta [ALT].png"
+		},
+		{
+			"arc": "jaya",
+			"name": "season-15-jaya",
+			"source": "Season 15 - Jaya [ALT 2].png"
+		},
+		{
+			"arc": "skypiea",
+			"name": "season-16-skypiea",
+			"source": "Season 16 - Skypiea [ALT].png"
+		},
+		{
+			"arc": "long-ring-long-land",
+			"name": "season-17-long-ring-long-land",
+			"source": "Season 17 - Long Ring Long Land [ALT 2].png"
+		},
+		{
+			"arc": "water-seven",
+			"name": "season-18-water-seven",
+			"source": "Season 18 - Water Seven [ALT].png"
+		},
+		{
+			"arc": "enies-lobby",
+			"name": "season-19-enies-lobby",
+			"source": "Season 19 - Enies Lobby [ALT].png"
+		},
+		{
+			"arc": "post-enies-lobby",
+			"name": "season-20-post-enies-lobby",
+			"source": "Season 20 - Post-Enies Lobby [ALT].png"
+		},
+		{
+			"arc": "thriller-bark",
+			"name": "season-21-thriller-bark",
+			"source": "Season 21 - Thriller Bark [ALT].png"
+		},
+		{
+			"arc": "sabaody-archipelago",
+			"name": "season-22-sabaody-archipelago",
+			"source": "Season 22 - Sabaody Archipelago [ALT].png"
+		},
+		{
+			"arc": "amazon-lily",
+			"name": "season-23-amazon-lily",
+			"source": "Season 23 - Amazon Lily [ALT].png"
+		},
+		{
+			"arc": "impel-down",
+			"name": "season-24-impel-down",
+			"source": "Season 24 - Impel Down [ALT].png"
+		},
+		{
+			"arc": "if-you-could-go-anywhere-the-adventures-of-the-straw-hats",
+			"name": "season-25-if-you-could-go-anywhere-the-adventures-of-the-straw-hats",
+			"source": "Season 25 - If You Could Go Anywhere... The Adventures of the Straw Hats [ALT].png"
+		},
+		{
+			"arc": "marineford",
+			"name": "season-26-marineford",
+			"source": "Season 26 - Marineford [ALT].png"
+		},
+		{
+			"arc": "post-war",
+			"name": "season-27-post-war",
+			"source": "Season 27 - Post-War [ALT].png"
+		},
+		{
+			"arc": "return-to-sabaody",
+			"name": "season-28-return-to-sabaody",
+			"source": "Season 28 - Return to Sabaody [ALT].png"
+		},
+		{
+			"arc": "fishman-island",
+			"name": "season-29-fishman-island",
+			"source": "Season 29 - Fishman Island [ALT].png"
+		},
+		{
+			"arc": "punk-hazard",
+			"name": "season-30-punk-hazard",
+			"source": "Season 30 - Punk Hazard [ALT].png"
+		},
+		{
+			"arc": "dressrosa",
+			"name": "season-31-dressrosa",
+			"source": "Season 31 - Dressrosa [ALT].png"
+		},
+		{
+			"arc": "zou",
+			"name": "season-32-zou",
+			"source": "Season 32 - Zou [ALT].png"
+		},
+		{
+			"arc": "whole-cake-island",
+			"name": "season-33-whole-cake-island",
+			"source": "Season 33 - Whole Cake Island [ALT].png"
+		},
+		{
+			"arc": "reverie",
+			"name": "season-34-reverie",
+			"source": "Season 34 - Reverie [ALT].png"
+		},
+		{
+			"arc": "wano",
+			"name": "season-35-wano",
+			"source": "Season 35 - Wano [ALT].png"
+		},
+		{
+			"arc": "egghead",
+			"name": "season-36-egghead",
+			"source": "Season 36 - Egghead [ALT].png"
+		}
+	]
+}

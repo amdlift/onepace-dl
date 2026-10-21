@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { Posters } from './artwork';
 import { AuthenticationService } from './auth/service';
 import { CatalogueService } from './catalogue/service';
 import { openDatabase, type Database } from './db/database';
@@ -20,6 +21,7 @@ export interface App {
 	runtime: Runtime;
 	db: Database;
 	catalogue: CatalogueService;
+	posters: Posters;
 	releases: ReleaseService;
 	authentication: AuthenticationService;
 	downloads: DownloadService;
@@ -36,6 +38,7 @@ export function createApp(runtime: Runtime): App {
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
 	assignLibraryIndexes(db);
 	const catalogue = new CatalogueService(db, runtime);
+	const posters = new Posters(runtime.paths.config);
 	const releases = new ReleaseService(db, runtime);
 	const authentication = new AuthenticationService(
 		db,
@@ -83,6 +86,7 @@ export function createApp(runtime: Runtime): App {
 		runtime,
 		db,
 		catalogue,
+		posters,
 		releases,
 		authentication,
 		downloads,
