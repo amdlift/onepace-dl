@@ -1,4 +1,13 @@
-import { copyFileSync, existsSync, mkdirSync, renameSync, statSync, unlinkSync } from 'node:fs';
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	renameSync,
+	rmSync,
+	rmdirSync,
+	statSync,
+	unlinkSync
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { Background, Pause } from '../background';
@@ -6,6 +15,7 @@ import type { Clock } from '../clock';
 import { reasonOf } from '../failure';
 import type { ConfigureOutcome, PathService } from '../paths/service';
 import { crossesFilesystems } from './import';
+import { sharedSidecarPaths, sidecarPathFor } from './sidecars';
 
 const stoppedMidMove = 'Pacerr stopped while it was moving the Library.';
 
@@ -188,15 +198,58 @@ export class LibraryMoveService {
 const canRun = (state: string): boolean => state === 'planned' || state === 'failed';
 
 /**
- * One Part's file, moved and then recorded as moved, so a move stopped partway leaves every Part
- * recorded where its file actually is rather than where the move was heading.
+ * One Part's file and the Sidecar that describes it, moved and then recorded as moved, so a move
+ * stopped partway leaves every Part recorded where its file actually is rather than where the
+ * move was heading. The pair and the record are one transaction: a Part whose video has moved
+ * and whose Sidecar has not is a Library neither root describes correctly.
  */
 function land(db: Database, part: StrandedRow, library: string): void {
-	const source = join(part.library_root, part.library_path);
 	const destination = join(library, part.library_path);
 	mkdirSync(dirname(destination), { recursive: true });
-	carry(source, destination);
-	db.prepare('update had_part set library_root = null where part_slug = ?').run(part.part_slug);
+	db.transaction(() => {
+		carry(join(part.library_root, part.library_path), destination);
+		const sidecar = sidecarPathFor(part.library_path);
+		carrySidecar(join(part.library_root, sidecar), join(library, sidecar));
+		db.prepare('update had_part set library_root = null where part_slug = ?').run(part.part_slug);
+	})();
+	// After the Part lands rather than before, so a move that stops here never leaves the new
+	// Library offering a season of artwork and metadata with no video under it.
+	for (const shared of sharedSidecarPaths(part.library_path)) {
+		duplicate(join(part.library_root, shared), join(library, shared));
+	}
+	discardShared(db, part);
+}
+
+/**
+ * The Sidecars the old Library no longer describes anything with, dropped once the last Part
+ * they covered has left, along with the directory they sat in. Until then both roots keep a copy,
+ * because a Library split across a half-finished move is two Libraries a media server can read.
+ */
+function discardShared(db: Database, part: StrandedRow): void {
+	const stranded = strandedParts(db);
+	for (const shared of sharedSidecarPaths(part.library_path)) {
+		if (stillCovered(shared, part.library_root, stranded)) continue;
+		rmSync(join(part.library_root, shared), { force: true });
+	}
+	pruneEmptied(part.library_root, dirname(part.library_path));
+}
+
+const stillCovered = (shared: string, root: string, stranded: StrandedRow[]): boolean =>
+	stranded.some(
+		(part) => part.library_root === root && sharedSidecarPaths(part.library_path).includes(shared)
+	);
+
+/** Empties the directories a departed Part was filed under, never the Library root itself. */
+function pruneEmptied(root: string, relative: string): void {
+	let directory = relative;
+	while (directory !== '.' && directory !== '/') {
+		try {
+			rmdirSync(join(root, directory));
+		} catch {
+			return;
+		}
+		directory = dirname(directory);
+	}
 }
 
 function carry(source: string, destination: string): void {
@@ -211,6 +264,16 @@ function carry(source: string, destination: string): void {
 	}
 	copyFileSync(source, destination);
 	unlinkSync(source);
+}
+
+// A Library filed before Pacerr wrote Sidecars has none to carry, and one carried already has
+// none left behind: either way there is nothing here to fail the move over.
+function carrySidecar(source: string, destination: string): void {
+	if (existsSync(source)) carry(source, destination);
+}
+
+function duplicate(source: string, destination: string): void {
+	if (existsSync(source)) copyFileSync(source, destination);
 }
 
 /**

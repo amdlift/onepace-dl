@@ -11,7 +11,7 @@ import {
 } from '../catalogue/store';
 import type { Coverage } from '../catalogue/watch-page';
 import { showTitle } from './naming';
-import { readHadParts } from './store';
+import { readHadParts, type HadPart } from './store';
 
 /**
  * Sidecars are the Library edge, so this is one of the few places `season` and `episode` are a
@@ -106,17 +106,30 @@ const alreadySays = (destination: string, rendered: string): boolean =>
  */
 export function refreshSidecars(db: Database, library: string): void {
 	const had = [...readHadParts(db).values()];
-	if (had.length === 0) return;
-	writeShowSidecar(db, library);
+	// A Part a half-finished move has left behind is described in the Library still holding it,
+	// so a correction upstream never files metadata into one the media has not reached.
+	const rootOf = (part: HadPart): string => part.libraryRoot ?? library;
+	for (const root of new Set(had.map(rootOf))) writeShowSidecar(db, root);
 	for (const part of had) {
-		writeSeasonSidecar(db, library, part.arcSlug, part.libraryPath);
-		writeEpisodeSidecar(db, library, part.partSlug, part.libraryPath);
+		writeSeasonSidecar(db, rootOf(part), part.arcSlug, part.libraryPath);
+		writeEpisodeSidecar(db, rootOf(part), part.partSlug, part.libraryPath);
 	}
 }
 
 /** Where the Sidecar describing the file at one Library path lives. */
 export const sidecarPathFor = (libraryPath: string): string =>
 	`${libraryPath.slice(0, libraryPath.length - extname(libraryPath).length)}.nfo`;
+
+/**
+ * The Sidecars describing the season directory a file at one Library path sits in and the show
+ * the Library holds, which every Part filed beside it shares rather than owns. Derived from the
+ * rendered path, so a naming template of the user's own keeps them with the media either way.
+ */
+export const sharedSidecarPaths = (libraryPath: string): string[] => [
+	join(dirname(libraryPath), 'season.nfo'),
+	join(dirname(libraryPath), 'cover.jpg'),
+	'tvshow.nfo'
+];
 
 /** Describes the one show the Library holds, at its root, where a media server looks for it. */
 export function writeShowSidecar(db: Database, library: string): void {

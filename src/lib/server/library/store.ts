@@ -23,6 +23,8 @@ export interface HadPart {
 	arcSlug: string;
 	/** Relative to the Library root, which is a mount point and may be remounted elsewhere. */
 	libraryPath: string;
+	/** The old root a half-finished move has left this Part under, or null for the Library. */
+	libraryRoot: string | null;
 	infohash: string | null;
 	releaseTitle: string | null;
 	resolution: Resolution | null;
@@ -35,6 +37,7 @@ interface HadRow {
 	part_slug: string;
 	arc_slug: string;
 	library_path: string;
+	library_root: string | null;
 	infohash: string | null;
 	release_title: string | null;
 	resolution: number | null;
@@ -45,7 +48,7 @@ interface HadRow {
 export function readHadParts(db: Database): Map<string, HadPart> {
 	const rows = db
 		.prepare(
-			`select h.part_slug, p.arc_slug, h.library_path, h.infohash, h.had_at,
+			`select h.part_slug, p.arc_slug, h.library_path, h.library_root, h.infohash, h.had_at,
 				r.title as release_title, coalesce(c.resolution, r.resolution) as resolution,
 				coalesce(c.variant, r.variant) as variant
 			from had_part h
@@ -61,6 +64,7 @@ export function readHadParts(db: Database): Map<string, HadPart> {
 				partSlug: row.part_slug,
 				arcSlug: row.arc_slug,
 				libraryPath: row.library_path,
+				libraryRoot: row.library_root,
 				infohash: row.infohash,
 				releaseTitle: row.release_title,
 				resolution: row.resolution as Resolution | null,
