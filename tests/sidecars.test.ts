@@ -83,7 +83,7 @@ const aCorrectedWatchPage = (): string =>
 /** The same correction, reaching an Arc's description as well as a Part's. */
 const aCorrectedArcAndPart = (): string => aCorrectedWatchPage().replaceAll('agendas', 'schemes');
 
-const sidecarKinds = ['showNfo', 'seasonNfo', 'episodeNfo', 'seasonPoster'] as const;
+const sidecarKinds = ['showNfo', 'arcNfo', 'partNfo', 'arcPoster'] as const;
 
 type SidecarKind = (typeof sidecarKinds)[number];
 
@@ -443,9 +443,9 @@ describe('the Sidecars Pacerr writes', () => {
 
 		expect(switchesOn(page)).toEqual({
 			showNfo: true,
-			seasonNfo: true,
-			episodeNfo: true,
-			seasonPoster: true
+			arcNfo: true,
+			partNfo: true,
+			arcPoster: true
 		});
 	});
 
@@ -460,7 +460,7 @@ describe('the Sidecars Pacerr writes', () => {
 
 describe('a kind of Sidecar the user switched off', () => {
 	it('is not written for a Part imported afterwards, and no other kind is affected', async () => {
-		const pacerr = await reverieWithout('seasonPoster');
+		const pacerr = await reverieWithout('arcPoster');
 
 		expect(libraryFiles(pacerr)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
@@ -487,7 +487,7 @@ describe('a kind of Sidecar the user switched off', () => {
 	});
 
 	it('takes the season NFO with it when it is that kind', async () => {
-		const pacerr = await reverieWithout('seasonNfo');
+		const pacerr = await reverieWithout('arcNfo');
 
 		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
@@ -499,7 +499,7 @@ describe('a kind of Sidecar the user switched off', () => {
 	});
 
 	it('takes the episode NFO with it when it is that kind', async () => {
-		const pacerr = await reverieWithout('episodeNfo');
+		const pacerr = await reverieWithout('partNfo');
 
 		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
 			'Season 34/cover.jpg',
@@ -553,15 +553,15 @@ describe('switching a kind of Sidecar off', () => {
 
 	it('survives the container being recreated, so it is not reconfigured every upgrade', async () => {
 		const pacerr = await startPacerr();
-		await turnOff(pacerr, 'episodeNfo', 'seasonPoster');
+		await turnOff(pacerr, 'partNfo', 'arcPoster');
 
 		await pacerr.restart();
 
 		expect(switchesOn(await pacerr.open('/settings/sidecars'))).toEqual({
 			showNfo: true,
-			seasonNfo: true,
-			episodeNfo: false,
-			seasonPoster: false
+			arcNfo: true,
+			partNfo: false,
+			arcPoster: false
 		});
 	});
 });
@@ -588,7 +588,7 @@ describe('switching a kind of Sidecar back on', () => {
 describe('a kind of Sidecar switched off after the Library already holds some', () => {
 	it('is passed over by a clean scrape that refreshes the kinds still on', async () => {
 		const pacerr = await reverie();
-		await turnOff(pacerr, 'episodeNfo');
+		await turnOff(pacerr, 'partNfo');
 		const before = libraryTimestamps(pacerr);
 
 		pacerr.upstream.watchPage.publish(aCorrectedArcAndPart());

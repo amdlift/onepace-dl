@@ -24,9 +24,9 @@ import {
 import { renderLibraryPath, type NamingFields } from './naming';
 import {
 	sidecarPathFor,
-	writeEpisodeSidecar,
-	writeSeasonPoster,
-	writeSeasonSidecar,
+	writePartSidecar,
+	writeArcPoster,
+	writeArcSidecar,
 	writeShowSidecar
 } from './sidecars';
 import {
@@ -197,9 +197,9 @@ export class ImportService {
 				const library = this.#paths.library().path;
 				const placed = placeIntoLibrary(library, source, template, target.naming);
 				writeShowSidecar(this.#db, library);
-				writeSeasonSidecar(this.#db, library, target.arcSlug, placed.libraryPath);
-				writeSeasonPoster(this.#db, this.#posters, library, placed.libraryPath, target.arcSlug);
-				writeEpisodeSidecar(this.#db, library, target.partSlug, placed.libraryPath);
+				writeArcSidecar(this.#db, library, target.arcSlug, placed.libraryPath);
+				writeArcPoster(this.#db, this.#posters, library, placed.libraryPath, target.arcSlug);
+				writePartSidecar(this.#db, library, target.partSlug, placed.libraryPath);
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(
 					this.#db,

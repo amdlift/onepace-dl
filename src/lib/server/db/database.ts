@@ -274,9 +274,9 @@ const migrations = [
 	create table sidecar (
 		id integer primary key check (id = 1),
 		show_nfo integer not null default 1,
-		season_nfo integer not null default 1,
-		episode_nfo integer not null default 1,
-		season_poster integer not null default 1
+		arc_nfo integer not null default 1,
+		part_nfo integer not null default 1,
+		arc_poster integer not null default 1
 	);
 	insert into sidecar (id) values (1);
 	`

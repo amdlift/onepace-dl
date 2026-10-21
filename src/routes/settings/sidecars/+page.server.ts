@@ -12,9 +12,9 @@ export const actions: Actions = {
 		// A browser submits nothing at all for an unticked box, so absence is what "off" looks like.
 		writeSidecarSwitches(getApp().db, {
 			showNfo: submitted.get('showNfo') !== null,
-			seasonNfo: submitted.get('seasonNfo') !== null,
-			episodeNfo: submitted.get('episodeNfo') !== null,
-			seasonPoster: submitted.get('seasonPoster') !== null
+			arcNfo: submitted.get('arcNfo') !== null,
+			partNfo: submitted.get('partNfo') !== null,
+			arcPoster: submitted.get('arcPoster') !== null
 		});
 		return { saved: true };
 	}

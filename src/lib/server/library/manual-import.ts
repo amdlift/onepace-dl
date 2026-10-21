@@ -9,9 +9,9 @@ import { hidesNothing, permit, type BrowsePolicy } from '../paths/browse';
 import { copiedInsteadOfLinked, placeIntoLibrary, type Placing } from './import';
 import type { NamingFields } from './naming';
 import {
-	writeEpisodeSidecar,
-	writeSeasonPoster,
-	writeSeasonSidecar,
+	writePartSidecar,
+	writeArcPoster,
+	writeArcSidecar,
 	writeShowSidecar
 } from './sidecars';
 import { partLibraryIndex, readNamingTemplate, recordHadPart } from './store';
@@ -246,9 +246,9 @@ export function manualImport(
 		try {
 			const placed = placeIntoLibrary(library, source, template, target.naming, placing);
 			writeShowSidecar(db, library);
-			writeSeasonSidecar(db, library, target.arcSlug, placed.libraryPath);
-			writeSeasonPoster(db, posters, library, placed.libraryPath, target.arcSlug);
-			writeEpisodeSidecar(db, library, target.partSlug, placed.libraryPath);
+			writeArcSidecar(db, library, target.arcSlug, placed.libraryPath);
+			writeArcPoster(db, posters, library, placed.libraryPath, target.arcSlug);
+			writePartSidecar(db, library, target.partSlug, placed.libraryPath);
 			// No infohash: Pacerr did not download this file and has no Release to attribute it to,
 			// so it records having the Part and claims nothing further about it.
 			recordHadPart(
