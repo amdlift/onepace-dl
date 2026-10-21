@@ -12,6 +12,8 @@
 	const namingTemplate = $derived(data.namingTemplate);
 	const importSource = $derived(data.importSource);
 	const remotePathMappings = $derived(data.remotePathMappings);
+	const library = $derived(data.library);
+	const downloads = $derived(data.downloads);
 	const paths = $derived(data.paths);
 
 	const tokens = '{show}, {arc}, {seasonDirectory}, {season}, {part}, {episode}, {resolution}';
@@ -151,6 +153,62 @@
 
 <section class="paths">
 	<h2>Directories</h2>
+
+	{#if form?.libraryProblem}
+		<p class="alert">{form.libraryProblem}</p>
+	{/if}
+
+	{#if library.source === 'environment'}
+		<div class="pinned">
+			<label>
+				<span>Library</span>
+				<input name="library" value={library.path} readonly />
+			</label>
+			<p class="note">
+				The Library is configured by {library.variable}, and cannot be changed here.
+			</p>
+		</div>
+	{:else}
+		<form method="POST" action="?/saveLibrary">
+			<label>
+				<span>Library</span>
+				<input name="library" autocomplete="off" value={library.path} />
+			</label>
+			<p class="note">
+				Where Pacerr files every import. Setting {library.variable} pins it from the environment
+				instead and makes this field read-only.
+			</p>
+			<button class="button" type="submit">Save</button>
+		</form>
+	{/if}
+
+	{#if form?.downloadsProblem}
+		<p class="alert">{form.downloadsProblem}</p>
+	{/if}
+
+	{#if downloads.source === 'environment'}
+		<div class="pinned">
+			<label>
+				<span>Download directory</span>
+				<input name="downloads" value={downloads.path} readonly />
+			</label>
+			<p class="note">
+				The download directory is configured by {downloads.variable}, and cannot be changed here.
+			</p>
+		</div>
+	{:else}
+		<form method="POST" action="?/saveDownloads">
+			<label>
+				<span>Download directory</span>
+				<input name="downloads" autocomplete="off" value={downloads.path} />
+			</label>
+			<p class="note">
+				Where this container sees the completed downloads the Download Client writes. Setting
+				{downloads.variable} pins it from the environment instead and makes this field read-only.
+			</p>
+			<button class="button" type="submit">Save</button>
+		</form>
+	{/if}
 
 	<ul>
 		{#each paths.directories as directory (directory.directory)}
@@ -307,6 +365,13 @@
 		gap: 0.5rem;
 	}
 
+	.pinned {
+		display: grid;
+		gap: 0.75rem;
+		max-width: 20rem;
+		margin-bottom: 0.75rem;
+	}
+
 	.paths ul {
 		display: grid;
 		gap: 0.35rem;
@@ -366,6 +431,8 @@
 	input[name='username'],
 	input[name='password'],
 	input[name='template'],
+	input[name='library'],
+	input[name='downloads'],
 	input[name='remotePath'],
 	input[name='localPath'] {
 		padding: 0.35rem 0.5rem;

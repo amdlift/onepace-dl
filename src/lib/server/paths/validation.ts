@@ -46,17 +46,20 @@ const purposes: Record<DirectoryName, Purpose> = {
 	library: {
 		noun: 'Library',
 		consequence: 'Every import is filed there, so nothing can be imported.',
-		remedy: 'Mount a volume there, or set PACERR_LIBRARY_DIR to where it already is.'
+		remedy: 'Point the Library in Settings at where it already is, or mount a volume there.'
 	},
 	downloads: {
 		noun: 'download directory',
 		consequence: 'Pacerr reads completed downloads from there, so nothing can be imported.',
 		remedy:
-			'Mount a volume there, or set PACERR_DOWNLOADS_DIR to where it already is. If the ' +
-			'Download Client already holds the files somewhere Pacerr can reach under a different ' +
-			'path, add a Remote Path Mapping instead of moving the mount.'
+			'Point the download directory in Settings at where it already is, or mount a volume ' +
+			'there. If the Download Client already holds the files somewhere Pacerr can reach under ' +
+			'a different path, add a Remote Path Mapping instead of moving the mount.'
 	}
 };
+
+/** How a diagnostic names a directory mid-sentence, for anything else that has to name one. */
+export const directoryNoun = (directory: DirectoryName): string => purposes[directory].noun;
 
 /**
  * Replaces the configured mount's wording wholesale, because the two have different fixes: moving

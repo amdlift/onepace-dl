@@ -7,8 +7,7 @@ import {
 	statSync,
 	writeFileSync
 } from 'node:fs';
-import { join } from 'node:path';
-import sharp from 'sharp';
+import { basename, extname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import {
 	fixtures,
@@ -43,11 +42,15 @@ function finish(pacerr: Pacerr, fileCount: number): string {
 
 const libraryEntries = (pacerr: Pacerr): string[] => readdirSync(pacerr.paths.library).sort();
 
-const libraryFiles = (pacerr: Pacerr): string[] =>
+/** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
+const libraryMedia = (pacerr: Pacerr): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
-		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
+		.filter((entry) => !isSidecar(entry) && statSync(join(pacerr.paths.library, entry)).isFile())
 		.sort();
+
+const isSidecar = (entry: string): boolean =>
+	extname(entry) === '.nfo' || basename(entry) === 'cover.jpg';
 
 /** Reverie, monitored and downloaded: one Batch Release covering the Arc's three Parts. */
 async function reverie(options: StartOptions = {}): Promise<Pacerr> {
@@ -116,11 +119,10 @@ describe('importing a completed download', () => {
 	it('files it into the Library without being asked', async () => {
 		const pacerr = await reverie();
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
-			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
-			'Season 34/cover.jpg'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
 	});
 
@@ -166,42 +168,6 @@ describe('importing a completed download', () => {
 	});
 });
 
-describe('the Poster a media server shows for a season', () => {
-	it('lands in the season directory as cover.jpg, at Poster dimensions', async () => {
-		const pacerr = await reverie();
-
-		const poster = await sharp(join(pacerr.paths.library, 'Season 34/cover.jpg')).metadata();
-
-		expect(poster.format).toBe('jpeg');
-		expect([poster.width, poster.height]).toEqual([1000, 1500]);
-	});
-
-	it('is the one the user supplied for the Arc, where they have supplied one', async () => {
-		const pacerr = await reverie();
-		const mine = Buffer.from('\xff\xd8\xffthe Poster I chose myself', 'latin1');
-		mkdirSync(join(pacerr.paths.config, 'posters'), { recursive: true });
-		writeFileSync(join(pacerr.paths.config, 'posters', 'gaimon.jpg'), mine);
-
-		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
-		finish(pacerr, 1);
-		await pacerr.advance(minutes(15));
-
-		expect(readFileSync(join(pacerr.paths.library, 'Season 04/cover.jpg'))).toEqual(mine);
-	});
-
-	it('is not written for a season holding no Part, which would be artwork and no video', async () => {
-		const pacerr = await reverie();
-
-		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
-		await pacerr.advance(minutes(15));
-
-		expect(libraryEntries(pacerr)).toEqual(['Season 34']);
-		expect(libraryFiles(pacerr).filter((entry) => entry.endsWith('cover.jpg'))).toEqual([
-			'Season 34/cover.jpg'
-		]);
-	});
-});
-
 describe('a download Pacerr cannot read', () => {
 	const unreadable = async (): Promise<Pacerr> => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
@@ -227,7 +193,7 @@ describe('a download Pacerr cannot read', () => {
 	it('leaves the Part wanted rather than claiming it is had', async () => {
 		const pacerr = await unreadable();
 
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 		expect((await pacerr.open('/arcs/reverie')).texts('tbody .have')).toEqual([
 			'Missing',
 			'Missing',
@@ -250,11 +216,10 @@ describe('the naming template', () => {
 		finish(pacerr, 3);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Reverie/Reverie - 34x01 - The Fifth Emperor.mkv',
 			'Reverie/Reverie - 34x02 - A Beautiful World.mkv',
-			'Reverie/Reverie - 34x03 - The Empty Throne.mkv',
-			'Reverie/cover.jpg'
+			'Reverie/Reverie - 34x03 - The Empty Throne.mkv'
 		]);
 	});
 
@@ -278,7 +243,7 @@ describe('the one-off entries the Catalogue keeps alongside real Arcs', () => {
 		const pacerr = await specials();
 
 		expect(libraryEntries(pacerr)).toEqual(['Specials']);
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
 			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
@@ -297,13 +262,11 @@ describe('an Arc that One Pace inserts above one already in the Library', () => 
 		finish(pacerr, 1);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].mkv",
-			'Season 04/cover.jpg',
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
-			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
-			'Season 34/cover.jpg'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
 	});
 });
@@ -324,7 +287,7 @@ describe('a special One Pace publishes after the Library already holds one', () 
 		finish(pacerr, 1);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
 			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);

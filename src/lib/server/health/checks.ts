@@ -55,7 +55,7 @@ const directoryOutcomes: Record<DirectoryCheck['condition'], string> = {
  * ownership clears the banner without anything having to be acknowledged.
  */
 function pathChecks(app: App): HealthCheck[] {
-	const validation = validatePaths(app.runtime.paths, app.downloads.downloadDirectory());
+	const validation = validatePaths(app.paths.current(), app.downloads.downloadDirectory());
 	const directories = validation.directories.map(
 		(directory): HealthCheck => ({
 			name: directoryChecks[directory.directory],
