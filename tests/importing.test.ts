@@ -19,7 +19,7 @@ import {
 } from './harness/pacerr';
 import { defaultNamingTemplate } from '../src/lib/server/library/naming';
 
-const firstPart = 'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv';
+const firstPart = 'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv';
 
 /** A tmpfs the temporary root is never on, so a hardlink between them genuinely fails. */
 function otherFilesystem(): string {
@@ -40,6 +40,8 @@ function finish(pacerr: Pacerr, fileCount: number): string {
 	return infohash;
 }
 
+const libraryEntries = (pacerr: Pacerr): string[] => readdirSync(pacerr.paths.library).sort();
+
 const libraryFiles = (pacerr: Pacerr): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
@@ -58,6 +60,18 @@ async function reverie(options: StartOptions = {}): Promise<Pacerr> {
 }
 
 const acrossFilesystems = (): Promise<Pacerr> => reverie({ downloadsDir: otherFilesystem() });
+
+/** Both one-off entries the Catalogue carries, monitored and downloaded: one Part each. */
+async function specials(): Promise<Pacerr> {
+	const pacerr = await startPacerr({ feed: fixtures.feed });
+	await pacerr.connectDownloadClient();
+	for (const arc of ['one-piece-fan-letter', 'warship-island-01-april-fools-2025']) {
+		await pacerr.submit('/', 'toggleMonitoring', { arc });
+		finish(pacerr, 1);
+	}
+	await pacerr.advance(minutes(15));
+	return pacerr;
+}
 
 /** The watch page with one more Arc ahead of every Arc Pacerr has already seen. */
 function withAnArcInserted(watchPage: string): string {
@@ -102,10 +116,16 @@ describe('importing a completed download', () => {
 		const pacerr = await reverie();
 
 		expect(libraryFiles(pacerr)).toEqual([
-			'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv'
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
+	});
+
+	it('puts nothing but season directories at the root, so this reads as one show', async () => {
+		const pacerr = await reverie();
+
+		expect(libraryEntries(pacerr)).toEqual(['Season 34']);
 	});
 
 	it('shows every Part it filed as had, with the Resolution and Variant it holds', async () => {
@@ -128,9 +148,9 @@ describe('importing a completed download', () => {
 		const page = await pacerr.open('/activity');
 		expect(page.texts('.history .event').filter((event) => event === 'Imported')).toHaveLength(3);
 		expect(page.texts('.history .detail')).toEqual([
-			'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv'
 		]);
 	});
 
@@ -215,18 +235,13 @@ describe('the naming template', () => {
 });
 
 describe('the one-off entries the Catalogue keeps alongside real Arcs', () => {
-	it('files them as specials, as the one episode they are', async () => {
-		const pacerr = await startPacerr({ feed: fixtures.feed });
-		await pacerr.connectDownloadClient();
-		for (const arc of ['one-piece-fan-letter', 'warship-island-01-april-fools-2025']) {
-			await pacerr.submit('/', 'toggleMonitoring', { arc });
-			finish(pacerr, 1);
-		}
-		await pacerr.advance(minutes(15));
+	it('files them under Specials, where a media server looks for them', async () => {
+		const pacerr = await specials();
 
+		expect(libraryEntries(pacerr)).toEqual(['Specials']);
 		expect(libraryFiles(pacerr)).toEqual([
-			'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [1080p].mkv',
-			'Warship Island 01 (April Fools 2025)/Season 00/Warship Island 01 (April Fools 2025) - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
+			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
+			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
 	});
 });
@@ -244,10 +259,10 @@ describe('an Arc that One Pace inserts above one already in the Library', () => 
 		await pacerr.advance(minutes(15));
 
 		expect(libraryFiles(pacerr)).toEqual([
-			"Gaimon/Season 04/Gaimon - S04E01 - You're the Weird Animal [1080p].mkv",
-			'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
-			'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv'
+			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].mkv",
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
 	});
 });
@@ -269,8 +284,8 @@ describe('a special One Pace publishes after the Library already holds one', () 
 		await pacerr.advance(minutes(15));
 
 		expect(libraryFiles(pacerr)).toEqual([
-			'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [1080p].mkv',
-			'Warship Island 01 (April Fools 2025)/Season 00/Warship Island 01 (April Fools 2025) - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
+			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
+			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
 	});
 });

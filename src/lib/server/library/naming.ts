@@ -4,13 +4,26 @@ import type { Resolution } from '../catalogue/watch-page';
  * Arcs render as seasons and Parts as episodes, because `SxxEyy` is the one shape Jellyfin and
  * Plex parse without a custom agent. Those two words live here and in the paths this renders,
  * and nowhere else in Pacerr.
+ *
+ * Season directories sit at the Library root with no Arc folder above them, because a folder per
+ * Arc reads as a show per Arc rather than as one show with many seasons.
  */
 export const defaultNamingTemplate =
-	'{arc}/Season {season}/{arc} - S{season}E{episode} - {part} [{resolution}]';
+	'{seasonDirectory}/{show} - S{season}E{episode} - {part} [{resolution}]';
+
+/** Pacerr manages one show, and this is the name a media server files every Part under. */
+export const showTitle = 'One Pace';
+
+/**
+ * The directory under the Library that holds one Arc's Parts. Index zero is `Specials` because
+ * that is the name a media server looks for the one-off entries under.
+ */
+export const seasonDirectory = (arcLibraryIndex: number): string =>
+	arcLibraryIndex <= 0 ? 'Specials' : `Season ${padded(arcLibraryIndex)}`;
 
 export interface NamingFields {
 	arcTitle: string;
-	/** The Arc's fixed place in the Library, which `{season}` renders. */
+	/** The Arc's fixed place in the Library, which `{season}` and `{seasonDirectory}` render. */
 	arcLibraryIndex: number;
 	partTitle: string;
 	/** The Part's fixed place within its Arc's place in the Library, which `{episode}` renders. */
@@ -21,8 +34,10 @@ export interface NamingFields {
 /** The path, relative to the Library root and without an extension, one Part is filed under. */
 export function renderLibraryPath(template: string, fields: NamingFields): string {
 	const values: Record<string, string> = {
+		show: showTitle,
 		arc: nameable(fields.arcTitle),
 		season: padded(fields.arcLibraryIndex),
+		seasonDirectory: seasonDirectory(fields.arcLibraryIndex),
 		part: nameable(fields.partTitle),
 		episode: padded(fields.partLibraryIndex),
 		resolution: fields.resolution === null ? 'unknown' : `${fields.resolution}p`
