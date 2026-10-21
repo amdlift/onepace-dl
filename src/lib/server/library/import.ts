@@ -196,9 +196,9 @@ export class ImportService {
 			try {
 				const library = this.#paths.library().path;
 				const placed = placeIntoLibrary(library, source, template, target.naming);
-				writeShowSidecar(library);
+				writeShowSidecar(this.#db, library);
 				writeSeasonSidecar(this.#db, library, target.arcSlug, placed.libraryPath);
-				writeSeasonPoster(this.#posters, library, placed.libraryPath, target.arcSlug);
+				writeSeasonPoster(this.#db, this.#posters, library, placed.libraryPath, target.arcSlug);
 				writeEpisodeSidecar(this.#db, library, target.partSlug, placed.libraryPath);
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(

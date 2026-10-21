@@ -100,6 +100,16 @@
 	</form>
 </section>
 
+<section class="sidecars">
+	<h2>Sidecars</h2>
+
+	<p class="note">
+		The NFO documents and the Poster Pacerr writes into the Library beside the media they describe,
+		so a media server reads what only One Pace knows. Each kind has a switch of its own.
+	</p>
+	<a class="button" href="/settings/sidecars">Sidecars</a>
+</section>
+
 <section>
 	<h2>Manual Import</h2>
 
@@ -396,6 +406,11 @@
 
 	.paths li.bad {
 		color: var(--danger);
+	}
+
+	.sidecars .note {
+		max-width: 44rem;
+		margin-bottom: 0.75rem;
 	}
 
 	.mapping-list {

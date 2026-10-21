@@ -31,6 +31,54 @@ const rootElement: Record<SidecarKind, string> = {
 	episode: 'episodedetails'
 };
 
+/**
+ * The kinds of Sidecar a user can switch off, which is every kind there is. A Poster is a Sidecar
+ * too, so it carries a switch alongside the three NFO documents.
+ */
+export type SidecarSwitch = 'showNfo' | 'seasonNfo' | 'episodeNfo' | 'seasonPoster';
+
+export type SidecarSwitches = Record<SidecarSwitch, boolean>;
+
+interface SidecarRow {
+	show_nfo: number;
+	season_nfo: number;
+	episode_nfo: number;
+	season_poster: number;
+}
+
+export function readSidecarSwitches(db: Database): SidecarSwitches {
+	const row = db
+		.prepare('select show_nfo, season_nfo, episode_nfo, season_poster from sidecar where id = 1')
+		.get() as SidecarRow;
+	return {
+		showNfo: row.show_nfo === 1,
+		seasonNfo: row.season_nfo === 1,
+		episodeNfo: row.episode_nfo === 1,
+		seasonPoster: row.season_poster === 1
+	};
+}
+
+export function writeSidecarSwitches(db: Database, switches: SidecarSwitches): void {
+	db.prepare(
+		'update sidecar set show_nfo = ?, season_nfo = ?, episode_nfo = ?, season_poster = ? ' +
+			'where id = 1'
+	).run(
+		flag(switches.showNfo),
+		flag(switches.seasonNfo),
+		flag(switches.episodeNfo),
+		flag(switches.seasonPoster)
+	);
+}
+
+const flag = (value: boolean): number => (value ? 1 : 0);
+
+/**
+ * Asked inside each write rather than at its call sites, so that every path into the Library — an
+ * import, a Manual Import, a refresh after a Catalogue scrape — is governed by the switch without
+ * each having to remember to ask.
+ */
+const writes = (db: Database, kind: SidecarSwitch): boolean => readSidecarSwitches(db)[kind];
+
 /** Writes one document into the Library at a path relative to its root. */
 export function writeSidecar(
 	library: string,
@@ -47,7 +95,8 @@ export const sidecarPathFor = (libraryPath: string): string =>
 	`${libraryPath.slice(0, libraryPath.length - extname(libraryPath).length)}.nfo`;
 
 /** Describes the one show the Library holds, at its root, where a media server looks for it. */
-export function writeShowSidecar(library: string): void {
+export function writeShowSidecar(db: Database, library: string): void {
+	if (!writes(db, 'showNfo')) return;
 	writeSidecar(library, 'tvshow.nfo', {
 		kind: 'show',
 		title: showTitle,
@@ -70,6 +119,7 @@ export function writeSeasonSidecar(
 	arcSlug: string,
 	libraryPath: string
 ): void {
+	if (!writes(db, 'seasonNfo')) return;
 	const arc = readArcDescription(db, arcSlug);
 	if (arc === null) return;
 	writeSidecar(library, join(dirname(libraryPath), 'season.nfo'), seasonOf(arc));
@@ -89,6 +139,7 @@ export function writeEpisodeSidecar(
 	partSlug: string,
 	libraryPath: string
 ): void {
+	if (!writes(db, 'episodeNfo')) return;
 	const part = readPartDescription(db, partSlug);
 	if (part === null) return;
 	writeSidecar(library, sidecarPathFor(libraryPath), {
@@ -106,11 +157,13 @@ export function writeEpisodeSidecar(
  * of artwork and no video.
  */
 export function writeSeasonPoster(
+	db: Database,
 	posters: Posters,
 	library: string,
 	libraryPath: string,
 	arcSlug: string
 ): void {
+	if (!writes(db, 'seasonPoster')) return;
 	const poster = posters.library(arcSlug);
 	if (poster === null) return;
 	copyFileSync(poster.path, join(library, dirname(libraryPath), 'cover.jpg'));

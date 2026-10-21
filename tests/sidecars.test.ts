@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { describe, expect, it, onTestFinished } from 'vitest';
-import { fixtures, minutes, startPacerr, type Pacerr } from './harness/pacerr';
+import { fixtures, minutes, startPacerr, type Pacerr, type PacerrPage } from './harness/pacerr';
 
 /** Drive the download Pacerr grabbed last to completion, with real files on a real filesystem. */
 function finish(pacerr: Pacerr, fileCount: number): string {
@@ -40,11 +40,46 @@ const libraryDirectories = (pacerr: Pacerr): string[] =>
 const inLibrary = (pacerr: Pacerr, path: string): string =>
 	readFileSync(join(pacerr.paths.library, path), 'utf8');
 
+/** Which Sidecar kinds the Settings page reports as switched on. */
+const switchesOn = (page: PacerrPage): Record<string, boolean> =>
+	Object.fromEntries(
+		[...page.document.querySelectorAll('input[type="checkbox"]')].map((input) => [
+			input.getAttribute('name'),
+			input.hasAttribute('checked')
+		])
+	);
+
 /** Reverie, monitored and downloaded: one Batch Release covering the Arc's three Parts. */
 async function reverie(): Promise<Pacerr> {
 	const pacerr = await startPacerr({ feed: fixtures.feed });
 	await pacerr.connectDownloadClient();
 	pacerr.downloadClient.filesPerTorrent = 3;
+	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+	finish(pacerr, 3);
+	await pacerr.advance(minutes(15));
+	return pacerr;
+}
+
+const sidecarKinds = ['showNfo', 'seasonNfo', 'episodeNfo', 'seasonPoster'] as const;
+
+type SidecarKind = (typeof sidecarKinds)[number];
+
+/** Save the Sidecars page with every switch on except the kinds named. */
+const turnOff = (pacerr: Pacerr, ...off: SidecarKind[]): Promise<PacerrPage> =>
+	pacerr.submit(
+		'/settings/sidecars',
+		'saveSidecars',
+		Object.fromEntries(
+			sidecarKinds.filter((kind) => !off.includes(kind)).map((kind) => [kind, 'on'])
+		)
+	);
+
+/** Reverie downloaded and imported, with the kinds named switched off before any of it lands. */
+async function reverieWithout(...off: SidecarKind[]): Promise<Pacerr> {
+	const pacerr = await startPacerr({ feed: fixtures.feed });
+	await pacerr.connectDownloadClient();
+	pacerr.downloadClient.filesPerTorrent = 3;
+	await turnOff(pacerr, ...off);
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
 	finish(pacerr, 3);
 	await pacerr.advance(minutes(15));
@@ -282,6 +317,156 @@ describe('the Poster a media server shows for a season', () => {
 		expect(libraryDirectories(pacerr)).toEqual(['Season 34']);
 		expect(libraryFiles(pacerr).filter((file) => file.endsWith('cover.jpg'))).toEqual([
 			'Season 34/cover.jpg'
+		]);
+	});
+});
+
+describe('the Sidecars Pacerr writes', () => {
+	it('each have a switch of their own in Settings, and every one of them starts on', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.open('/settings/sidecars');
+
+		expect(switchesOn(page)).toEqual({
+			showNfo: true,
+			seasonNfo: true,
+			episodeNfo: true,
+			seasonPoster: true
+		});
+	});
+
+	it('are switched from a page Settings links to, rather than from somewhere buried', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.open('/settings');
+
+		expect(page.attributes('a', 'href')).toContain('/settings/sidecars');
+	});
+});
+
+describe('a kind of Sidecar the user switched off', () => {
+	it('is not written for a Part imported afterwards, and no other kind is affected', async () => {
+		const pacerr = await reverieWithout('seasonPoster');
+
+		expect(libraryFiles(pacerr)).toEqual([
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
+			'Season 34/season.nfo',
+			'tvshow.nfo'
+		]);
+	});
+
+	it('takes the show NFO with it when it is that kind', async () => {
+		const pacerr = await reverieWithout('showNfo');
+
+		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
+			'Season 34/cover.jpg',
+			'Season 34/season.nfo'
+		]);
+	});
+
+	it('takes the season NFO with it when it is that kind', async () => {
+		const pacerr = await reverieWithout('seasonNfo');
+
+		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
+			'Season 34/cover.jpg',
+			'tvshow.nfo'
+		]);
+	});
+
+	it('takes the episode NFO with it when it is that kind', async () => {
+		const pacerr = await reverieWithout('episodeNfo');
+
+		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
+			'Season 34/cover.jpg',
+			'Season 34/season.nfo',
+			'tvshow.nfo'
+		]);
+	});
+
+	it('leaves a Library of nothing but media once every switch is off', async () => {
+		const pacerr = await reverieWithout(...sidecarKinds);
+
+		expect(libraryFiles(pacerr)).toEqual([
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
+			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
+		]);
+	});
+
+	it('is skipped by a Manual Import too, which files a Part just as a download does', async () => {
+		const pacerr = await startPacerr();
+		const source = mkdtempSync(join(tmpdir(), 'pacerr-source-'));
+		onTestFinished(() => rmSync(source, { recursive: true, force: true }));
+		writeFileSync(join(source, 'Drum Island 01.mkv'), 'video');
+		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+		await turnOff(pacerr, ...sidecarKinds);
+
+		await pacerr.submit('/manual-import', 'import', {
+			'part:Drum Island 01.mkv': 'drum-island-01'
+		});
+
+		expect(libraryFiles(pacerr)).toEqual([
+			'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv'
+		]);
+	});
+});
+
+describe('switching a kind of Sidecar off', () => {
+	it('leaves the files already in the Library exactly as they were', async () => {
+		const pacerr = await reverie();
+		const before = libraryFiles(pacerr);
+		const season = inLibrary(pacerr, 'Season 34/season.nfo');
+		const show = inLibrary(pacerr, 'tvshow.nfo');
+
+		await turnOff(pacerr, ...sidecarKinds);
+		await pacerr.advance(minutes(15));
+
+		expect(libraryFiles(pacerr)).toEqual(before);
+		expect(inLibrary(pacerr, 'Season 34/season.nfo')).toBe(season);
+		expect(inLibrary(pacerr, 'tvshow.nfo')).toBe(show);
+	});
+
+	it('survives the container being recreated, so it is not reconfigured every upgrade', async () => {
+		const pacerr = await startPacerr();
+		await turnOff(pacerr, 'episodeNfo', 'seasonPoster');
+
+		await pacerr.restart();
+
+		expect(switchesOn(await pacerr.open('/settings/sidecars'))).toEqual({
+			showNfo: true,
+			seasonNfo: true,
+			episodeNfo: false,
+			seasonPoster: false
+		});
+	});
+});
+
+describe('switching a kind of Sidecar back on', () => {
+	it('starts it being written again for the next Part imported', async () => {
+		const pacerr = await reverieWithout(...sidecarKinds);
+		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([]);
+
+		await turnOff(pacerr);
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
+		finish(pacerr, 1);
+		await pacerr.advance(minutes(15));
+
+		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
+			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].nfo",
+			'Season 04/cover.jpg',
+			'Season 04/season.nfo',
+			'tvshow.nfo'
 		]);
 	});
 });
