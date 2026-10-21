@@ -9,7 +9,7 @@ import {
 	writeFileSync
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, extname, join } from 'node:path';
+import { basename, dirname, extname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { fixtures, hours, startPacerr, type Pacerr, type PacerrPage } from './harness/pacerr';
 
@@ -36,10 +36,11 @@ function importSource(files: string[]): string {
 const libraryMedia = (pacerr: Pacerr): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
-		.filter(
-			(entry) => extname(entry) !== '.nfo' && statSync(join(pacerr.paths.library, entry)).isFile()
-		)
+		.filter((entry) => !isSidecar(entry) && statSync(join(pacerr.paths.library, entry)).isFile())
 		.sort();
+
+const isSidecar = (entry: string): boolean =>
+	extname(entry) === '.nfo' || basename(entry) === 'cover.jpg';
 
 async function pacerrWith(files: string[]): Promise<{ pacerr: Pacerr; source: string }> {
 	const pacerr = await startPacerr({ feed: fixtures.feed });

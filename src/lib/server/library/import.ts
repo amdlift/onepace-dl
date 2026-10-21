@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
+import type { Posters } from '../artwork';
 import type { Clock } from '../clock';
 import type { DownloadClient } from '../download/client';
 import { DownloadService } from '../download/service';
@@ -21,7 +22,7 @@ import {
 	recordUpgradeImported
 } from '../upgrade/store';
 import { renderLibraryPath, type NamingFields } from './naming';
-import { sidecarPathFor, writeEpisodeSidecar } from './sidecars';
+import { sidecarPathFor, writeEpisodeSidecar, writeSeasonPoster } from './sidecars';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -98,12 +99,20 @@ export class ImportService {
 	#db: Database;
 	#clock: Clock;
 	#downloads: DownloadService;
+	#posters: Posters;
 	#paths: PathService;
 
-	constructor(db: Database, clock: Clock, downloads: DownloadService, paths: PathService) {
+	constructor(
+		db: Database,
+		clock: Clock,
+		downloads: DownloadService,
+		posters: Posters,
+		paths: PathService
+	) {
 		this.#db = db;
 		this.#clock = clock;
 		this.#downloads = downloads;
+		this.#posters = posters;
 		this.#paths = paths;
 	}
 
@@ -181,6 +190,7 @@ export class ImportService {
 			try {
 				const library = this.#paths.library().path;
 				const placed = placeIntoLibrary(library, source, template, target.naming);
+				writeSeasonPoster(this.#posters, library, placed.libraryPath, target.arcSlug);
 				writeEpisodeSidecar(this.#db, library, target.partSlug, placed.libraryPath);
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(

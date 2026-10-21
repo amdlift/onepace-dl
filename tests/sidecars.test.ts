@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { fixtures, minutes, startPacerr, type Pacerr } from './harness/pacerr';
 
@@ -64,7 +65,8 @@ describe('a Part Pacerr files into the Library', () => {
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].nfo',
 			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
-			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].nfo',
+			'Season 34/cover.jpg'
 		]);
 	});
 
@@ -119,7 +121,8 @@ describe('a Library filed under a naming template the user set', () => {
 			'Reverie/Reverie - 34x02 - A Beautiful World.mkv',
 			'Reverie/Reverie - 34x02 - A Beautiful World.nfo',
 			'Reverie/Reverie - 34x03 - The Empty Throne.mkv',
-			'Reverie/Reverie - 34x03 - The Empty Throne.nfo'
+			'Reverie/Reverie - 34x03 - The Empty Throne.nfo',
+			'Reverie/cover.jpg'
 		]);
 	});
 });
@@ -173,5 +176,41 @@ describe('the date One Pace published a Release', () => {
 		for (const sidecar of sidecars) {
 			expect(inLibrary(pacerr, sidecar)).not.toMatch(/<(aired|premiered|year|dateadded)>/);
 		}
+	});
+});
+
+describe('the Poster a media server shows for a season', () => {
+	it('lands in the season directory as cover.jpg, at Poster dimensions', async () => {
+		const pacerr = await reverie();
+
+		const poster = await sharp(join(pacerr.paths.library, 'Season 34/cover.jpg')).metadata();
+
+		expect(poster.format).toBe('jpeg');
+		expect([poster.width, poster.height]).toEqual([1000, 1500]);
+	});
+
+	it('is the one the user supplied for the Arc, where they have supplied one', async () => {
+		const pacerr = await reverie();
+		const mine = Buffer.from('\xff\xd8\xffthe Poster I chose myself', 'latin1');
+		mkdirSync(join(pacerr.paths.config, 'posters'), { recursive: true });
+		writeFileSync(join(pacerr.paths.config, 'posters', 'gaimon.jpg'), mine);
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
+		finish(pacerr, 1);
+		await pacerr.advance(minutes(15));
+
+		expect(readFileSync(join(pacerr.paths.library, 'Season 04/cover.jpg'))).toEqual(mine);
+	});
+
+	it('is not written for a season holding no Part, which would be artwork and no video', async () => {
+		const pacerr = await reverie();
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
+		await pacerr.advance(minutes(15));
+
+		expect(readdirSync(pacerr.paths.library).sort()).toEqual(['Season 34']);
+		expect(libraryFiles(pacerr).filter((file) => file.endsWith('cover.jpg'))).toEqual([
+			'Season 34/cover.jpg'
+		]);
 	});
 });

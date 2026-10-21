@@ -7,7 +7,7 @@ import {
 	statSync,
 	writeFileSync
 } from 'node:fs';
-import { extname, join } from 'node:path';
+import { basename, extname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import {
 	fixtures,
@@ -46,10 +46,11 @@ const libraryEntries = (pacerr: Pacerr): string[] => readdirSync(pacerr.paths.li
 const libraryMedia = (pacerr: Pacerr): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
-		.filter(
-			(entry) => extname(entry) !== '.nfo' && statSync(join(pacerr.paths.library, entry)).isFile()
-		)
+		.filter((entry) => !isSidecar(entry) && statSync(join(pacerr.paths.library, entry)).isFile())
 		.sort();
+
+const isSidecar = (entry: string): boolean =>
+	extname(entry) === '.nfo' || basename(entry) === 'cover.jpg';
 
 /** Reverie, monitored and downloaded: one Batch Release covering the Arc's three Parts. */
 async function reverie(options: StartOptions = {}): Promise<Pacerr> {

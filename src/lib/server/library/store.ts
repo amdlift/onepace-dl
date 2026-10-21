@@ -178,8 +178,9 @@ export interface ReplacedRelease {
 	libraryPath: string;
 }
 
-/** One Part a completed download owes the Library, and everything its name is rendered from. */
+/** One Part a completed download owes the Library, and everything filing it there needs. */
 export interface ImportTarget {
+	arcSlug: string;
 	partSlug: string;
 	partTitle: string;
 	had: boolean;
@@ -201,6 +202,7 @@ export interface PendingImport {
 interface PendingRow {
 	infohash: string;
 	release_title: string;
+	arc_slug: string;
 	part_slug: string;
 	part_title: string;
 	part_number: number;
@@ -227,7 +229,8 @@ export function readPendingImports(db: Database): PendingImport[] {
 		.prepare(
 			`select g.infohash, g.release_title, gp.part_slug,
 				part.title as part_title, part.number as part_number,
-				arc.title as arc_title, i.library_index, pi.library_index as part_library_index,
+				arc.slug as arc_slug, arc.title as arc_title,
+				i.library_index, pi.library_index as part_library_index,
 				(select count(*) from part sibling where sibling.arc_slug = arc.slug) as arc_part_count,
 				coalesce(c.resolution, r.resolution) as resolution,
 				(exists(select 1 from had_part where had_part.part_slug = gp.part_slug)
@@ -250,6 +253,7 @@ export function readPendingImports(db: Database): PendingImport[] {
 	const pending = new Map<string, PendingImport>();
 	for (const row of rows) {
 		const target: ImportTarget = {
+			arcSlug: row.arc_slug,
 			partSlug: row.part_slug,
 			partTitle: row.part_title,
 			had: row.had === 1,
