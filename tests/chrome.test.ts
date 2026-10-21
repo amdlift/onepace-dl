@@ -1,5 +1,23 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { startPacerr } from './harness/pacerr';
+
+const viewsDirectory = fileURLToPath(new URL('../src/routes/(views)', import.meta.url));
+
+/** Every view the shared layout wraps, read off the route tree so a view added later is covered. */
+function everyView(directory = viewsDirectory): string[] {
+	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
+		entry.isDirectory()
+			? everyView(join(directory, entry.name))
+			: entry.name === '+page.svelte'
+				? [join(directory, entry.name)]
+				: []
+	);
+}
+
+const ownChrome = /<h1|class="toolbar"/;
 
 describe('the page header', () => {
 	it('names whichever view is open', async () => {
@@ -79,5 +97,36 @@ describe('the sidebar', () => {
 
 		expect(await marked('/settings/sidecars')).toEqual(['Settings']);
 		expect(await marked('/arcs/reverie')).toEqual(['Arcs']);
+	});
+});
+
+describe('a view', () => {
+	it('defines no chrome of its own', () => {
+		const views = everyView();
+
+		const own = views.filter((view) => ownChrome.test(readFileSync(view, 'utf8')));
+
+		expect(views.length).toBeGreaterThan(1);
+		expect(own).toEqual([]);
+	});
+});
+
+describe('the login screen', () => {
+	it('has neither the sidebar nor the health banner', async () => {
+		const pacerr = await startPacerr();
+		await pacerr.submit('/settings', 'saveAuthentication', {
+			enabled: 'on',
+			username: 'captain',
+			password: 'all-blue-or-bust'
+		});
+		pacerr.forget();
+
+		const page = await pacerr.open('/login');
+
+		expect(page.text('h1')).toBe('Log in');
+		expect(page.document.querySelector('nav[aria-label="Sections"]')).toBeNull();
+		expect(page.document.querySelector('.page-toolbar')).toBeNull();
+		expect(page.text('.banner')).toBe('');
+		expect(page.texts('form[action="?/logIn"] button')).toEqual(['Log in']);
 	});
 });
