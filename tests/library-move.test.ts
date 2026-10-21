@@ -40,8 +40,8 @@ async function aMoveStoppedAfterOnePart(): Promise<{
 	const inTheWay = join(media, 'Season 34', 'One Pace - S34E02 - A Beautiful World [1080p].mkv');
 	mkdirSync(inTheWay, { recursive: true });
 
-	await pacerr.submit('/settings', 'saveLibrary', { library: media });
-	await pacerr.submit('/settings', 'startLibraryMove');
+	await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+	await pacerr.submit('/settings/media-management', 'startLibraryMove');
 	await pacerr.settle();
 
 	return { pacerr, media, clear: () => rmSync(inTheWay, { recursive: true }) };
@@ -52,7 +52,7 @@ describe('changing the Library that already holds Parts', () => {
 		const pacerr = await aLibraryHoldingReverie();
 		const media = anotherDirectory();
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 
 		expect(page.text('.move')).toContain('3 Parts');
 		expect(page.text('.move')).toContain('21 B');
@@ -68,7 +68,7 @@ describe('a Library a stopped move left in two places', () => {
 		const { pacerr, media } = await aMoveStoppedAfterOnePart();
 		const elsewhere = anotherDirectory();
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: elsewhere });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: elsewhere });
 
 		expect(page.text('.move')).toContain(`2 Parts, 14 B, are still under ${pacerr.paths.library}`);
 		expect(page.text('.move')).toContain(`1 Part, 7 B, is still under ${media}`);
@@ -80,7 +80,7 @@ describe('a Library moved to another filesystem', () => {
 		const pacerr = await aLibraryHoldingReverie();
 		const media = onAnotherFilesystem();
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 
 		expect(page.text('.move')).toContain('different filesystems');
 		expect(page.text('.move')).toContain('copies each file rather than renaming it');
@@ -94,8 +94,8 @@ describe('a Library moved to another filesystem', () => {
 		expect(statSync(join(pacerr.paths.library, firstPart)).nlink).toBe(2);
 		const media = onAnotherFilesystem();
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(mediaUnder(media)).toHaveLength(3);
@@ -105,7 +105,7 @@ describe('a Library moved to another filesystem', () => {
 	it('says the opposite of a move that stays on one filesystem', async () => {
 		const pacerr = await aLibraryHoldingReverie();
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: anotherDirectory() });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: anotherDirectory() });
 
 		expect(page.text('.move')).toContain('same filesystem');
 		expect(page.text('.move')).toContain('costs no disk');
@@ -117,17 +117,17 @@ describe('a confirmed move', () => {
 	it('returns the interface straight away and carries on in the background', async () => {
 		const pacerr = await aLibraryHoldingReverie();
 		const media = anotherDirectory();
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 		await pacerr.hold();
 
-		const started = await pacerr.submit('/settings', 'startLibraryMove');
+		const started = await pacerr.submit('/settings/media-management', 'startLibraryMove');
 
 		expect(started.text('.move')).toContain('0 of 3 Parts moved');
 		expect(mediaUnder(media)).toEqual([]);
 
 		await pacerr.settle();
 
-		const finished = await pacerr.open('/settings');
+		const finished = await pacerr.open('/settings/media-management');
 		expect(finished.text('.move')).toContain('Moved 3 Parts');
 		expect(mediaUnder(media)).toHaveLength(3);
 		expect(mediaUnder(pacerr.paths.library)).toEqual([]);
@@ -138,8 +138,8 @@ describe('a confirmed move', () => {
 		const before = mediaUnder(pacerr.paths.library);
 		const media = anotherDirectory();
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(mediaUnder(media)).toEqual(before);
@@ -149,8 +149,8 @@ describe('a confirmed move', () => {
 		const pacerr = await aLibraryHoldingReverie();
 		const media = anotherDirectory();
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(everythingUnder(media)).toEqual([
@@ -171,7 +171,7 @@ describe('a confirmed move', () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
 		pacerr.downloadClient.filesPerTorrent = 3;
-		await pacerr.submit('/settings', 'saveNamingTemplate', {
+		await pacerr.submit('/settings/media-management', 'saveNamingTemplate', {
 			template: '{arc}/{arc} - {season}x{episode} - {part}'
 		});
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
@@ -179,8 +179,8 @@ describe('a confirmed move', () => {
 		await pacerr.advance(minutes(15));
 		const media = anotherDirectory();
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(sidecarsUnder(media)).toEqual([
@@ -198,8 +198,8 @@ describe('a confirmed move', () => {
 		const pacerr = await aLibraryHoldingReverie();
 		const media = anotherDirectory();
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(everythingUnder(pacerr.paths.library)).toEqual([]);
@@ -209,9 +209,9 @@ describe('a confirmed move', () => {
 describe('a move the user chose to leave alone', () => {
 	it('points the Library back at the directory those Parts are actually in', async () => {
 		const pacerr = await aLibraryHoldingReverie();
-		await pacerr.submit('/settings', 'saveLibrary', { library: anotherDirectory() });
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: anotherDirectory() });
 
-		const page = await pacerr.submit('/settings', 'dismissLibraryMove');
+		const page = await pacerr.submit('/settings/media-management', 'dismissLibraryMove');
 
 		expect(page.attributes('input[name="library"]', 'value')).toEqual([pacerr.paths.library]);
 	});
@@ -219,9 +219,9 @@ describe('a move the user chose to leave alone', () => {
 	it('files the next import beside them, rather than splitting the Library in two', async () => {
 		const pacerr = await aLibraryHoldingReverie();
 		const media = anotherDirectory();
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 
-		await pacerr.submit('/settings', 'dismissLibraryMove');
+		await pacerr.submit('/settings/media-management', 'dismissLibraryMove');
 		await alsoHoldingGaimon(pacerr);
 
 		expect(mediaUnder(pacerr.paths.library)).toHaveLength(4);
@@ -233,7 +233,7 @@ describe('a move stopped partway and then dismissed', () => {
 	it('goes on saying where the Parts it left behind are, rather than hiding the split', async () => {
 		const { pacerr } = await aMoveStoppedAfterOnePart();
 
-		const page = await pacerr.submit('/settings', 'dismissLibraryMove');
+		const page = await pacerr.submit('/settings/media-management', 'dismissLibraryMove');
 
 		expect(page.text('.move')).toContain(`2 Parts are still under ${pacerr.paths.library}`);
 	});
@@ -246,11 +246,11 @@ describe('a move stopped partway', () => {
 		const inTheWay = join(media, 'Season 34', 'One Pace - S34E02 - A Beautiful World [1080p].mkv');
 		mkdirSync(inTheWay, { recursive: true });
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
-		const page = await pacerr.open('/settings');
+		const page = await pacerr.open('/settings/media-management');
 		expect(page.text('.move')).toContain('stopped after 1 of 3 Parts');
 		expect(page.text('.move')).toContain(inTheWay);
 		expect(page.text('.move')).toContain(`2 Parts are still under ${pacerr.paths.library}`);
@@ -266,7 +266,7 @@ describe('a move stopped partway', () => {
 	it('names every file left behind, so the user knows what to go and fix', async () => {
 		const { pacerr } = await aMoveStoppedAfterOnePart();
 
-		const page = await pacerr.open('/settings');
+		const page = await pacerr.open('/settings/media-management');
 
 		expect(page.texts('.move .stranded li')).toEqual([
 			join(pacerr.paths.library, 'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv'),
@@ -282,8 +282,8 @@ describe('a move stopped partway', () => {
 			recursive: true
 		});
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(sidecarsUnder(media)).toEqual([
@@ -311,8 +311,8 @@ describe('a move stopped partway', () => {
 		mkdirSync(join(media, 'Season 34', 'One Pace - S34E02 - A Beautiful World [1080p].mkv'), {
 			recursive: true
 		});
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		// Same length, because the payload the watch page carries is chunked by byte count.
@@ -347,8 +347,8 @@ describe('a move stopped partway', () => {
 			recursive: true
 		});
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(everythingUnder(pacerr.paths.library)).not.toContain('Season 04');
@@ -359,13 +359,13 @@ describe('a move the container was recreated in the middle of', () => {
 	it('says what stopped it, with every Part still where Pacerr says it is', async () => {
 		const pacerr = await aLibraryHoldingReverie();
 		const media = anotherDirectory();
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 		await pacerr.hold();
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 
 		await pacerr.restart();
 
-		const page = await pacerr.open('/settings');
+		const page = await pacerr.open('/settings/media-management');
 		expect(page.text('.move')).toContain('Pacerr stopped while it was moving the Library');
 		expect(page.text('.move')).toContain(`3 Parts are still under ${pacerr.paths.library}`);
 		expect(mediaUnder(media)).toEqual([]);
@@ -376,18 +376,18 @@ describe('a move the container was recreated in the middle of', () => {
 describe('a move run again once the problem is fixed', () => {
 	it('offers to try again, and takes up only what is still at the old Library', async () => {
 		const { pacerr, media, clear } = await aMoveStoppedAfterOnePart();
-		const stopped = await pacerr.open('/settings');
+		const stopped = await pacerr.open('/settings/media-management');
 		expect(stopped.texts('.move button')).toContain('Try again');
 
 		clear();
 		await pacerr.hold();
-		const retrying = await pacerr.submit('/settings', 'startLibraryMove');
+		const retrying = await pacerr.submit('/settings/media-management', 'startLibraryMove');
 
 		expect(retrying.text('.move')).toContain('1 of 3 Parts moved');
 
 		await pacerr.settle();
 
-		const finished = await pacerr.open('/settings');
+		const finished = await pacerr.open('/settings/media-management');
 		expect(finished.text('.move')).toContain('Moved 3 Parts');
 		expect(mediaUnder(media)).toHaveLength(3);
 		expect(mediaUnder(pacerr.paths.library)).toEqual([]);
@@ -397,7 +397,7 @@ describe('a move run again once the problem is fixed', () => {
 		const { pacerr, media, clear } = await aMoveStoppedAfterOnePart();
 		clear();
 
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
 		expect(sidecarsUnder(media)).toEqual([
@@ -414,10 +414,10 @@ describe('a move run again once the problem is fixed', () => {
 	it('records every Part at the new Library, so a later move takes all three from there', async () => {
 		const { pacerr, media, clear } = await aMoveStoppedAfterOnePart();
 		clear();
-		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.submit('/settings/media-management', 'startLibraryMove');
 		await pacerr.settle();
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: anotherDirectory() });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: anotherDirectory() });
 
 		expect(page.text('.move')).toContain(`3 Parts, 21 B, are still under ${media}`);
 	});

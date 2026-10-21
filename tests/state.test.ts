@@ -166,10 +166,10 @@ const sourceDirectory = fileURLToPath(new URL('../src', import.meta.url));
 // vocabularies, not this one.
 const legendViews = [
 	'app.css',
-	join('routes', '+page.svelte'),
-	join('routes', 'arcs', '[slug]', '+page.svelte'),
-	join('routes', 'wanted', '+page.svelte'),
-	join('routes', 'activity', '+page.svelte')
+	join('routes', '(views)', '+page.svelte'),
+	join('routes', '(views)', 'arcs', '[slug]', '+page.svelte'),
+	join('routes', '(views)', 'wanted', '+page.svelte'),
+	join('routes', '(views)', 'activity', '+page.svelte')
 ];
 
 function everyRule(): { selector: string; declarations: string }[] {

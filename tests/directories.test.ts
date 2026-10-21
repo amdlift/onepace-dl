@@ -18,7 +18,7 @@ describe('a Library set in Settings', () => {
 		const pacerr = await downloadedReverie();
 		const media = anotherDirectory();
 
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 		await pacerr.advance(minutes(15));
 
 		expect(filesUnder(media).filter((file) => file.endsWith('.mkv'))).toHaveLength(3);
@@ -29,12 +29,12 @@ describe('a Library set in Settings', () => {
 		const pacerr = await startPacerr();
 		const media = anotherDirectory();
 		const completed = anotherDirectory('pacerr-finished-');
-		await pacerr.submit('/settings', 'saveLibrary', { library: media });
-		await pacerr.submit('/settings', 'saveDownloads', { downloads: completed });
+		await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
+		await pacerr.submit('/settings/media-management', 'saveDownloads', { downloads: completed });
 
 		await pacerr.restart();
 
-		const settings = await pacerr.open('/settings');
+		const settings = await pacerr.open('/settings/media-management');
 		expect(settings.attributes('input[name="library"]', 'value')).toEqual([media]);
 		expect(settings.attributes('input[name="downloads"]', 'value')).toEqual([completed]);
 	});
@@ -44,7 +44,7 @@ describe('saving a path Pacerr cannot use', () => {
 	it('says it cannot find one that is not mounted', async () => {
 		const pacerr = await startPacerr();
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: '/no/such/place' });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: '/no/such/place' });
 
 		expect(page.text('.paths')).toContain('cannot find the Library at /no/such/place');
 		expect(page.text('.paths')).not.toContain('cannot write to it');
@@ -53,7 +53,7 @@ describe('saving a path Pacerr cannot use', () => {
 	it('says so on the save itself, rather than only on the page load after it', async () => {
 		const pacerr = await startPacerr();
 
-		const page = await pacerr.answer('/settings', 'saveLibrary', { library: '/no/such/place' });
+		const page = await pacerr.answer('/settings/media-management', 'saveLibrary', { library: '/no/such/place' });
 
 		expect(page.text('.paths .alert')).toContain('cannot find the Library at /no/such/place');
 	});
@@ -64,7 +64,7 @@ describe('saving a path Pacerr cannot use', () => {
 		chmodSync(media, 0o555);
 		onTestFinished(() => chmodSync(media, 0o755));
 
-		const page = await pacerr.answer('/settings', 'saveLibrary', { library: media });
+		const page = await pacerr.answer('/settings/media-management', 'saveLibrary', { library: media });
 
 		expect(page.text('.paths .alert')).toContain(`can see the Library at ${media}`);
 		expect(page.text('.paths .alert')).toContain('cannot write to it');
@@ -74,7 +74,7 @@ describe('saving a path Pacerr cannot use', () => {
 		const pacerr = await startPacerr();
 		const media = onAnotherFilesystem();
 
-		const page = await pacerr.answer('/settings', 'saveLibrary', { library: media });
+		const page = await pacerr.answer('/settings/media-management', 'saveLibrary', { library: media });
 
 		expect(page.text('.paths .alert')).toContain('on different filesystems');
 		expect(page.text('.paths .alert')).not.toContain('cannot find the Library');
@@ -86,7 +86,7 @@ describe('saving a path Pacerr cannot use', () => {
 		chmodSync(media, 0o555);
 		onTestFinished(() => chmodSync(media, 0o755));
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 
 		expect(page.text('.paths')).toContain(`can see the Library at ${media} but cannot write to it`);
 		expect(page.text('.paths')).not.toContain('cannot find the Library');
@@ -96,7 +96,7 @@ describe('saving a path Pacerr cannot use', () => {
 		const pacerr = await startPacerr();
 		const media = onAnotherFilesystem();
 
-		const page = await pacerr.submit('/settings', 'saveLibrary', { library: media });
+		const page = await pacerr.submit('/settings/media-management', 'saveLibrary', { library: media });
 
 		expect(page.text('.paths')).toContain('on different filesystems');
 		expect(page.text('.paths')).toContain('occupies disk twice');
@@ -110,7 +110,7 @@ describe('a directory pinned by environment variable', () => {
 		const pinned = anotherDirectory('pacerr-pinned-');
 		const pacerr = await startPacerr({ libraryFromEnvironment: pinned });
 
-		const page = await pacerr.open('/settings');
+		const page = await pacerr.open('/settings/media-management');
 
 		expect(page.attributes('input[name="library"]', 'value')).toEqual([pinned]);
 		expect(page.attributes('input[name="library"]', 'readonly')).toEqual(['']);
@@ -121,7 +121,7 @@ describe('a directory pinned by environment variable', () => {
 		const pinned = anotherDirectory('pacerr-pinned-');
 		const pacerr = await startPacerr({ downloadsFromEnvironment: pinned });
 
-		const page = await pacerr.submit('/settings', 'saveDownloads', {
+		const page = await pacerr.submit('/settings/media-management', 'saveDownloads', {
 			downloads: anotherDirectory()
 		});
 
@@ -134,7 +134,7 @@ describe('a fresh install, which the image gives neither variable', () => {
 	it('offers both fields for editing', async () => {
 		const pacerr = await startPacerr();
 
-		const page = await pacerr.open('/settings');
+		const page = await pacerr.open('/settings/media-management');
 
 		expect(page.attributes('input[name="library"]', 'readonly')).toEqual([null]);
 		expect(page.attributes('input[name="downloads"]', 'readonly')).toEqual([null]);

@@ -85,15 +85,15 @@ containers, or add a **Remote Path Mapping** in Settings. See
 | Mount        | Holds                                                     | Set in                             |
 | ------------ | --------------------------------------------------------- | ---------------------------------- |
 | `/config`    | `pacerr.db` — the Catalogue, Monitoring, Profile, History | `PACERR_CONFIG_DIR`                |
-| `/library`   | The Library a media server reads                          | Settings → Directories             |
-| `/downloads` | The download directory the Download Client writes into    | Settings → Directories             |
+| `/library`   | The Library a media server reads                          | Settings → Media Management        |
+| `/downloads` | The download directory the Download Client writes into    | Settings → Media Management        |
 
 Everything Pacerr must not lose lives in `/config`, so recreating the container loses nothing as
 long as that volume survives. That includes any Poster you supply yourself — see
 [Artwork](#artwork).
 
 Those two paths are only where the image mounts them. Point Pacerr at an existing layout —
-`/zfspool/media/Anime/One Pace`, say — in **Settings → Directories**, and mount it in the container
+`/zfspool/media/Anime/One Pace`, say — in **Settings → Media Management**, and mount it in the container
 at whatever path you type there. **Browse**, beside either field, walks the directories this
 container can see, so a deep path is clicked down to rather than retyped, and a path you already
 know is pasted into the field above the listing. It leaves out the container's own system

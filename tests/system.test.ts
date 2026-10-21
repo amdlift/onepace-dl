@@ -149,7 +149,7 @@ describe('the health banner', () => {
 
 	it('says nothing to a visitor who has not signed in', async () => {
 		const pacerr = await startPacerr();
-		await pacerr.submit('/settings', 'saveAuthentication', {
+		await pacerr.submit('/settings/security', 'saveAuthentication', {
 			enabled: 'on',
 			username: 'captain',
 			password: 'all-blue-or-bust'

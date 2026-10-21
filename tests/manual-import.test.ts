@@ -38,7 +38,7 @@ const libraryMedia = (pacerr: Pacerr): string[] => mediaUnder(pacerr.paths.libra
 async function pacerrWith(files: string[]): Promise<{ pacerr: Pacerr; source: string }> {
 	const pacerr = await startPacerr({ feed: fixtures.feed });
 	const source = importSource(files);
-	await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+	await pacerr.submit('/settings/manual-import', 'saveImportSource', { importSource: source });
 	return { pacerr, source };
 }
 
@@ -46,15 +46,15 @@ describe('the Import Source', () => {
 	it('is empty until it is configured, and survives a restart once it is', async () => {
 		const pacerr = await startPacerr();
 		expect(
-			(await pacerr.open('/settings')).attributes('input[name="importSource"]', 'value')
+			(await pacerr.open('/settings/manual-import')).attributes('input[name="importSource"]', 'value')
 		).toEqual(['']);
 
 		const source = importSource([]);
-		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+		await pacerr.submit('/settings/manual-import', 'saveImportSource', { importSource: source });
 		await pacerr.restart();
 
 		expect(
-			(await pacerr.open('/settings')).attributes('input[name="importSource"]', 'value')
+			(await pacerr.open('/settings/manual-import')).attributes('input[name="importSource"]', 'value')
 		).toEqual([source]);
 	});
 
@@ -291,7 +291,7 @@ describe('an Import Source on a filesystem the Library cannot be hardlinked to',
 		const source = mkdtempSync('/dev/shm/pacerr-source-');
 		onTestFinished(() => rmSync(source, { recursive: true, force: true }));
 		writeFileSync(join(source, 'Drum Island 01.mkv'), 'video');
-		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
+		await pacerr.submit('/settings/manual-import', 'saveImportSource', { importSource: source });
 		return pacerr;
 	}
 
