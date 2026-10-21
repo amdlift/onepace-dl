@@ -35,3 +35,45 @@ describe('a table column', () => {
 		expect(occurrences(/\bnumeric\b/g)).toEqual([]);
 	});
 });
+
+const tokenSheet = join(sourceDirectory, 'app.css');
+
+function declarationsFor(selector: string): Record<string, string> {
+	const rule = readFileSync(tokenSheet, 'utf8')
+		.split('}')
+		.map((block) => block.split('{'))
+		.find(([heading, body]) => body !== undefined && heading?.trim() === selector);
+
+	return Object.fromEntries(
+		[...(rule?.[1] ?? '').matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)].map((declaration) => [
+			declaration[1] ?? '',
+			(declaration[2] ?? '').trim()
+		])
+	);
+}
+
+describe('a table row', () => {
+	it('is the height the reference gives a row, with its cell padding', () => {
+		expect(declarationsFor('.table td')).toMatchObject({
+			height: 'var(--row-height)',
+			padding: 'var(--cell-padding)'
+		});
+	});
+
+	it('is separated from the row above it by a hairline along its top', () => {
+		expect(declarationsFor('.table tbody tr')).toMatchObject({
+			'border-top': 'var(--hairline) solid var(--border)'
+		});
+	});
+
+	it('draws no rule of its own underneath', () => {
+		expect(declarationsFor('.table td')['border-bottom']).toBeUndefined();
+		expect(declarationsFor('.table th')['border-bottom']).toBeUndefined();
+	});
+
+	it('lifts under the pointer', () => {
+		expect(declarationsFor('.table tbody tr:hover')).toMatchObject({
+			background: 'var(--surface-hover)'
+		});
+	});
+});

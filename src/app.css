@@ -196,7 +196,6 @@ h2 {
 
 .table th {
 	padding: var(--cell-padding);
-	border-bottom: var(--hairline) solid var(--border);
 	color: var(--ink-dim);
 	font-weight: var(--weight-bold);
 	font-size: var(--type-base);
@@ -206,8 +205,11 @@ h2 {
 .table td {
 	height: var(--row-height);
 	padding: var(--cell-padding);
-	border-bottom: var(--hairline) solid var(--border);
 	vertical-align: middle;
+}
+
+.table tbody tr {
+	border-top: var(--hairline) solid var(--border);
 }
 
 .table tbody tr:hover {
