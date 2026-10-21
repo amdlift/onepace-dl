@@ -68,3 +68,18 @@ describe('a Release One Pace means to recut', () => {
 		expect(badges[0]).toBe('To Be Redone');
 	});
 });
+
+describe('the state of a Release in the Queue', () => {
+	it("carries the same treatments, in the Download Client's own words", async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+
+		const inFlight = stateLabels(await pacerr.open('/activity'));
+		pacerr.downloadClient.complete(pacerr.downloadClient.added[0]!.infohash, '/downloads/x');
+		const finished = stateLabels(await pacerr.open('/activity'));
+
+		expect(inFlight).toEqual(['Downloading']);
+		expect(finished).toEqual(['Completed']);
+	});
+});

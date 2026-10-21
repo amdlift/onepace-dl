@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { formatState, type State } from './state';
 
-	let { state }: { state: State } = $props();
+	// The Queue names the same treatments in the Download Client's words, so the word is separable
+	// from the colour and the glyph that carry it.
+	let { state, label = formatState(state) }: { state: State; label?: string } = $props();
 </script>
 
 <td class="state-icon {state}">
-	<svg viewBox="0 0 14 14" role="img" aria-label={formatState(state)}>
+	<svg viewBox="0 0 14 14" role="img" aria-label={label}>
 		{#if state === 'had'}
 			<path d="M2.5 7.25 5.75 10.5 11.5 3.75" />
 		{:else if state === 'downloading'}

@@ -5,6 +5,8 @@
 		formatProgress,
 		formatTimestamp
 	} from '../../lib/format';
+	import StateIcon from '../../lib/StateIcon.svelte';
+	import type { State } from '../../lib/state';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -12,6 +14,11 @@
 	const activity = $derived(data.activity);
 	const connection = $derived(activity.connection);
 	const problem = $derived(connection !== null && !connection.ok ? connection.detail : null);
+
+	const treatmentOf = (state: 'downloading' | 'completed' | 'failed' | 'unknown'): State =>
+		({ downloading: 'downloading', completed: 'had', failed: 'missing', unknown: 'unreleased' })[
+			state
+		];
 </script>
 
 <svelte:head><title>Activity - Pacerr</title></svelte:head>
@@ -33,6 +40,7 @@
 		<table class="table">
 			<thead>
 				<tr>
+					<th class="state-icon"><span class="visually-hidden">State</span></th>
 					<th>Release</th>
 					<th>Parts</th>
 					<th>Status</th>
@@ -42,6 +50,7 @@
 			<tbody>
 				{#each activity.queue as row (row.infohash)}
 					<tr>
+						<StateIcon state={treatmentOf(row.state)} label={formatDownloadState(row.state)} />
 						<td>
 							{row.releaseTitle}
 							{#if row.batch}<span class="badge">Batch</span>{/if}
@@ -107,5 +116,13 @@
 
 	.event.bad {
 		color: var(--danger);
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
 	}
 </style>
