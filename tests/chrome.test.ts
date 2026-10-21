@@ -50,7 +50,11 @@ describe('the toolbar', () => {
 			'Refresh Catalogue',
 			'Refresh Releases'
 		]);
-		expect(arcs.texts('.page-toolbar .controls *')).toEqual([]);
+		expect(arcs.texts('.page-toolbar .controls button')).toEqual([
+			'Poster',
+			'Overview',
+			'Table'
+		]);
 
 		const manualImport = await pacerr.open('/manual-import');
 		expect(manualImport.texts('.page-toolbar .controls nav a')).toEqual([

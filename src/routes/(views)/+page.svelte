@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { arcsLayouts, formatArcsLayout } from '../../lib/arcs-layout';
 	import Chrome from '../../lib/components/Chrome.svelte';
 	import { formatResolution, formatTimestamp, pluralise } from '../../lib/format';
 	import type { PageProps } from './$types';
@@ -7,6 +8,7 @@
 
 	const catalogue = $derived(data.catalogue);
 	const feed = $derived(data.feed);
+	const layout = $derived(data.layout);
 </script>
 
 <svelte:head><title>Arcs - Pacerr</title></svelte:head>
@@ -21,6 +23,22 @@
 		</form>
 		<form method="POST" action="?/refreshReleases">
 			<button class="button" type="submit">Refresh Releases</button>
+		</form>
+	{/snippet}
+
+	{#snippet controls()}
+		<form class="layouts" method="POST" action="?/chooseLayout">
+			{#each arcsLayouts as option (option)}
+				<button
+					class="toggle"
+					type="submit"
+					name="layout"
+					value={option}
+					aria-pressed={option === layout}
+				>
+					{formatArcsLayout(option)}
+				</button>
+			{/each}
 		</form>
 	{/snippet}
 
