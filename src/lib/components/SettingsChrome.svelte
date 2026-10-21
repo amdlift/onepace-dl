@@ -19,7 +19,7 @@
 </script>
 
 <Chrome title="Settings">
-	{#snippet controls()}
+	{#snippet actions()}
 		<nav class="categories" aria-label="Settings">
 			{#each categories as category (category.href)}
 				<a href={category.href} aria-current={current(category.href)}>{category.label}</a>
@@ -34,14 +34,22 @@
 	.categories {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--space-3);
 	}
 
 	.categories a {
+		padding: var(--space-2) var(--space-3);
+		border-bottom: var(--accent-bar) solid transparent;
 		color: var(--ink-dim);
 	}
 
+	.categories a:hover {
+		background: var(--surface-hover);
+		color: var(--ink-bright);
+		text-decoration: none;
+	}
+
 	.categories a[aria-current='page'] {
+		border-bottom-color: var(--nav-active);
 		color: var(--ink-bright);
 	}
 </style>

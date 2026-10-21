@@ -93,6 +93,7 @@ describe('the Settings sub-navigation', () => {
 			const page = await pacerr.open(path ?? '/settings');
 
 			expect(page.texts('nav[aria-label="Settings"] a')).toEqual(labels);
+			expect(page.texts('.page-toolbar .actions nav[aria-label="Settings"] a')).toEqual(labels);
 			expect(page.attributes('nav[aria-label="Settings"] a', 'href')).toEqual(
 				categories.map(([href]) => href)
 			);
