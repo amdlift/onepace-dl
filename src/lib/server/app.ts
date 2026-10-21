@@ -44,7 +44,8 @@ export function createApp(runtime: Runtime): App {
 	openConfigDirectory(runtime.paths.config);
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
 	assignLibraryIndexes(db);
-	const catalogue = new CatalogueService(db, runtime);
+	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
+	const catalogue = new CatalogueService(db, runtime, paths);
 	const posters = new Posters(runtime.paths.config);
 	const releases = new ReleaseService(db, runtime);
 	const authentication = new AuthenticationService(
@@ -54,7 +55,6 @@ export function createApp(runtime: Runtime): App {
 	);
 	const downloads = new DownloadService(db, runtime.downloadClients);
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
-	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
 	const imports = new ImportService(db, runtime.clock, downloads, posters, paths);
 	const background = new Background();
 	const moves = new LibraryMoveService(db, runtime.clock, paths, background);
