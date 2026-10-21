@@ -91,9 +91,9 @@ async function holdingSevenTwenty(): Promise<Pacerr> {
 }
 
 const reverieAt720 = [
-	'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [720p].mkv',
-	'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [720p].mkv',
-	'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [720p].mkv'
+	'Season 34/One Pace - S34E01 - The Fifth Emperor [720p].mkv',
+	'Season 34/One Pace - S34E02 - A Beautiful World [720p].mkv',
+	'Season 34/One Pace - S34E03 - The Empty Throne [720p].mkv'
 ];
 
 const callAPartDoneAt = (pacerr: Pacerr, cutoff: string): Promise<unknown> =>
@@ -126,12 +126,12 @@ const libraryFiles = (pacerr: Pacerr): string[] =>
 const contentOf = (pacerr: Pacerr, file: string): string =>
 	readFileSync(join(pacerr.paths.library, file), 'utf8');
 
-const firstPart = 'Reverie/Season 34/Reverie - S34E01 - The Fifth Emperor [1080p].mkv';
+const firstPart = 'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv';
 
 const reverieInTheLibrary = [
 	firstPart,
-	'Reverie/Season 34/Reverie - S34E02 - A Beautiful World [1080p].mkv',
-	'Reverie/Season 34/Reverie - S34E03 - The Empty Throne [1080p].mkv'
+	'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
+	'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 ];
 
 describe('a Release that drops out of the watch page current set', () => {
@@ -280,8 +280,7 @@ describe('the queue', () => {
 describe('a manually imported Part', () => {
 	const fanLetter = '80872a919a43b5d044caa3fd80933707344e4fab';
 	const theFile = 'One Piece Fan Letter.mkv';
-	const inTheLibrary =
-		'One Piece Fan Letter/Season 00/One Piece Fan Letter - S00E01 - One Piece Fan Letter [unknown].mkv';
+	const inTheLibrary = 'Specials/One Pace - S00E01 - One Piece Fan Letter [unknown].mkv';
 
 	it('has no Upgrade path, because Pacerr does not know what it holds', async () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });

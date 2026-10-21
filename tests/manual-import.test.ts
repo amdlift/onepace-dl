@@ -114,7 +114,7 @@ describe('the bulk Manual Import view', () => {
 });
 
 describe('committing a Manual Import', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	it('files the file the user confirmed under the same naming a download gets', async () => {
 		const { pacerr, source } = await pacerrWith(['Drum Island 01.mkv']);
@@ -169,7 +169,7 @@ describe('committing a Manual Import', () => {
 });
 
 describe('moving rather than hardlinking', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	it('leaves nothing behind in the Import Source when the user asks it to move', async () => {
 		const { pacerr, source } = await pacerrWith(['Drum Island 01.mkv']);
@@ -244,7 +244,7 @@ describe('what Manual Import is allowed to read', () => {
 });
 
 describe('filling a single gap from Wanted', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	it('offers Manual Import as a row action on a Part Pacerr does not have', async () => {
 		const { pacerr } = await pacerrWith(['Drum Island 01.mkv']);
@@ -286,7 +286,7 @@ describe('a path that never runs unattended', () => {
 });
 
 describe('an Import Source on a filesystem the Library cannot be hardlinked to', () => {
-	const drumIsland = 'Drum Island/Season 13/Drum Island - S13E01 - Tin Plate Wapol [unknown].mkv';
+	const drumIsland = 'Season 13/One Pace - S13E01 - Tin Plate Wapol [unknown].mkv';
 
 	/** A tmpfs the Library's temporary root is never on, so a hardlink between them truly fails. */
 	async function acrossFilesystems(): Promise<Pacerr> {
