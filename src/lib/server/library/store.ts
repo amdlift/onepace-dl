@@ -178,7 +178,7 @@ export interface ReplacedRelease {
 	libraryPath: string;
 }
 
-/** One Part a completed download owes the Library, and everything its name is rendered from. */
+/** One Part a completed download owes the Library, and everything filing it there needs. */
 export interface ImportTarget {
 	arcSlug: string;
 	partSlug: string;
@@ -227,9 +227,10 @@ function replacedBy(row: PendingRow): ReplacedRelease | null {
 export function readPendingImports(db: Database): PendingImport[] {
 	const rows = db
 		.prepare(
-			`select g.infohash, g.release_title, gp.part_slug, part.arc_slug,
+			`select g.infohash, g.release_title, gp.part_slug,
 				part.title as part_title, part.number as part_number,
-				arc.title as arc_title, i.library_index, pi.library_index as part_library_index,
+				arc.slug as arc_slug, arc.title as arc_title,
+				i.library_index, pi.library_index as part_library_index,
 				(select count(*) from part sibling where sibling.arc_slug = arc.slug) as arc_part_count,
 				coalesce(c.resolution, r.resolution) as resolution,
 				(exists(select 1 from had_part where had_part.part_slug = gp.part_slug)

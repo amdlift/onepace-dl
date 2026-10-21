@@ -50,7 +50,7 @@ export function createApp(runtime: Runtime): App {
 	const downloads = new DownloadService(db, runtime.downloadClients);
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
 	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
-	const imports = new ImportService(db, runtime.clock, downloads, paths);
+	const imports = new ImportService(db, runtime.clock, downloads, posters, paths);
 	const scheduler = new Scheduler(runtime.clock);
 	scheduler.add({
 		name: catalogueJob,
