@@ -54,8 +54,8 @@
 	.shell {
 		display: grid;
 		grid-template-areas: 'header header' 'nav main';
-		grid-template-columns: 11rem 1fr;
-		grid-template-rows: 3rem 1fr;
+		grid-template-columns: var(--sidebar-width) 1fr;
+		grid-template-rows: var(--header-height) 1fr;
 		min-height: 100vh;
 	}
 
@@ -63,17 +63,17 @@
 		grid-area: header;
 		display: flex;
 		align-items: baseline;
-		gap: 0.6rem;
-		padding: 0 1rem;
+		gap: var(--space-2);
+		padding: 0 var(--space-4);
 		background: var(--surface-raised);
-		border-bottom: 1px solid var(--border);
-		line-height: 3rem;
+		border-bottom: var(--hairline) solid var(--border);
+		line-height: var(--header-height);
 	}
 
 	.brand {
-		color: var(--ink-bright);
-		font-size: 1.1rem;
-		letter-spacing: 0.08em;
+		color: var(--brand);
+		font-size: var(--type-modal-title);
+		letter-spacing: var(--type-tracking);
 		text-transform: uppercase;
 	}
 
@@ -83,14 +83,13 @@
 
 	.subject {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	nav {
 		grid-area: nav;
 		background: var(--surface-raised);
-		border-right: 1px solid var(--border);
-		padding-top: 0.5rem;
+		border-right: var(--hairline) solid var(--border);
+		padding-top: var(--space-2);
 	}
 
 	nav ul {
@@ -101,8 +100,8 @@
 
 	nav a {
 		display: block;
-		padding: 0.4rem 1rem;
-		border-left: 3px solid transparent;
+		padding: var(--space-2) var(--space-4);
+		border-left: var(--accent-bar) solid transparent;
 		color: var(--ink);
 	}
 
@@ -112,34 +111,33 @@
 	}
 
 	nav a[aria-current='page'] {
-		border-left-color: var(--accent);
+		border-left-color: var(--nav-active);
 		color: var(--ink-bright);
 		background: var(--surface-hover);
 	}
 
 	main {
 		grid-area: main;
-		padding: 1rem;
+		padding: var(--content-padding);
 	}
 
 	.banner {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: baseline;
-		gap: 0.5rem;
-		margin: 0 0 0.75rem;
-		padding: 0.5rem 0.75rem;
-		border-left: 3px solid var(--danger);
-		background: var(--surface-raised);
+		gap: var(--space-2);
+		margin: 0 0 var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border-left: var(--accent-bar) solid var(--danger);
+		background: var(--surface-panel);
 	}
 
 	.banner strong {
 		color: var(--ink-bright);
-		font-weight: 500;
+		font-weight: var(--weight-medium);
 	}
 
 	.banner .detail {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 </style>

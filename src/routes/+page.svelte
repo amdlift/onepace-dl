@@ -101,22 +101,22 @@
 <style>
 	.actions {
 		display: flex;
-		gap: 0.5rem;
+		gap: var(--space-2);
 	}
 
 	.poster {
-		width: 40px;
+		width: var(--poster-width);
 		padding-right: 0;
 	}
 
 	img,
 	.no-poster {
 		display: block;
-		width: 40px;
-		height: 60px;
+		width: var(--poster-width);
+		height: var(--poster-height);
 		object-fit: cover;
-		border-radius: 2px;
-		background: var(--surface-hover);
+		border-radius: var(--radius-card);
+		background: var(--surface-panel);
 	}
 
 	.monitoring {

@@ -97,21 +97,12 @@
 </section>
 
 <style>
-	h2 {
-		margin: 1rem 0 0.5rem;
-		font-size: 0.9rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--ink-dim);
-	}
-
 	.parts,
 	.reason,
 	.replaced,
 	.detail {
 		display: block;
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.event.bad {

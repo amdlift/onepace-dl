@@ -91,7 +91,7 @@
 					<tr>
 						<td class="file">{file.path}</td>
 						<td>
-							<select name="part:{file.path}">
+							<select class="input" name="part:{file.path}">
 								<option value="" selected={file.suggestedPartSlug === null}>Choose a Part</option>
 								{#each parts as part (part.slug)}
 									<option value={part.slug} selected={file.suggestedPartSlug === part.slug}>
@@ -121,8 +121,7 @@
 <style>
 	.roots {
 		display: flex;
-		gap: 0.75rem;
-		font-size: 0.8rem;
+		gap: var(--space-3);
 	}
 
 	.roots a[aria-current='page'] {
@@ -130,16 +129,14 @@
 	}
 
 	.file {
-		font-size: 0.8rem;
 		color: var(--ink-dim);
 	}
 
 	.placing {
 		display: flex;
 		align-items: baseline;
-		gap: 0.5rem;
-		margin: 0.75rem 0;
-		font-size: 0.8rem;
+		gap: var(--space-2);
+		margin: var(--space-3) 0;
 		color: var(--ink-dim);
 	}
 </style>

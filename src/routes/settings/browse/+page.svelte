@@ -31,7 +31,7 @@
 	<input type="hidden" name="for" value={target} />
 	<label>
 		<span>Path</span>
-		<input name="at" autocomplete="off" value={directory} />
+		<input class="input" name="at" autocomplete="off" value={directory} />
 	</label>
 	<p class="note">
 		Type or paste a path to open it, or click down to one below. Pacerr shows the directories this
@@ -61,66 +61,46 @@
 <style>
 	form {
 		display: grid;
-		gap: 0.75rem;
+		gap: var(--space-3);
 		justify-items: start;
-		max-width: 32rem;
+		max-width: var(--control-width);
 	}
 
 	label {
 		display: grid;
-		gap: 0.25rem;
+		gap: var(--space-1);
 		width: 100%;
 	}
 
 	label span {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
-	}
-
-	input {
-		padding: 0.35rem 0.5rem;
-		border: 1px solid var(--border);
-		border-radius: 2px;
-		background: var(--surface-raised);
-		color: var(--ink);
 	}
 
 	.row {
 		display: flex;
-		gap: 0.5rem;
-	}
-
-	.note {
-		margin: 0;
-		color: var(--ink-dim);
-		font-size: 0.8rem;
+		gap: var(--space-2);
 	}
 
 	.directories {
 		display: grid;
-		gap: 0.25rem;
-		max-width: 32rem;
-		margin: 1rem 0 0;
+		gap: var(--space-1);
+		max-width: var(--control-width);
+		margin: var(--space-4) 0 0;
 		padding: 0;
 		list-style: none;
 	}
 
 	.directories a {
 		display: block;
-		padding: 0.35rem 0.5rem;
-		border: 1px solid var(--border);
-		border-radius: 2px;
-		background: var(--surface-raised);
+		padding: var(--space-2);
+		border: var(--hairline) solid var(--border);
+		border-radius: var(--radius-control);
+		background: var(--surface-panel);
 		color: var(--ink);
 		text-decoration: none;
 	}
 
 	.directories .up {
 		color: var(--ink-dim);
-	}
-
-	.empty {
-		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 </style>

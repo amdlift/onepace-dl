@@ -116,9 +116,8 @@
 	.releases li {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.75rem;
+		gap: var(--space-3);
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.resolution {
@@ -128,21 +127,18 @@
 	.grab {
 		display: inline-flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.have {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 		white-space: nowrap;
 	}
 
 	.flag {
 		display: block;
 		color: var(--ink-dim);
-		font-size: 0.75rem;
 	}
 
 	.wanted {
@@ -160,8 +156,8 @@
 			135deg,
 			transparent,
 			transparent 6px,
-			var(--surface-raised) 6px,
-			var(--surface-raised) 12px
+			var(--surface-panel) 6px,
+			var(--surface-panel) 12px
 		);
 	}
 

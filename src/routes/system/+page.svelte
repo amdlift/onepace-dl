@@ -148,14 +148,6 @@
 </section>
 
 <style>
-	h2 {
-		margin: 1rem 0 0.5rem;
-		font-size: 0.9rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--ink-dim);
-	}
-
 	.checks ul {
 		margin: 0;
 		padding: 0;
@@ -164,11 +156,11 @@
 
 	.checks li {
 		display: grid;
-		grid-template-columns: 11rem 11rem 1fr;
-		gap: 0.25rem 1rem;
-		padding: 0.5rem 0.75rem;
-		border-left: 3px solid var(--border);
-		border-bottom: 1px solid var(--border);
+		grid-template-columns: var(--column-narrow) var(--column-narrow) 1fr;
+		gap: var(--space-1) var(--space-4);
+		padding: var(--space-2) var(--space-3);
+		border-left: var(--accent-bar) solid var(--border);
+		border-bottom: var(--hairline) solid var(--border);
 	}
 
 	.checks li.warned {
@@ -186,14 +178,12 @@
 	.checks .when {
 		grid-column: 3;
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.checks .summary,
 	.checks .detail {
 		grid-column: 1 / -1;
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.history .event.failed {
@@ -207,17 +197,16 @@
 	.history .reason {
 		display: block;
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.pages {
 		display: flex;
-		gap: 1rem;
-		margin: 0.75rem 0 0;
+		gap: var(--space-4);
+		margin: var(--space-3) 0 0;
 	}
 
 	.delisted summary {
-		padding: 0.5rem 0;
+		padding: var(--space-2) 0;
 		color: var(--ink-dim);
 		cursor: pointer;
 	}
@@ -226,7 +215,6 @@
 	.covers,
 	.infohash {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
 	}
 
 	.covers span,
@@ -235,6 +223,6 @@
 	}
 
 	.infohash {
-		font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+		font-family: var(--font-mono);
 	}
 </style>
