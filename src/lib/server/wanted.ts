@@ -1,4 +1,6 @@
-import type { Database } from 'better-sqlite3';
+import type { State } from '../state';
+import type { App } from './app';
+import { downloadingParts } from './downloading';
 import { grabRow, type GrabRow } from './selection/grab-row';
 import { select } from './selection/selection';
 
@@ -18,6 +20,9 @@ export interface WantedRow {
 	partSlug: string | null;
 	title: string | null;
 	state: WantedState;
+	/** Which of the six legend states the row is in, which `state` alone cannot say. */
+	legend: State;
+	toBeRedone: boolean;
 	/** Null for an Unreleased Part: there is nothing yet for Selection to choose between. */
 	grab: GrabRow | null;
 }
@@ -31,6 +36,7 @@ interface GapRow {
 	number: number;
 	title: string | null;
 	has_release: number;
+	to_be_redone: number;
 }
 
 /**
@@ -38,7 +44,8 @@ interface GapRow {
  * from the Catalogue every time it is asked for: a Part that appeared upstream an hour ago is
  * covered without anything having to be written when it arrived.
  */
-export function wantedView(db: Database): WantedRow[] {
+export async function wantedView(app: App): Promise<WantedRow[]> {
+	const db = app.db;
 	const rows = db
 		.prepare(
 			`select arc.position as arc_position, 0 as unreleased, part.position as part_position,
@@ -48,7 +55,12 @@ export function wantedView(db: Database): WantedRow[] {
 					select 1 from catalogue_release_part covers
 					join feed_release release on release.infohash = covers.infohash
 					where covers.part_slug = part.slug
-				) as has_release
+				) as has_release,
+				exists(
+					select 1 from catalogue_release_part covers
+					join feed_release release on release.infohash = covers.infohash
+					where covers.part_slug = part.slug and release.status = 'to-be-redone'
+				) as to_be_redone
 			from part
 			join arc on arc.slug = part.arc_slug
 			join monitored_arc on monitored_arc.arc_slug = arc.slug
@@ -56,7 +68,7 @@ export function wantedView(db: Database): WantedRow[] {
 				and part.slug not in (select part_slug from had_part)
 			union all
 			select arc.position, 1, unreleased_part.number,
-				arc.slug, arc.title, null, unreleased_part.number, null, 0
+				arc.slug, arc.title, null, unreleased_part.number, null, 0, 0
 			from unreleased_part
 			join arc on arc.slug = unreleased_part.arc_slug
 			join monitored_arc on monitored_arc.arc_slug = arc.slug
@@ -65,18 +77,30 @@ export function wantedView(db: Database): WantedRow[] {
 		.all() as GapRow[];
 
 	const selection = select(db);
-	return rows.map((row) => ({
-		arcSlug: row.arc_slug,
-		arcTitle: row.arc_title,
-		number: row.number,
-		partSlug: row.part_slug,
-		title: row.title,
-		state: stateOf(row),
-		grab: row.part_slug === null ? null : grabRow(selection.parts.get(row.part_slug))
-	}));
+	const downloading = await downloadingParts(app);
+	return rows.map((row) => {
+		const state = stateOf(row);
+		return {
+			arcSlug: row.arc_slug,
+			arcTitle: row.arc_title,
+			number: row.number,
+			partSlug: row.part_slug,
+			title: row.title,
+			state,
+			toBeRedone: row.to_be_redone === 1,
+			legend: legendOf(state, row.part_slug !== null && downloading.has(row.part_slug)),
+			grab: row.part_slug === null ? null : grabRow(selection.parts.get(row.part_slug))
+		};
+	});
 }
 
 function stateOf(row: GapRow): WantedState {
 	if (row.unreleased === 1) return 'unreleased';
 	return row.has_release === 1 ? 'available' : 'missing';
 }
+
+// Wanted lists only monitored Arcs, so every gap it shows is one the user asked Pacerr to fill.
+const legendOf = (state: WantedState, downloading: boolean): State => {
+	if (state === 'unreleased') return 'unreleased';
+	return downloading ? 'downloading' : 'missing';
+};

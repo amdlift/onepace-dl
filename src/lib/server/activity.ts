@@ -1,6 +1,8 @@
+import type { TransferState } from '../state';
 import type { App } from './app';
 import type { ConnectionTest } from './download/client';
 import { readGrabs } from './download/store';
+import { currentStatuses } from './downloading';
 import { readHistory, type HistoryRecord } from './history/store';
 
 export interface QueueRow {
@@ -9,7 +11,7 @@ export interface QueueRow {
 	batch: boolean;
 	partTitles: string[];
 	/** Unknown while the Download Client is not saying; it is the one that knows. */
-	state: 'downloading' | 'completed' | 'failed' | 'unknown';
+	state: TransferState;
 	progress: number | null;
 }
 
@@ -42,22 +44,4 @@ export async function activityView(app: App): Promise<ActivityView> {
 		history: readHistory(app.db),
 		connection: app.downloads.health()
 	};
-}
-
-async function currentStatuses(
-	app: App,
-	infohashes: string[]
-): Promise<Map<string, { state: QueueRow['state']; progress: number }> | null> {
-	const client = app.downloads.client();
-	if (client === null || infohashes.length === 0) return null;
-	try {
-		const statuses = await client.statuses(infohashes);
-		app.downloads.noteSuccess();
-		return new Map(
-			statuses.map((status) => [status.infohash, { state: status.state, progress: status.progress }])
-		);
-	} catch (error) {
-		app.downloads.noteFailure(error);
-		return null;
-	}
 }

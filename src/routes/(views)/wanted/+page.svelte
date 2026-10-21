@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Chrome from '../../../lib/components/Chrome.svelte';
 	import { formatResolution, formatVariant, formatWantedState } from '../../../lib/format';
+	import StateIcon from '../../../lib/StateIcon.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -17,6 +18,7 @@
 		<table class="table">
 			<thead>
 				<tr>
+					<th class="state-icon"><span class="visually-hidden">State</span></th>
 					<th>Arc</th>
 					<th>Part</th>
 					<th>Title</th>
@@ -28,14 +30,14 @@
 			<tbody>
 				{#each wanted as row (`${row.arcSlug}/${row.number}`)}
 					<tr>
+						<StateIcon state={row.legend} />
 						<td><a href="/arcs/{row.arcSlug}">{row.arcTitle}</a></td>
 						<td>{row.number}</td>
-						<td>{row.title ?? ''}</td>
-						<td
-							class="state"
-							class:missing={row.state === 'missing'}
-							class:unreleased={row.state === 'unreleased'}
-						>
+						<td>
+							{row.title ?? ''}
+							{#if row.toBeRedone}<span class="badge redone">To Be Redone</span>{/if}
+						</td>
+						<td class="state" class:unreleased={row.state === 'unreleased'}>
 							{formatWantedState(row.state)}
 						</td>
 						<td>
@@ -44,7 +46,7 @@
 							{:else if row.grab.chosen}
 								<span class="grab">
 									<span>{row.grab.title}</span>
-									<span class="resolution">{formatResolution(row.grab.resolution)}</span>
+									<span class="pill resolution">{formatResolution(row.grab.resolution)}</span>
 									<span>{formatVariant(row.grab.variant)}</span>
 								</span>
 								{#if row.grab.batch}
@@ -77,10 +79,6 @@
 		color: var(--ink-dim);
 	}
 
-	.resolution {
-		color: var(--ink-bright);
-	}
-
 	.flag {
 		display: block;
 		color: var(--ink-dim);
@@ -89,10 +87,6 @@
 	.none {
 		color: var(--ink-dim);
 		font-style: italic;
-	}
-
-	.state.missing {
-		color: var(--warning);
 	}
 
 	.state.unreleased {

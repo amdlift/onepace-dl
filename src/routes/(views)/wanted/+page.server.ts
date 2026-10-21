@@ -3,5 +3,5 @@ import { wantedView } from '../../../lib/server/wanted';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	return { wanted: wantedView(getApp().db) };
+	return { wanted: await wantedView(getApp()) };
 };

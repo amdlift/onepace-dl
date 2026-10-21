@@ -6,6 +6,7 @@
 		formatTimestamp,
 		formatVariant
 	} from '../../../../lib/format';
+	import StateIcon from '../../../../lib/StateIcon.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -27,6 +28,7 @@
 	<table class="table">
 		<thead>
 			<tr>
+				<th class="state-icon"><span class="visually-hidden">State</span></th>
 				<th>Part</th>
 				<th>Title</th>
 				<th>Would grab</th>
@@ -38,6 +40,7 @@
 		<tbody>
 			{#each arc.rows as row (row.number)}
 				<tr class={{ gap: !row.released }}>
+					<StateIcon state={row.state} />
 					<td>{row.number}</td>
 					{#if row.released}
 						<td>
@@ -48,7 +51,7 @@
 							{#if row.grab.chosen}
 								<span class="grab">
 									<span>{row.grab.title}</span>
-									<span class="resolution">{formatResolution(row.grab.resolution)}</span>
+									<span class="pill resolution">{formatResolution(row.grab.resolution)}</span>
 									<span>{formatVariant(row.grab.variant)}</span>
 								</span>
 								{#if row.grab.batch}
@@ -67,7 +70,7 @@
 							{:else}
 								{row.had.releaseTitle ?? 'Imported'}
 								{#if row.had.resolution !== null}
-									<span class="resolution">{formatResolution(row.had.resolution)}</span>
+									<span class="pill resolution">{formatResolution(row.had.resolution)}</span>
 								{/if}
 								{#if row.had.variant !== null}<span>{formatVariant(row.had.variant)}</span>{/if}
 							{/if}
@@ -79,7 +82,7 @@
 								<ul class="releases">
 									{#each row.releases as release (release.infohash)}
 										<li>
-											<span class="resolution">{formatResolution(release.resolution)}</span>
+											<span class="pill resolution">{formatResolution(release.resolution)}</span>
 											<span>{formatVariant(release.variant)}</span>
 											<span>{formatReleaseStatus(release.status)}</span>
 											<span>{formatTimestamp(new Date(release.publishedAt))}</span>
@@ -122,10 +125,6 @@
 		color: var(--ink-dim);
 	}
 
-	.resolution {
-		color: var(--ink-bright);
-	}
-
 	.grab {
 		display: inline-flex;
 		flex-wrap: wrap;
@@ -161,9 +160,5 @@
 			var(--surface-panel) 6px,
 			var(--surface-panel) 12px
 		);
-	}
-
-	.badge.redone {
-		color: var(--warning);
 	}
 </style>

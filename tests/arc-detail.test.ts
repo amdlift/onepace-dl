@@ -8,7 +8,7 @@ describe('the Arc detail view', () => {
 		const page = await pacerr.open('/arcs/reverie');
 
 		expect(page.text('h1')).toContain('Reverie');
-		expect(page.texts('tbody tr td:first-child')).toEqual(['1', '2', '3']);
+		expect(page.texts('tbody tr td:nth-child(2)')).toEqual(['1', '2', '3']);
 		expect(page.texts('tbody tr')[0]).toContain('The Fifth Emperor');
 	});
 

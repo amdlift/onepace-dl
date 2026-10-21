@@ -82,7 +82,11 @@
 								<span class="badge">+{arc.unreleasedPartCount} unreleased</span>
 							{/if}
 						</td>
-						<td class="had">{arc.hadCount} of {arc.partCount}</td>
+						<td class="had">
+							<span class="pill" class:complete={arc.hadCount === arc.partCount}>
+								{arc.hadCount} of {arc.partCount}
+							</span>
+						</td>
 						<td class="monitoring">
 							<form method="POST" action="?/toggleMonitoring">
 								<input type="hidden" name="arc" value={arc.slug} />
@@ -117,13 +121,5 @@
 	.monitoring {
 		width: 1%;
 		white-space: nowrap;
-	}
-
-	.visually-hidden {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
 	}
 </style>
