@@ -63,7 +63,9 @@ The instance stops itself when the test finishes.
   `filesPerTorrent`.
 - `pacerr.connectDownloadClient()` — point Pacerr at one, which nothing is grabbed without.
 - `pacerr.paths` — `config`, `library`, `downloads`, all under a temporary directory. Assert on
-  the Library by reading it.
+  the Library by reading it. Sidecar content is asserted with `toMatchFileSnapshot` against the
+  golden documents under `tests/fixtures/sidecars/`, read off the Library the application wrote;
+  a diff there is a signal to read rather than noise to regenerate.
 - `pacerr.restart()` — recreate the container: same config volume, everything else new.
 
 The suite builds the app once (`tests/harness/build.ts`) because seam 1 drives the real

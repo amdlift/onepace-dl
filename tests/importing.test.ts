@@ -7,7 +7,7 @@ import {
 	statSync,
 	writeFileSync
 } from 'node:fs';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import {
 	fixtures,
@@ -42,10 +42,13 @@ function finish(pacerr: Pacerr, fileCount: number): string {
 
 const libraryEntries = (pacerr: Pacerr): string[] => readdirSync(pacerr.paths.library).sort();
 
-const libraryFiles = (pacerr: Pacerr): string[] =>
+/** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
+const libraryMedia = (pacerr: Pacerr): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
-		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
+		.filter(
+			(entry) => extname(entry) !== '.nfo' && statSync(join(pacerr.paths.library, entry)).isFile()
+		)
 		.sort();
 
 /** Reverie, monitored and downloaded: one Batch Release covering the Arc's three Parts. */
@@ -115,7 +118,7 @@ describe('importing a completed download', () => {
 	it('files it into the Library without being asked', async () => {
 		const pacerr = await reverie();
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
 			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
@@ -189,7 +192,7 @@ describe('a download Pacerr cannot read', () => {
 	it('leaves the Part wanted rather than claiming it is had', async () => {
 		const pacerr = await unreadable();
 
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 		expect((await pacerr.open('/arcs/reverie')).texts('tbody .have')).toEqual([
 			'Missing',
 			'Missing',
@@ -212,7 +215,7 @@ describe('the naming template', () => {
 		finish(pacerr, 3);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Reverie/Reverie - 34x01 - The Fifth Emperor.mkv',
 			'Reverie/Reverie - 34x02 - A Beautiful World.mkv',
 			'Reverie/Reverie - 34x03 - The Empty Throne.mkv'
@@ -239,7 +242,7 @@ describe('the one-off entries the Catalogue keeps alongside real Arcs', () => {
 		const pacerr = await specials();
 
 		expect(libraryEntries(pacerr)).toEqual(['Specials']);
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
 			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);
@@ -258,7 +261,7 @@ describe('an Arc that One Pace inserts above one already in the Library', () => 
 		finish(pacerr, 1);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].mkv",
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
@@ -283,7 +286,7 @@ describe('a special One Pace publishes after the Library already holds one', () 
 		finish(pacerr, 1);
 		await pacerr.advance(minutes(15));
 
-		expect(libraryFiles(pacerr)).toEqual([
+		expect(libraryMedia(pacerr)).toEqual([
 			'Specials/One Pace - S00E01 - One Piece Fan Letter [1080p].mkv',
 			'Specials/One Pace - S00E02 - Warship Island 01 (April Fools 2025) [1080p].mkv'
 		]);

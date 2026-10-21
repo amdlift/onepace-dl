@@ -9,7 +9,7 @@ import {
 	writeFileSync
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { fixtures, hours, startPacerr, type Pacerr, type PacerrPage } from './harness/pacerr';
 
@@ -32,10 +32,13 @@ function importSource(files: string[]): string {
 	return root;
 }
 
-const libraryFiles = (pacerr: Pacerr): string[] =>
+/** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
+const libraryMedia = (pacerr: Pacerr): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
-		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
+		.filter(
+			(entry) => extname(entry) !== '.nfo' && statSync(join(pacerr.paths.library, entry)).isFile()
+		)
 		.sort();
 
 async function pacerrWith(files: string[]): Promise<{ pacerr: Pacerr; source: string }> {
@@ -123,7 +126,7 @@ describe('committing a Manual Import', () => {
 			'part:Drum Island 01.mkv': 'drum-island-01'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		expect(statSync(join(pacerr.paths.library, drumIsland)).ino).toBe(
 			statSync(join(source, 'Drum Island 01.mkv')).ino
 		);
@@ -137,7 +140,7 @@ describe('committing a Manual Import', () => {
 			'part:Drum Island 02.mkv': ''
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 	});
 
 	it('shows the Part as had with no Release, because Pacerr does not know what the file is', async () => {
@@ -179,7 +182,7 @@ describe('moving rather than hardlinking', () => {
 			placing: 'move'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		expect(existsSync(join(source, 'Drum Island 01.mkv'))).toBe(false);
 	});
 
@@ -222,7 +225,7 @@ describe('what Manual Import is allowed to read', () => {
 			'part:/etc/hostname': 'drum-island-02'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 		expect((await pacerr.open('/activity')).text('.history')).toContain(
 			'the Import Source and the Library and nothing else'
 		);
@@ -239,7 +242,7 @@ describe('what Manual Import is allowed to read', () => {
 		await pacerr.submit('/manual-import', 'import', {
 			'part:Drum Island 02.mkv': 'drum-island-02'
 		});
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 	});
 });
 
@@ -268,7 +271,7 @@ describe('filling a single gap from Wanted', () => {
 			file: 'Wano 60.mkv'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 	});
 });
 
@@ -278,7 +281,7 @@ describe('a path that never runs unattended', () => {
 
 		await pacerr.advance(hours(48));
 
-		expect(libraryFiles(pacerr)).toEqual([]);
+		expect(libraryMedia(pacerr)).toEqual([]);
 		expect((await pacerr.open('/activity')).texts('.history .event')).not.toContain(
 			'Manually imported'
 		);
@@ -305,7 +308,7 @@ describe('an Import Source on a filesystem the Library cannot be hardlinked to',
 			'part:Drum Island 01.mkv': 'drum-island-01'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		const page = await pacerr.open('/activity');
 		expect(page.texts('.history .event')).toContain('Manually imported, with a warning');
 		expect(page.text('.history')).toContain('on different filesystems');
@@ -319,7 +322,7 @@ describe('an Import Source on a filesystem the Library cannot be hardlinked to',
 			placing: 'move'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryMedia(pacerr)).toEqual([drumIsland]);
 		expect((await pacerr.open('/activity')).texts('.history .event')).toEqual([
 			'Manually imported'
 		]);

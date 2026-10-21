@@ -20,6 +20,7 @@ import {
 	recordUpgradeImported
 } from '../upgrade/store';
 import { renderLibraryPath, type NamingFields } from './naming';
+import { sidecarPathFor, writeEpisodeSidecar } from './sidecars';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -178,6 +179,7 @@ export class ImportService {
 			if (target === undefined || target.had) continue;
 			try {
 				const placed = placeIntoLibrary(this.#library, source, template, target.naming);
+				writeEpisodeSidecar(this.#db, this.#library, target.partSlug, placed.libraryPath);
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(
 					this.#db,
@@ -217,8 +219,9 @@ export class ImportService {
 	 */
 	#forgetReplaced(target: ImportTarget, libraryPath: string): void {
 		const replaced = target.replaces?.libraryPath;
-		if (replaced !== undefined && replaced !== libraryPath)
-			rmSync(join(this.#library, replaced), { force: true });
+		if (replaced === undefined || replaced === libraryPath) return;
+		rmSync(join(this.#library, replaced), { force: true });
+		rmSync(join(this.#library, sidecarPathFor(replaced)), { force: true });
 	}
 
 	/**

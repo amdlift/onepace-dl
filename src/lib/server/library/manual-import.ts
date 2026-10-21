@@ -6,6 +6,7 @@ import { reasonOf } from '../failure';
 import { recordHistory, type HistoryEntry } from '../history/store';
 import { copiedInsteadOfLinked, placeIntoLibrary, type Placing } from './import';
 import type { NamingFields } from './naming';
+import { writeEpisodeSidecar } from './sidecars';
 import { partLibraryIndex, readNamingTemplate, recordHadPart } from './store';
 
 const videoExtensions = new Set([
@@ -248,6 +249,7 @@ export function manualImport(
 
 		try {
 			const placed = placeIntoLibrary(library, source, template, target.naming, placing);
+			writeEpisodeSidecar(db, library, target.partSlug, placed.libraryPath);
 			// No infohash: Pacerr did not download this file and has no Release to attribute it to,
 			// so it records having the Part and claims nothing further about it.
 			recordHadPart(
