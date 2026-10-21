@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Setting from '../../../lib/components/Setting.svelte';
 	import SettingsChrome from '../../../lib/components/SettingsChrome.svelte';
 	import { formatResolution, formatResolutionOrder, formatVariant } from '../../../lib/format';
 	import type { PageProps } from './$types';
@@ -24,89 +25,55 @@
 		{/if}
 
 		<form method="POST" action="?/saveProfile">
-			<fieldset>
-				<legend>Resolution preference</legend>
+			<Setting label="Resolution preference" field="resolution-1">
 				{#each ranks as rank (rank)}
-					<label>
-						<span>{rankLabels[rank]}</span>
-						<select class="input" name="resolution-{rank + 1}">
-							<option value="" selected={profile.resolutions[rank] === undefined}>None</option>
-							{#each resolutions as resolution (resolution)}
-								<option value={resolution} selected={profile.resolutions[rank] === resolution}>
-									{formatResolution(resolution)}
-								</option>
-							{/each}
-						</select>
-					</label>
+					<select
+						class="input"
+						id="resolution-{rank + 1}"
+						name="resolution-{rank + 1}"
+						aria-label={rankLabels[rank]}
+					>
+						<option value="" selected={profile.resolutions[rank] === undefined}>None</option>
+						{#each resolutions as resolution (resolution)}
+							<option value={resolution} selected={profile.resolutions[rank] === resolution}>
+								{formatResolution(resolution)}
+							</option>
+						{/each}
+					</select>
 				{/each}
-				<p class="order">{formatResolutionOrder(profile.resolutions)}</p>
-			</fieldset>
-			<label>
-				<span>Preferred Variant</span>
-				<select class="input" name="variant">
+				{#snippet help()}<span class="order">{formatResolutionOrder(profile.resolutions)}</span
+					>{/snippet}
+			</Setting>
+
+			<Setting label="Preferred Variant" field="variant">
+				<select class="input" id="variant" name="variant">
 					{#each variants as variant (variant)}
 						<option value={variant} selected={profile.variant === variant}>
 							{formatVariant(variant)}
 						</option>
 					{/each}
 				</select>
-			</label>
-			<label>
-				<span>Cutoff</span>
-				<select class="input" name="cutoff">
+			</Setting>
+
+			<Setting label="Cutoff" field="cutoff">
+				<select class="input" id="cutoff" name="cutoff">
 					{#each resolutions as resolution (resolution)}
 						<option value={resolution} selected={profile.cutoff === resolution}>
 							{formatResolution(resolution)}
 						</option>
 					{/each}
 				</select>
-			</label>
-			<p class="note">
-				Pacerr takes the most recently published Release covering each Part that this Profile
-				accepts, and stops looking for a better Resolution once a Part reaches the Cutoff.
-			</p>
-			<button class="button" type="submit">Save</button>
+				{#snippet help()}
+					Pacerr takes the most recently published Release covering each Part that this Profile
+					accepts, and stops looking for a better Resolution once a Part reaches the Cutoff.
+				{/snippet}
+			</Setting>
+
+			<div class="setting">
+				<div class="control">
+					<button class="button" type="submit">Save</button>
+				</div>
+			</div>
 		</form>
 	</section>
-
 </SettingsChrome>
-
-<style>
-	form {
-		display: grid;
-		gap: var(--space-3);
-		justify-items: start;
-		max-width: var(--form-width);
-	}
-
-	label {
-		display: grid;
-		gap: var(--space-1);
-		width: 100%;
-	}
-
-	label span {
-		color: var(--ink-dim);
-	}
-
-	fieldset {
-		display: grid;
-		gap: var(--space-2);
-		width: 100%;
-		margin: 0;
-		padding: var(--space-3);
-		border: var(--hairline) solid var(--border);
-		border-radius: var(--radius-control);
-	}
-
-	legend {
-		padding: 0 var(--space-1);
-		color: var(--ink-dim);
-	}
-
-	.order {
-		margin: 0;
-		color: var(--ink-bright);
-	}
-
-</style>

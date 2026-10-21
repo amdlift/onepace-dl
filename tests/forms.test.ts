@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { startPacerr, type Pacerr } from './harness/pacerr';
 
 const tokenSheet = fileURLToPath(new URL('../src/app.css', import.meta.url));
 
@@ -17,6 +18,18 @@ function declarationsFor(selector: string): Record<string, string> {
 		])
 	);
 }
+
+const settingsPages = [
+	'/settings',
+	'/settings/media-management',
+	'/settings/download-client',
+	'/settings/metadata',
+	'/settings/manual-import',
+	'/settings/security'
+];
+
+const labelsOn = async (pacerr: Pacerr, path: string): Promise<string[]> =>
+	(await pacerr.open(path)).texts('.setting > .label');
 
 describe('a setting', () => {
 	it('is a row of the label column, gutter and control column the reference measures', () => {
@@ -36,5 +49,85 @@ describe('a setting', () => {
 
 	it('dims its help text to the help colour', () => {
 		expect(declarationsFor('.help')).toMatchObject({ color: 'var(--ink-dim)' });
+	});
+});
+
+describe('a section of a Settings page', () => {
+	it('carries a legend at the reference size with a rule beneath it', () => {
+		expect(declarationsFor('h2')).toMatchObject({
+			'font-size': 'var(--type-legend)',
+			'border-bottom': 'var(--hairline) solid var(--border)'
+		});
+	});
+
+	it('is what every setting on every Settings page sits inside', async () => {
+		const pacerr = await startPacerr();
+
+		for (const path of settingsPages) {
+			const page = await pacerr.open(path);
+
+			expect(page.texts('section > h2').length).toBeGreaterThan(0);
+			expect(page.texts('section .setting').length).toBe(page.texts('.setting').length);
+		}
+	});
+});
+
+describe('every setting a Settings page offers', () => {
+	it('is a labelled row', async () => {
+		const pacerr = await startPacerr();
+
+		expect(await labelsOn(pacerr, '/settings')).toEqual([
+			'Resolution preference',
+			'Preferred Variant',
+			'Cutoff'
+		]);
+		expect(await labelsOn(pacerr, '/settings/media-management')).toEqual([
+			'Naming template',
+			'Library',
+			'Download directory'
+		]);
+		expect(await labelsOn(pacerr, '/settings/download-client')).toEqual([
+			'qBittorrent address',
+			'Username',
+			'Password'
+		]);
+		expect(await labelsOn(pacerr, '/settings/metadata')).toEqual([
+			'Show NFO',
+			'Season NFO',
+			'Episode NFO',
+			'Season Poster'
+		]);
+		expect(await labelsOn(pacerr, '/settings/manual-import')).toEqual(['Import Source']);
+		expect(await labelsOn(pacerr, '/settings/security')).toEqual([
+			'Require a login',
+			'Username',
+			'Password'
+		]);
+	});
+
+	it('names the control its label is for', async () => {
+		const pacerr = await startPacerr();
+
+		for (const path of settingsPages) {
+			const page = await pacerr.open(path);
+
+			const labelled = page.attributes('.setting > .label', 'for');
+			expect(labelled.length).toBeGreaterThan(0);
+			for (const field of labelled) {
+				expect(page.attributes(`.setting > .control #${field} `, 'name')).toEqual([field]);
+			}
+		}
+	});
+
+	it('explains itself beneath its control rather than beside the row', async () => {
+		const pacerr = await startPacerr();
+
+		for (const path of settingsPages) {
+			const page = await pacerr.open(path);
+
+			const help = page.texts('.help');
+			expect(help.length).toBeGreaterThan(0);
+			expect(page.texts('.setting > .control .help')).toEqual(help);
+		}
 	});
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Setting from '../../../../lib/components/Setting.svelte';
 	import SettingsChrome from '../../../../lib/components/SettingsChrome.svelte';
 	import type { PageProps } from './$types';
 
@@ -15,59 +16,62 @@
 		<h2>Download Client</h2>
 
 		<form method="POST" action="?/saveDownloadClient">
-			<label>
-				<span>qBittorrent address</span>
-				<input class="input" name="url" placeholder="http://localhost:8080" value={downloadClient.url} />
-			</label>
-			<label>
-				<span>Username</span>
-				<input class="input" name="username" autocomplete="off" value={downloadClient.username} />
-			</label>
-			<label>
-				<span>Password</span>
-				<input class="input" name="password" type="password" autocomplete="off" placeholder="Unchanged" />
-			</label>
-			<p class="note">
-				Pacerr hands every Release to this client and never moves bytes over BitTorrent itself, so
-				the seeding, ratio and VPN rules you already set there keep applying.
-			</p>
-			<div class="row">
-				<button class="button" type="submit">Save</button>
-				<button class="button" type="submit" formaction="?/testDownloadClient">Test</button>
+			<Setting label="qBittorrent address" field="url">
+				<input
+					class="input"
+					id="url"
+					name="url"
+					placeholder="http://localhost:8080"
+					value={downloadClient.url}
+				/>
+			</Setting>
+
+			<Setting label="Username" field="username">
+				<input
+					class="input"
+					id="username"
+					name="username"
+					autocomplete="off"
+					value={downloadClient.username}
+				/>
+			</Setting>
+
+			<Setting label="Password" field="password">
+				<input
+					class="input"
+					id="password"
+					name="password"
+					type="password"
+					autocomplete="off"
+					placeholder="Unchanged"
+				/>
+				{#snippet help()}
+					Pacerr hands every Release to this client and never moves bytes over BitTorrent itself, so
+					the seeding, ratio and VPN rules you already set there keep applying.
+				{/snippet}
+			</Setting>
+
+			<div class="setting">
+				<div class="control row">
+					<button class="button" type="submit">Save</button>
+					<button class="button" type="submit" formaction="?/testDownloadClient">Test</button>
+				</div>
 			</div>
 		</form>
 
 		{#if connection !== null}
-			<p class="connection" class:bad={!connection.ok}>{connection.detail}</p>
+			<div class="setting">
+				<div class="control">
+					<p class="connection" class:bad={!connection.ok}>{connection.detail}</p>
+				</div>
+			</div>
 		{/if}
 	</section>
 </SettingsChrome>
 
 <style>
-	form {
-		display: grid;
-		gap: var(--space-3);
-		justify-items: start;
-		max-width: var(--form-width);
-	}
-
-	label {
-		display: grid;
-		gap: var(--space-1);
-		width: 100%;
-	}
-
-	label span {
-		color: var(--ink-dim);
-	}
-
-	.row {
-		display: flex;
-		gap: var(--space-2);
-	}
-
 	.connection {
-		margin: var(--space-2) 0 0;
+		margin: 0;
 		color: var(--ink-bright);
 	}
 
