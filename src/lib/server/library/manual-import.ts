@@ -1,9 +1,10 @@
-import { readdirSync, realpathSync, statSync } from 'node:fs';
-import { basename, extname, join, relative, resolve, sep } from 'node:path';
+import { readdirSync, statSync } from 'node:fs';
+import { basename, extname, join, relative, resolve } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { Clock } from '../clock';
 import { reasonOf } from '../failure';
 import { recordHistory, type HistoryEntry } from '../history/store';
+import { hidesNothing, permit, type BrowsePolicy } from '../paths/browse';
 import { copiedInsteadOfLinked, placeIntoLibrary, type Placing } from './import';
 import type { NamingFields } from './naming';
 import { partLibraryIndex, readNamingTemplate, recordHadPart } from './store';
@@ -22,16 +23,17 @@ const videoExtensions = new Set([
 ]);
 
 /**
- * Every video file under `root`, however deep, named relative to it. A relative name is the only
- * form the rest of Manual Import accepts, so nothing it lists can later be read as a path elsewhere.
+ * Every video file the policy reaches, however deep, named relative to its root. A relative name is
+ * the only form the rest of Manual Import accepts, so nothing it lists can later be read as a path
+ * elsewhere.
  */
-export function importableFiles(root: string): string[] {
+export function importableFiles(policy: BrowsePolicy): string[] {
 	const found: string[] = [];
-	walk(root, root, found);
+	walk(policy, policy.root, found);
 	return found.sort((left, right) => left.localeCompare(right));
 }
 
-function walk(root: string, directory: string, found: string[]): void {
+function walk(policy: BrowsePolicy, directory: string, found: string[]): void {
 	let entries: string[];
 	try {
 		entries = readdirSync(directory);
@@ -41,30 +43,13 @@ function walk(root: string, directory: string, found: string[]): void {
 	for (const entry of entries) {
 		const path = join(directory, entry);
 		// A symlink out of the root would widen what Manual Import can read past what was
-		// configured, so the walk only descends into what `confine` would also allow.
-		if (confine(root, relative(root, path)) === null) continue;
+		// configured, so the walk only descends into what the policy would let an import read.
+		if (permit(policy, path) === null) continue;
 		const stats = statSync(path, { throwIfNoEntry: false });
 		if (stats === undefined) continue;
-		if (stats.isDirectory()) walk(root, path, found);
-		else if (videoExtensions.has(extname(entry).toLowerCase())) found.push(relative(root, path));
-	}
-}
-
-/**
- * The absolute path `candidate` names inside `root`, or null when it names anything outside it.
- * Resolved through symlinks, because a link inside the root is still a way out of it.
- */
-export function confine(root: string, candidate: string): string | null {
-	const base = realOf(resolve(root));
-	const full = realOf(resolve(root, candidate));
-	return full === base || full.startsWith(base + sep) ? resolve(root, candidate) : null;
-}
-
-function realOf(path: string): string {
-	try {
-		return realpathSync(path);
-	} catch {
-		return path;
+		if (stats.isDirectory()) walk(policy, path, found);
+		else if (videoExtensions.has(extname(entry).toLowerCase()))
+			found.push(relative(policy.root, path));
 	}
 }
 
@@ -217,7 +202,7 @@ export function manualImport(
 	db: Database,
 	clock: Clock,
 	library: string,
-	root: string | null,
+	policy: BrowsePolicy | null,
 	confirmed: ConfirmedImport[],
 	placing: Placing
 ): void {
@@ -233,7 +218,7 @@ export function manualImport(
 	for (const one of confirmed) {
 		const target = targets.get(one.partSlug);
 		if (target === undefined) continue;
-		const source = root === null ? null : confine(root, one.path);
+		const source = policy === null ? null : permit(policy, one.path);
 		if (source === null) {
 			entries.push({
 				event: 'manualImport',
@@ -299,8 +284,17 @@ export type BrowsableRoot = 'source' | 'library';
 export const browsableRoot = (requested: unknown): BrowsableRoot =>
 	requested === 'library' ? 'library' : 'source';
 
-export function rootDirectory(db: Database, library: string, root: BrowsableRoot): string | null {
-	return root === 'library' ? library : readImportSource(db);
+export function importPolicy(
+	db: Database,
+	library: string,
+	root: BrowsableRoot
+): BrowsePolicy | null {
+	const directory = root === 'library' ? library : readImportSource(db);
+	// Nothing is hidden within either root: the Import Source is the user's own directory, and the
+	// Library is what Pacerr itself writes.
+	return directory === null
+		? null
+		: { root: directory, hidden: hidesNothing, refusal: outsideWhatPacerrReads };
 }
 
 export function writeImportSource(db: Database, path: string): void {

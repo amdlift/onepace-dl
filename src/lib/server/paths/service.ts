@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { EnvironmentPaths, RuntimePaths } from '../runtime';
+import { filesystemPolicy, type BrowsePolicy } from './browse';
 import { directoryNoun } from './validation';
 
 /** The two directories a user points Pacerr at; the config directory is a boot concern instead. */
@@ -55,10 +56,16 @@ export class PathService {
 		return this.#configured('downloads');
 	}
 
+	/** How far the Settings browser may look for a directory to point one of these at. */
+	browsePolicy(): BrowsePolicy {
+		return filesystemPolicy(this.#mounted.root);
+	}
+
 	/** The three directories as they stand now, for whatever validates or reads them. */
 	current(): RuntimePaths {
 		return {
 			config: this.#mounted.config,
+			root: this.#mounted.root,
 			library: this.library().path,
 			downloads: this.downloads().path
 		};

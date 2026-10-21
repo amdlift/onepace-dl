@@ -6,6 +6,8 @@ import type { DownloadClientFactory } from './download/client';
 
 export interface RuntimePaths {
 	config: string;
+	/** The filesystem this install can see: `/` in the container, a temporary directory at seam 1. */
+	root: string;
 	/** Where the Library and the download directory sit until Settings says otherwise. */
 	library: string;
 	downloads: string;
