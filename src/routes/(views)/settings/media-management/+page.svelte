@@ -214,37 +214,54 @@
 		{/if}
 
 		{#if remotePathMappings.length > 0}
-			<ul class="mapping-list">
-				{#each remotePathMappings as mapping (mapping.id)}
-					<li>
-						<code>{mapping.remotePath}</code>
-						<span aria-hidden="true">&rarr;</span>
-						<code>{mapping.localPath}</code>
-						<form method="POST" action="?/removeRemotePathMapping">
-							<input type="hidden" name="id" value={mapping.id} />
-							<button class="button" type="submit">Remove</button>
-						</form>
-					</li>
-				{/each}
-			</ul>
+			<table class="table mapping-list">
+				<thead>
+					<tr>
+						<th>Path on the Download Client</th>
+						<th>The same place as Pacerr sees it</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each remotePathMappings as mapping (mapping.id)}
+						<tr>
+							<td>{mapping.remotePath}</td>
+							<td>{mapping.localPath}</td>
+							<td class="remove">
+								<form method="POST" action="?/removeRemotePathMapping">
+									<input type="hidden" name="id" value={mapping.id} />
+									<button class="button" type="submit">Remove</button>
+								</form>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
 		{/if}
 
 		<form class="add-mapping" method="POST" action="?/addRemotePathMapping">
-			<label>
-				<span>Path on the Download Client</span>
-				<input class="input" name="remotePath" autocomplete="off" placeholder="/data/torrents" />
-			</label>
-			<label>
-				<span>The same place as Pacerr sees it</span>
-				<input class="input" name="localPath" autocomplete="off" placeholder="/downloads" />
-			</label>
-			<p class="note">
-				Only needed when the two do not share a mount layout. The Download Client reports where it put
-				a completed download using its own paths; a mapping rewrites that prefix to the equivalent path
-				inside this container.
-			</p>
+			<input
+				class="input"
+				name="remotePath"
+				autocomplete="off"
+				aria-label="Path on the Download Client"
+				placeholder="/data/torrents"
+			/>
+			<input
+				class="input"
+				name="localPath"
+				autocomplete="off"
+				aria-label="The same place as Pacerr sees it"
+				placeholder="/downloads"
+			/>
 			<button class="button" type="submit">Add</button>
 		</form>
+
+		<p class="note">
+			Only needed when the two do not share a mount layout. The Download Client reports where it put
+			a completed download using its own paths; a mapping rewrites that prefix to the equivalent path
+			inside this container.
+		</p>
 	</section>
 </SettingsChrome>
 
@@ -292,39 +309,15 @@
 		color: var(--danger);
 	}
 
-	.mapping-list {
-		display: grid;
-		gap: var(--space-1);
-		margin: 0 0 var(--space-3);
-		padding: 0;
-		list-style: none;
-	}
-
-	.mapping-list li {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--space-2);
-	}
-
-	.mapping-list code {
-		color: var(--ink-bright);
+	.mapping-list,
+	.add-mapping {
+		max-width: calc(var(--label-width) + var(--label-gutter) + var(--control-width));
+		margin-bottom: var(--space-3);
 	}
 
 	.add-mapping {
 		display: grid;
-		gap: var(--space-3);
-		justify-items: start;
-		max-width: var(--form-width);
-	}
-
-	.add-mapping label {
-		display: grid;
-		gap: var(--space-1);
-		width: 100%;
-	}
-
-	.add-mapping label span {
-		color: var(--ink-dim);
+		grid-template-columns: 1fr 1fr auto;
+		gap: var(--space-2);
 	}
 </style>

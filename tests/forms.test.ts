@@ -131,3 +131,34 @@ describe('every setting a Settings page offers', () => {
 		}
 	});
 });
+
+describe('Remote Path Mappings', () => {
+	it('lists what is mapped as a table, and still adds to it and removes from it', async () => {
+		const pacerr = await startPacerr();
+
+		await pacerr.submit('/settings/media-management', 'addRemotePathMapping', {
+			remotePath: '/data/torrents',
+			localPath: '/downloads'
+		});
+
+		const added = await pacerr.open('/settings/media-management');
+		expect(added.texts('.mapping-list thead th')).toEqual([
+			'Path on the Download Client',
+			'The same place as Pacerr sees it',
+			''
+		]);
+		expect(added.texts('.mapping-list tbody tr')).toHaveLength(1);
+		expect(added.text('.mapping-list tbody tr')).toContain('/data/torrents');
+		expect(added.text('.mapping-list tbody tr')).toContain('/downloads');
+
+		const id = added.attributes(
+			'.mapping-list form[action="?/removeRemotePathMapping"] input[name="id"]',
+			'value'
+		)[0];
+		const removed = await pacerr.submit('/settings/media-management', 'removeRemotePathMapping', {
+			id: id ?? ''
+		});
+
+		expect(removed.texts('.mapping-list tbody tr')).toEqual([]);
+	});
+});
