@@ -160,8 +160,8 @@
 			135deg,
 			transparent,
 			transparent 6px,
-			var(--surface-raised) 6px,
-			var(--surface-raised) 12px
+			var(--surface-panel) 6px,
+			var(--surface-panel) 12px
 		);
 	}
 

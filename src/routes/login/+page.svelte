@@ -46,7 +46,7 @@
 		padding: 0.35rem 0.5rem;
 		border: 1px solid var(--border);
 		border-radius: 2px;
-		background: var(--surface-raised);
+		background: var(--surface-panel);
 		color: var(--ink);
 	}
 </style>

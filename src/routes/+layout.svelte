@@ -71,7 +71,7 @@
 	}
 
 	.brand {
-		color: var(--ink-bright);
+		color: var(--brand);
 		font-size: 1.1rem;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -112,7 +112,7 @@
 	}
 
 	nav a[aria-current='page'] {
-		border-left-color: var(--accent);
+		border-left-color: var(--nav-active);
 		color: var(--ink-bright);
 		background: var(--surface-hover);
 	}
@@ -130,7 +130,7 @@
 		margin: 0 0 0.75rem;
 		padding: 0.5rem 0.75rem;
 		border-left: 3px solid var(--danger);
-		background: var(--surface-raised);
+		background: var(--surface-panel);
 	}
 
 	.banner strong {

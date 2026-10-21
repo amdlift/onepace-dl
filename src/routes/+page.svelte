@@ -116,7 +116,7 @@
 		height: 60px;
 		object-fit: cover;
 		border-radius: 2px;
-		background: var(--surface-hover);
+		background: var(--surface-panel);
 	}
 
 	.monitoring {
