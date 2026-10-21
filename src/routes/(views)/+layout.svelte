@@ -6,8 +6,10 @@
 
 	const failing = $derived(data.failing);
 
-	const sections = [
-		{ href: '/', label: 'Arcs' },
+	type Section = { href: string; label: string; covers?: string[] };
+
+	const sections: Section[] = [
+		{ href: '/', label: 'Arcs', covers: ['/', '/arcs'] },
 		{ href: '/activity', label: 'Activity' },
 		{ href: '/wanted', label: 'Wanted' },
 		{ href: '/manual-import', label: 'Manual Import' },
@@ -15,10 +17,12 @@
 		{ href: '/system', label: 'System' }
 	];
 
-	function current(href: string): 'page' | undefined {
+	function current(section: Section): 'page' | undefined {
 		const path = page.url.pathname;
-		const here = href === '/' ? path === '/' : path.startsWith(href);
-		return here ? 'page' : undefined;
+		const covers = section.covers ?? [section.href];
+		return covers.some((root) => path === root || path.startsWith(`${root}/`))
+			? 'page'
+			: undefined;
 	}
 </script>
 
@@ -32,7 +36,7 @@
 		<ul>
 			{#each sections as section (section.href)}
 				<li>
-					<a href={section.href} aria-current={current(section.href)}>{section.label}</a>
+					<a href={section.href} aria-current={current(section)}>{section.label}</a>
 				</li>
 			{/each}
 		</ul>
