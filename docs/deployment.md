@@ -77,6 +77,25 @@ and clears on its own once the mount is fixed.
 
 **Settings → Directories → Test** re-runs exactly the same validation on demand.
 
+## Who can browse your filesystem
+
+**Browse**, beside each path field in Settings, lists the directories this container can see so you
+can click down to the one you want. It hides the container's own system directories (`/app`,
+`/proc`, `/sys`, `/dev`, `/bin`, `/sbin`, `/lib*`, `/usr`, `/etc`, `/var`, `/run`, `/tmp`), so what
+remains is effectively your mounts. It resolves every path through symlinks and refuses anything
+that lands outside what it is allowed to reach, by listing and by selection alike, so it can never
+offer a path that saving would then refuse. Manual Import uses the same mechanism with a narrower
+reach: the Import Source and the Library, and nothing else.
+
+**The browser is not separately authenticated.** Pacerr has one gate — every view, form action and
+endpoint is behind it, or none of them are. On an install with authentication enabled the browser is
+behind that gate with everything else. On an install with authentication **off**, which is the
+default, it is reachable like every other route, and anyone who can reach Pacerr can read the names
+of the directories this container has mounted. That is a consequence of the default rather than a
+hole in the browser: it exposes directory names, never file contents, and writes nothing but the
+path you pick. Expose Pacerr only to a network you trust, or turn authentication on in
+**Settings → Security** or with the `PACERR_AUTH_*` variables.
+
 ## Polling cost
 
 Every poll transfers the whole document, because One Pace serves no `ETag` and no `Last-Modified`.
