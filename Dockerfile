@@ -14,12 +14,13 @@ WORKDIR /app
 ENV NODE_ENV=production \
 	PROTOCOL_HEADER=x-forwarded-proto \
 	PACERR_CONFIG_DIR=/config \
-	PACERR_LIBRARY_DIR=/library \
-	PACERR_DOWNLOADS_DIR=/downloads \
 	PORT=3000
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci --omit dev --ignore-scripts
 COPY --from=build /app/build ./build
+# The Posters are read off disk at runtime, both to serve them and to write them into the Library,
+# so the image carries them rather than the build folding them into the bundle.
+COPY artwork ./artwork
 COPY server.js ./
 COPY src/lib/connection-protocol.ts ./src/lib/connection-protocol.ts
 RUN mkdir -p /config /library /downloads && chown -R node:node /config /library /downloads

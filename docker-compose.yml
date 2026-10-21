@@ -32,12 +32,14 @@ services:
       # as long as this survives.
       - pacerr-config:/config
 
-      # The Library a media server reads.
+      # The Library a media server reads. Mount it wherever you like and type
+      # that path into Settings -> Directories; /library is only the default.
       - /srv/media/one-pace:/library
 
-      # The download directory. This must resolve to the same files qBittorrent
-      # writes — mounting it at the same path in both containers is the simplest
-      # way. If you cannot, add a Remote Path Mapping in Settings.
+      # The download directory, likewise set in Settings -> Directories. This
+      # must resolve to the same files qBittorrent writes — mounting it at the
+      # same path in both containers is the simplest way. If you cannot, add a
+      # Remote Path Mapping in Settings.
       - /srv/downloads:/downloads
 
       # Hardlinking only works within one filesystem. If /library and /downloads

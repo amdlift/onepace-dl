@@ -7,3 +7,6 @@ build/
 *.db-shm
 .env
 .env.*
+
+# The Poster sources: a quarter of a gigabyte of PNGs, derived from rather than committed.
+artwork-sources/

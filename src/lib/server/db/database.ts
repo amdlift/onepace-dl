@@ -239,6 +239,15 @@ const migrations = [
 		from feed_source;
 	drop table catalogue_source;
 	drop table feed_source;
+	`,
+	`
+	-- Null means "whatever the deployment mounts by default", so that default lives in one place.
+	create table directory (
+		id integer primary key check (id = 1),
+		library text,
+		downloads text
+	);
+	insert into directory (id) values (1);
 	`
 ];
 

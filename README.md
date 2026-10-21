@@ -82,14 +82,21 @@ containers, or add a **Remote Path Mapping** in Settings. See
 
 ## Volumes
 
-| Mount        | Holds                                                     | Override               |
-| ------------ | --------------------------------------------------------- | ---------------------- |
-| `/config`    | `pacerr.db` — the Catalogue, Monitoring, Profile, History | `PACERR_CONFIG_DIR`    |
-| `/library`   | The Library a media server reads                          | `PACERR_LIBRARY_DIR`   |
-| `/downloads` | The download directory the Download Client writes into    | `PACERR_DOWNLOADS_DIR` |
+| Mount        | Holds                                                     | Set in                             |
+| ------------ | --------------------------------------------------------- | ---------------------------------- |
+| `/config`    | `pacerr.db` — the Catalogue, Monitoring, Profile, History | `PACERR_CONFIG_DIR`                |
+| `/library`   | The Library a media server reads                          | Settings → Directories             |
+| `/downloads` | The download directory the Download Client writes into    | Settings → Directories             |
 
 Everything Pacerr must not lose lives in `/config`, so recreating the container loses nothing as
-long as that volume survives.
+long as that volume survives. That includes any Poster you supply yourself — see
+[Artwork](#artwork).
+
+Those two paths are only where the image mounts them. Point Pacerr at an existing layout —
+`/zfspool/media/Anime/One Pace`, say — in **Settings → Directories**, and mount it in the container
+at whatever path you type there. The setting lives in `/config` and survives being recreated. The
+config directory is the exception: Pacerr cannot read a setting out of a database it has not opened
+yet, so that one stays an environment variable.
 
 Keep `/library` and `/downloads` **on the same filesystem** if you can. Pacerr hardlinks imports so
 a Part does not occupy disk twice while it seeds; across a filesystem boundary it falls back to
@@ -114,13 +121,17 @@ mode of the directory, and both fixes. Read `docker logs pacerr`.
 | `PORT`                            | `3000`                | Port to listen on inside the container                         |
 | `HOST`                            | `0.0.0.0`             | Address to bind                                                |
 | `PACERR_CONFIG_DIR`               | `/config`             | Where `pacerr.db` lives                                        |
-| `PACERR_LIBRARY_DIR`              | `/library`            | The Library                                                    |
-| `PACERR_DOWNLOADS_DIR`            | `/downloads`          | The download directory                                         |
+| `PACERR_LIBRARY_DIR`              | unset                 | Pins the Library, making the Settings field read-only          |
+| `PACERR_DOWNLOADS_DIR`            | unset                 | Pins the download directory the same way                       |
 | `PACERR_AUTH_USERNAME`            | unset                 | Configures the login from the environment                      |
 | `PACERR_AUTH_PASSWORD`            | unset                 | Configures the login from the environment                      |
 | `PACERR_FEED_INTERVAL_MINUTES`    | `15`                  | How often the release feed is polled                           |
 | `PACERR_CATALOGUE_INTERVAL_HOURS` | `24`                  | How often the watch page is scraped                            |
 | `PACERR_ONEPACE_URL`              | `https://onepace.net` | Where the Catalogue and feed come from                         |
+
+The image sets neither `PACERR_LIBRARY_DIR` nor `PACERR_DOWNLOADS_DIR`, because a variable that is
+always set would permanently lock both fields. Set one only if you want a deployment to configure
+Pacerr from outside: the value then wins, and Settings shows it read-only saying where it came from.
 
 Authentication is **off by default**, so a first run behind a VPN or a reverse proxy is not gated
 behind creating an account. Setting both `PACERR_AUTH_*` variables turns it on and takes the account
@@ -143,6 +154,37 @@ An Arc's season number is assigned the first time Pacerr sees that Arc and then 
 recomputed from its position in the Catalogue — so an Arc appearing upstream cannot renumber a
 Library you already have. Specials and one-off entries take season zero, each with its own episode
 number. The template is configurable in Settings.
+
+## Artwork
+
+Pacerr ships a Poster for every Arc One Pace has finished, so artwork works offline and on a fresh
+install without you sourcing anything. Each Arc resolves in this order, and the last step means an
+Arc appearing upstream never renders as a broken image:
+
+1. a Poster you supplied, at `/config/posters/<arc-slug>.jpg` — `.jpeg`, `.png` and `.webp` work
+   too, and the slug is the last part of the Arc's URL in Pacerr, as in `/arcs/alabasta`
+2. the Poster Pacerr ships
+3. the Backdrop One Pace publishes for the Arc
+4. a neutral placeholder
+
+Drop a file in and reload; nothing needs restarting.
+
+### Re-deriving the shipped Posters
+
+The sources are a quarter of a gigabyte of PNGs that deliberately stay out of the repository, so
+what is committed is the two derived sets — a Library JPEG sized for a media server and a smaller
+WebP these views serve — plus `artwork/posters.json`, which maps each one to an Arc slug. That
+mapping is written and reviewed by a human and is the only thing that says which Arc a Poster
+belongs to: the source filenames carry One Pace's own season numbering, which is not Pacerr's, per
+[ADR-0004](docs/adr/0004-never-parse-filenames-to-identify-a-release.md).
+
+```sh
+scripts/fetch-poster-sources.sh   # into artwork-sources/, which is gitignored
+node scripts/derive-posters.js
+```
+
+The derivation refuses to run on a source no manifest entry names, so new artwork is a line someone
+adds by hand rather than a guess the script makes.
 
 ## What Pacerr costs One Pace
 
