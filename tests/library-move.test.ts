@@ -43,6 +43,24 @@ async function aLibraryHoldingReverie(): Promise<Pacerr> {
 	return pacerr;
 }
 
+/** A move of Reverie that got one Part across and then hit a destination Pacerr cannot write. */
+async function aMoveStoppedAfterOnePart(): Promise<{
+	pacerr: Pacerr;
+	media: string;
+	clear: () => void;
+}> {
+	const pacerr = await aLibraryHoldingReverie();
+	const media = anotherDirectory();
+	const inTheWay = join(media, 'Season 34', 'One Pace - S34E02 - A Beautiful World [1080p].mkv');
+	mkdirSync(inTheWay, { recursive: true });
+
+	await pacerr.submit('/settings', 'saveLibrary', { library: media });
+	await pacerr.submit('/settings', 'startLibraryMove');
+	await pacerr.settle();
+
+	return { pacerr, media, clear: () => rmSync(inTheWay, { recursive: true }) };
+}
+
 describe('changing the Library that already holds Parts', () => {
 	it('shows what the move would do and touches nothing until it is confirmed', async () => {
 		const pacerr = await aLibraryHoldingReverie();
@@ -153,6 +171,17 @@ describe('a move stopped partway', () => {
 			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 		]);
 	});
+
+	it('names every file left behind, so the user knows what to go and fix', async () => {
+		const { pacerr } = await aMoveStoppedAfterOnePart();
+
+		const page = await pacerr.open('/settings');
+
+		expect(page.texts('.move .stranded li')).toEqual([
+			join(pacerr.paths.library, 'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv'),
+			join(pacerr.paths.library, 'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv')
+		]);
+	});
 });
 
 describe('a move the container was recreated in the middle of', () => {
@@ -170,5 +199,37 @@ describe('a move the container was recreated in the middle of', () => {
 		expect(page.text('.move')).toContain(`3 Parts are still under ${pacerr.paths.library}`);
 		expect(partsUnder(media)).toEqual([]);
 		expect(partsUnder(pacerr.paths.library)).toHaveLength(3);
+	});
+});
+
+describe('a move run again once the problem is fixed', () => {
+	it('offers to try again, and takes up only what is still at the old Library', async () => {
+		const { pacerr, media, clear } = await aMoveStoppedAfterOnePart();
+		const stopped = await pacerr.open('/settings');
+		expect(stopped.texts('.move button')).toContain('Try again');
+
+		clear();
+		await pacerr.hold();
+		const retrying = await pacerr.submit('/settings', 'startLibraryMove');
+
+		expect(retrying.text('.move')).toContain('1 of 3 Parts moved');
+
+		await pacerr.settle();
+
+		const finished = await pacerr.open('/settings');
+		expect(finished.text('.move')).toContain('Moved 3 Parts');
+		expect(partsUnder(media)).toHaveLength(3);
+		expect(partsUnder(pacerr.paths.library)).toEqual([]);
+	});
+
+	it('records every Part at the new Library, so a later move takes all three from there', async () => {
+		const { pacerr, media, clear } = await aMoveStoppedAfterOnePart();
+		clear();
+		await pacerr.submit('/settings', 'startLibraryMove');
+		await pacerr.settle();
+
+		const page = await pacerr.submit('/settings', 'saveLibrary', { library: anotherDirectory() });
+
+		expect(page.text('.move')).toContain(`3 Parts, 21 B, are still under ${media}`);
 	});
 });

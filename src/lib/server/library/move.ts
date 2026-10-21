@@ -21,7 +21,8 @@ export interface LibraryMove {
 	state: LibraryMoveState;
 	reason: string | null;
 	moved: number;
-	remaining: number;
+	/** Every file still at the old Library, named so a move that stopped says what to go and fix. */
+	stranded: string[];
 }
 
 interface MoveRow {
@@ -79,7 +80,7 @@ export class LibraryMoveService {
 	current(): LibraryMove | null {
 		const row = this.#latest();
 		if (row === undefined) return null;
-		const remaining = strandedParts(this.#db).length;
+		const stranded = strandedParts(this.#db);
 		return {
 			source: row.source,
 			destination: row.destination,
@@ -88,16 +89,25 @@ export class LibraryMoveService {
 			sameFilesystem: row.same_filesystem === 1,
 			state: row.state as LibraryMoveState,
 			reason: row.reason,
-			moved: row.parts - remaining,
-			remaining
+			moved: row.parts - stranded.length,
+			stranded: stranded.map((part) => join(part.library_root, part.library_path))
 		};
 	}
 
-	/** Starts the planned move and returns at once; it carries on in the background. */
+	/**
+	 * Runs the move and returns at once; it carries on in the background. A move that stopped
+	 * partway starts again here rather than being planned afresh, so it takes up the files still
+	 * at the old Library and leaves the ones already moved alone.
+	 */
 	start(): void {
 		const row = this.#latest();
-		if (row === undefined || row.state !== 'planned') return;
-		this.#db.prepare("update library_move set state = 'moving' where id = ?").run(row.id);
+		if (row === undefined || !canRun(row.state)) return;
+		this.#db
+			.prepare(
+				`update library_move set state = 'moving', reason = null, finished_at = null
+				where id = ?`
+			)
+			.run(row.id);
 		this.#background.run('Library move', (pause) => this.#move(row.id, pause));
 	}
 
@@ -174,6 +184,8 @@ export class LibraryMoveService {
 			);
 	}
 }
+
+const canRun = (state: string): boolean => state === 'planned' || state === 'failed';
 
 /**
  * One Part's file, moved and then recorded as moved, so a move stopped partway leaves every Part
