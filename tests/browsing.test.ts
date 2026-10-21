@@ -22,8 +22,8 @@ const offered = (page: PacerrPage): string[] => page.texts('.directories .name')
 
 /** Which Settings page each path field now lives on. */
 const settingsPage: Record<string, string> = {
-	library: '/settings',
-	downloads: '/settings',
+	library: '/settings/media-management',
+	downloads: '/settings/media-management',
 	importSource: '/settings/manual-import'
 };
 
@@ -96,7 +96,7 @@ describe('picking a directory for a Settings field', () => {
 		expect(await browseLinks(pacerr, '/settings/manual-import')).toEqual([
 			'/settings/browse?for=importSource'
 		]);
-		expect(await browseLinks(pacerr, '/settings')).toEqual([
+		expect(await browseLinks(pacerr, '/settings/media-management')).toEqual([
 			'/settings/browse?for=library',
 			'/settings/browse?for=downloads'
 		]);
@@ -219,7 +219,7 @@ describe('a path field the environment pinned', () => {
 		expect(await browseLinks(pacerr, '/settings/manual-import')).toEqual([
 			'/settings/browse?for=importSource'
 		]);
-		expect(await browseLinks(pacerr, '/settings')).toEqual(['/settings/browse?for=downloads']);
+		expect(await browseLinks(pacerr, '/settings/media-management')).toEqual(['/settings/browse?for=downloads']);
 
 		await pacerr.submit('/settings/browse', 'select', {
 			for: 'library',

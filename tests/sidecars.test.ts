@@ -168,7 +168,7 @@ describe('a Library filed under a naming template the user set', () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
 		pacerr.downloadClient.filesPerTorrent = 3;
-		await pacerr.submit('/settings', 'saveNamingTemplate', {
+		await pacerr.submit('/settings/media-management', 'saveNamingTemplate', {
 			template: '{arc}/{arc} - {season}x{episode} - {part}'
 		});
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });

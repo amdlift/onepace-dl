@@ -64,7 +64,7 @@ export const actions: Actions = {
 		}
 		const outcome = app.paths.configure(target, chosen);
 		if (!outcome.ok) return { problem: outcome.problem };
-		redirect(303, '/settings');
+		redirect(303, '/settings/media-management');
 	}
 };
 

@@ -47,3 +47,19 @@ describe('Manual Import', () => {
 		expect((await pacerr.open('/settings')).texts('h2')).not.toContain('Manual Import');
 	});
 });
+
+describe('Media Management', () => {
+	it('is where the Library, the download directory and Remote Path Mappings all live', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.open('/settings/media-management');
+
+		expect(page.attributes('input[name="library"]', 'value')).toEqual([pacerr.paths.library]);
+		expect(page.attributes('input[name="downloads"]', 'value')).toEqual([pacerr.paths.downloads]);
+		expect(page.texts('form[action="?/addRemotePathMapping"] button')).toEqual(['Add']);
+		expect(page.texts('form[action="?/saveNamingTemplate"] button')).toEqual(['Save']);
+		const settings = await pacerr.open('/settings');
+		expect(settings.attributes('input[name="library"]', 'value')).toEqual([]);
+		expect(settings.attributes('input[name="downloads"]', 'value')).toEqual([]);
+	});
+});

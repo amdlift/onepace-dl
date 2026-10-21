@@ -252,8 +252,8 @@ export class Pacerr {
 	async #configureDirectories(): Promise<void> {
 		const credentials = this.environmentCredentials;
 		if (credentials !== null) await this.submit('/login', 'logIn', credentials);
-		await this.submit('/settings', 'saveLibrary', { library: this.paths.library });
-		await this.submit('/settings', 'saveDownloads', { downloads: this.paths.downloads });
+		await this.submit('/settings/media-management', 'saveLibrary', { library: this.paths.library });
+		await this.submit('/settings/media-management', 'saveDownloads', { downloads: this.paths.downloads });
 		if (credentials !== null) this.forget();
 	}
 
