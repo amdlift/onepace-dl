@@ -40,11 +40,14 @@ it('picks up an Arc that appeared upstream', async () => {
 
 The instance stops itself when the test finishes.
 
-- `startPacerr({ configDir, watchPage, feed, now, authentication, downloadsDir })` — all optional.
+- `startPacerr({ configDir, watchPage, feed, now, authentication, downloadsDir,
+  libraryFromEnvironment, downloadsFromEnvironment })` — all optional.
   `configDir` boots against state a previous instance left behind; `authentication` is the
   container being given credentials by environment variable; `downloadsDir` mounts the download
   directory somewhere specific, which is how a test puts it on a filesystem the Library cannot be
-  hardlinked to. `watchPage` defaults to `fixtures.watchPage` and
+  hardlinked to; the two `*FromEnvironment` options are the deployment that pins a path with
+  `PACERR_LIBRARY_DIR` or `PACERR_DOWNLOADS_DIR`, which Settings then refuses to change.
+  `watchPage` defaults to `fixtures.watchPage` and
   `feed` to an empty channel, so a test that wants Releases passes `fixtures.feed`. Both
   fixtures are the real documents, captured from One Pace.
 - `pacerr.open(path)` → a `PacerrPage`: `text(selector?)`, `texts(selector)`,
@@ -63,7 +66,8 @@ The instance stops itself when the test finishes.
   `filesPerTorrent`.
 - `pacerr.connectDownloadClient()` — point Pacerr at one, which nothing is grabbed without.
 - `pacerr.paths` — `config`, `library`, `downloads`, all under a temporary directory. Assert on
-  the Library by reading it.
+  the Library by reading it. Starting up points Pacerr at the Library and the download directory
+  through its own Settings, so every test runs against paths configured the way a person does.
 - `pacerr.restart()` — recreate the container: same config volume, everything else new.
 
 The suite builds the app once (`tests/harness/build.ts`) because seam 1 drives the real
