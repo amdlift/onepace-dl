@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { EnvironmentPaths, RuntimePaths } from '../runtime';
 import { filesystemPolicy, type BrowsePolicy } from './browse';
-import { directoryNoun } from './validation';
+import { directoryNoun, directoryProblem } from './validation';
 
 /** The two directories a user points Pacerr at; the config directory is a boot concern instead. */
 export type ConfiguredDirectory = 'library' | 'downloads';
@@ -16,7 +16,15 @@ export interface ConfiguredPath {
 	variable: string;
 }
 
-export type ConfigureOutcome = { ok: true } | { ok: false; problem: string };
+/**
+ * Whether the directory was Pacerr's to set, and which of the three things is wrong with where it
+ * now points. A path with a problem is still saved: Settings naming a directory Pacerr cannot use
+ * is how the user sees their typo, where refusing it would leave the field showing a path they
+ * never typed and the problem unstated.
+ */
+export type ConfigureOutcome =
+	| { ok: false; problem: string }
+	| { ok: true; problem: string | null };
 
 export const environmentVariables: Record<ConfiguredDirectory, string> = {
 	library: 'PACERR_LIBRARY_DIR',
@@ -81,7 +89,7 @@ export class PathService {
 		}
 		const offered = wanted.trim();
 		this.#db.prepare(writes[directory]).run(offered === '' ? null : resolve(offered));
-		return { ok: true };
+		return { ok: true, problem: directoryProblem(directory, this.current()) };
 	}
 
 	#configured(directory: ConfiguredDirectory): ConfiguredPath {

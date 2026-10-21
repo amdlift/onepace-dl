@@ -2,15 +2,15 @@ import {
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
-	readdirSync,
 	rmSync,
 	statSync,
 	symlinkSync,
 	writeFileSync
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, extname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
+import { mediaUnder } from './harness/files';
 import { fixtures, hours, startPacerr, type Pacerr, type PacerrPage } from './harness/pacerr';
 
 /** What the view proposes for each listed file: its path against the Part slug pre-filled. */
@@ -33,14 +33,7 @@ function importSource(files: string[]): string {
 }
 
 /** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
-const libraryMedia = (pacerr: Pacerr): string[] =>
-	readdirSync(pacerr.paths.library, { recursive: true })
-		.map(String)
-		.filter((entry) => !isSidecar(entry) && statSync(join(pacerr.paths.library, entry)).isFile())
-		.sort();
-
-const isSidecar = (entry: string): boolean =>
-	extname(entry) === '.nfo' || basename(entry) === 'cover.jpg';
+const libraryMedia = (pacerr: Pacerr): string[] => mediaUnder(pacerr.paths.library);
 
 async function pacerrWith(files: string[]): Promise<{ pacerr: Pacerr; source: string }> {
 	const pacerr = await startPacerr({ feed: fixtures.feed });

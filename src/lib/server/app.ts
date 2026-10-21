@@ -45,8 +45,8 @@ export function createApp(runtime: Runtime): App {
 	const db = openDatabase(join(runtime.paths.config, 'pacerr.db'));
 	assignLibraryIndexes(db);
 	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
-	const catalogue = new CatalogueService(db, runtime, paths);
 	const posters = new Posters(runtime.paths.config);
+	const catalogue = new CatalogueService(db, runtime, posters, paths);
 	const releases = new ReleaseService(db, runtime);
 	const authentication = new AuthenticationService(
 		db,

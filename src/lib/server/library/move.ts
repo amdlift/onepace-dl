@@ -21,26 +21,34 @@ const stoppedMidMove = 'Pacerr stopped while it was moving the Library.';
 
 export type LibraryMoveState = 'planned' | 'moving' | 'done' | 'failed' | 'dismissed';
 
-/** What a move of the Library would do, is doing, or did. */
-export interface LibraryMove {
-	source: string;
-	destination: string;
+/**
+ * One directory some of the Library is still under. A move that stopped partway leaves Parts
+ * behind, and a second move started before the first was finished leaves them behind in more than
+ * one place, so what a plan names as its source is a list rather than the path Settings last held.
+ */
+export interface StrandedRoot {
+	path: string;
 	parts: number;
 	bytes: number;
+	/** Every file still under it, named so a move that stopped says what to go and fix. */
+	files: string[];
+}
+
+/** What a move of the Library would do, is doing, or did. */
+export interface LibraryMove {
+	destination: string;
+	parts: number;
 	sameFilesystem: boolean;
 	state: LibraryMoveState;
 	reason: string | null;
 	moved: number;
-	/** Every file still at the old Library, named so a move that stopped says what to go and fix. */
-	stranded: string[];
+	sources: StrandedRoot[];
 }
 
 interface MoveRow {
 	id: number;
-	source: string;
 	destination: string;
 	parts: number;
-	bytes: number;
 	same_filesystem: number;
 	state: string;
 	reason: string | null;
@@ -78,7 +86,7 @@ export class LibraryMoveService {
 			};
 		}
 		const from = this.#paths.library().path;
-		let outcome: ConfigureOutcome = { ok: true };
+		let outcome: ConfigureOutcome = { ok: true, problem: null };
 		this.#db.transaction(() => {
 			outcome = this.#paths.configure('library', wanted);
 			if (!outcome.ok) return;
@@ -92,15 +100,13 @@ export class LibraryMoveService {
 		if (row === undefined) return null;
 		const stranded = strandedParts(this.#db);
 		return {
-			source: row.source,
 			destination: row.destination,
 			parts: row.parts,
-			bytes: row.bytes,
 			sameFilesystem: row.same_filesystem === 1,
 			state: row.state as LibraryMoveState,
 			reason: row.reason,
 			moved: row.parts - stranded.length,
-			stranded: stranded.map((part) => join(part.library_root, part.library_path))
+			sources: rootsOf(stranded)
 		};
 	}
 
@@ -134,13 +140,34 @@ export class LibraryMoveService {
 			.run(stoppedMidMove, this.#clock.now().toISOString());
 	}
 
+	/**
+	 * Gives up on the move. Where every Part Pacerr holds turns out to be under one directory —
+	 * which is any move nothing has been moved by yet — the Library follows them there, so leaving
+	 * them alone leaves Settings naming the directory they are in rather than pinning them to a
+	 * root only a move plan would ever mention again. A move that got partway cannot be settled
+	 * that way, and goes on saying where the files it left behind are.
+	 */
 	dismiss(): void {
+		this.#db.transaction(() => {
+			this.#supersede();
+			this.#settle();
+		})();
+	}
+
+	#supersede(): void {
 		this.#db
 			.prepare(
 				`update library_move set state = 'dismissed', finished_at = ?
 				where state in ('planned', 'moving', 'done', 'failed')`
 			)
 			.run(this.#clock.now().toISOString());
+	}
+
+	#settle(): void {
+		const root = soleRoot(this.#db);
+		if (root === null) return;
+		this.#paths.configure('library', root);
+		this.#db.prepare('update had_part set library_root = null').run();
 	}
 
 	async #move(id: number, pause: Pause): Promise<void> {
@@ -166,7 +193,7 @@ export class LibraryMoveService {
 	#latest(): MoveRow | undefined {
 		return this.#db
 			.prepare(
-				`select id, source, destination, parts, bytes, same_filesystem, state, reason
+				`select id, destination, parts, same_filesystem, state, reason
 				from library_move order by id desc limit 1`
 			)
 			.get() as MoveRow | undefined;
@@ -175,27 +202,36 @@ export class LibraryMoveService {
 	#plan(from: string, to: string): void {
 		if (to === from) return;
 		pinTo(this.#db, from);
-		const stranded = strandedParts(this.#db);
-		if (stranded.length === 0) return;
-		this.dismiss();
+		const sources = rootsOf(strandedParts(this.#db));
+		if (sources.length === 0) return;
+		this.#supersede();
 		this.#db
 			.prepare(
 				`insert into library_move
-					(source, destination, parts, bytes, same_filesystem, state, planned_at)
-				values (?, ?, ?, ?, ?, 'planned', ?)`
+					(destination, parts, same_filesystem, state, planned_at)
+				values (?, ?, ?, 'planned', ?)`
 			)
 			.run(
-				from,
 				to,
-				stranded.length,
-				totalBytes(stranded),
-				shareAFilesystem(from, to) ? 1 : 0,
+				sources.reduce((total, source) => total + source.parts, 0),
+				sources.every((source) => shareAFilesystem(source.path, to)) ? 1 : 0,
 				this.#clock.now().toISOString()
 			);
 	}
 }
 
-const canRun = (state: string): boolean => state === 'planned' || state === 'failed';
+const canRun = (state: string): boolean => state !== 'moving' && state !== 'done';
+
+/**
+ * The one directory every Part Pacerr holds sits under, when that is somewhere other than the
+ * Library. Null where they are split across roots, because no single setting describes that.
+ */
+function soleRoot(db: Database): string | null {
+	const roots = db.prepare('select distinct library_root from had_part').all() as {
+		library_root: string | null;
+	}[];
+	return roots.length === 1 ? (roots[0]?.library_root ?? null) : null;
+}
 
 /**
  * One Part's file and the Sidecar that describes it, moved and then recorded as moved, so a move
@@ -299,8 +335,29 @@ function strandedParts(db: Database): StrandedRow[] {
 		.all() as StrandedRow[];
 }
 
-const totalBytes = (parts: StrandedRow[]): number =>
-	parts.reduce((total, part) => total + sizeOf(join(part.library_root, part.library_path)), 0);
+/**
+ * The Parts still to move, gathered under the directory each is actually in. Grouped rather than
+ * summarised under one source, because a move that stopped and was then pointed somewhere else
+ * again leaves the Library split across roots, and a plan that named only one of them would send
+ * the user looking for files in a directory they are not in.
+ */
+function rootsOf(stranded: StrandedRow[]): StrandedRoot[] {
+	const roots = new Map<string, StrandedRoot>();
+	for (const part of stranded) {
+		const path = join(part.library_root, part.library_path);
+		const root = roots.get(part.library_root) ?? {
+			path: part.library_root,
+			parts: 0,
+			bytes: 0,
+			files: []
+		};
+		root.parts += 1;
+		root.bytes += sizeOf(path);
+		root.files.push(path);
+		roots.set(part.library_root, root);
+	}
+	return [...roots.values()].sort((left, right) => left.path.localeCompare(right.path));
+}
 
 const sizeOf = (path: string): number => {
 	try {

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
+import type { Posters } from '../artwork';
 import { refreshSidecars } from '../library/sidecars';
 import { assignLibraryIndexes } from '../library/store';
 import type { PathService } from '../paths/service';
@@ -27,7 +28,11 @@ export interface CatalogueView {
 	failure: string | null;
 }
 
-const watchPage = (db: Database, paths: PathService): UpstreamDocument<Catalogue> => ({
+const watchPage = (
+	db: Database,
+	posters: Posters,
+	paths: PathService
+): UpstreamDocument<Catalogue> => ({
 	name: 'catalogue',
 	path: '/en/watch',
 	subject: 'the watch page',
@@ -40,7 +45,7 @@ const watchPage = (db: Database, paths: PathService): UpstreamDocument<Catalogue
 	replace: (catalogue, at, validators, freshness) => {
 		replaceCatalogue(db, catalogue, at, validators, freshness);
 		assignLibraryIndexes(db);
-		refreshSidecars(db, paths.library().path);
+		refreshSidecars(db, posters, paths.library().path);
 	}
 });
 
@@ -49,10 +54,10 @@ export class CatalogueService {
 	#runtime: Runtime;
 	#source: UpstreamSource<Catalogue>;
 
-	constructor(db: Database, runtime: Runtime, paths: PathService) {
+	constructor(db: Database, runtime: Runtime, posters: Posters, paths: PathService) {
 		this.#db = db;
 		this.#runtime = runtime;
-		this.#source = new UpstreamSource(db, runtime, watchPage(db, paths));
+		this.#source = new UpstreamSource(db, runtime, watchPage(db, posters, paths));
 	}
 
 	scrape(): Promise<UpstreamOutcome> {

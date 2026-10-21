@@ -4,7 +4,7 @@ import {
 	type Server,
 	type ServerResponse
 } from 'node:http';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -179,20 +179,61 @@ export class Pacerr {
 		return new PacerrPage(response.status, await response.text());
 	}
 
-	/** Submit a form action, the way a browser without JavaScript does. */
+	/** Submit a form action, the way a browser without JavaScript does, then read the page again. */
 	async submit(
 		path: string,
 		action: string,
 		fields: Record<string, string> = {}
 	): Promise<PacerrPage> {
+		await this.#act(path, action, fields, 'application/json');
+		return this.open(path);
+	}
+
+	/**
+	 * The page the submission itself renders, which is the only place what an action *returns*
+	 * reaches: `submit` reloads instead, and a reload carries standing state alone.
+	 */
+	async answer(
+		path: string,
+		action: string,
+		fields: Record<string, string> = {}
+	): Promise<PacerrPage> {
+		const answered = await this.#act(path, action, fields, 'text/html');
+		return new PacerrPage(answered.status, answered.body);
+	}
+
+	// SvelteKit answers a form action with the rendered page or with the action result as JSON,
+	// according to what the request will accept, so which of the two a test wants is said here.
+	async #act(
+		path: string,
+		action: string,
+		fields: Record<string, string>,
+		accept: string
+	): Promise<{ status: number; body: string }> {
 		const response = await this.fetch(`${path}?/${action}`, {
 			method: 'POST',
-			headers: { 'content-type': 'application/x-www-form-urlencoded', origin: this.#url },
+			headers: {
+				accept,
+				'content-type': 'application/x-www-form-urlencoded',
+				origin: this.#url
+			},
 			body: new URLSearchParams(fields).toString()
 		});
 		const body = await response.text();
 		if (response.status >= 400) throw new Error(`${action} failed: ${response.status} ${body}`);
-		return this.open(path);
+		return { status: response.status, body };
+	}
+
+	/** Drive the download Pacerr grabbed last to completion, with real files on a real disk. */
+	finishDownload(fileCount: number): string {
+		const infohash = this.downloadClient.added.at(-1)!.infohash;
+		const content = join(this.paths.downloads, infohash);
+		mkdirSync(content, { recursive: true });
+		for (let position = 1; position <= fileCount; position += 1) {
+			writeFileSync(join(content, `${position}.mkv`), `video ${position}`);
+		}
+		this.downloadClient.complete(infohash, content);
+		return infohash;
 	}
 
 	/** Point Pacerr at a Download Client, the way a user does before anything can be grabbed. */

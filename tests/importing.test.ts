@@ -1,14 +1,7 @@
-import {
-	mkdirSync,
-	mkdtempSync,
-	readdirSync,
-	readFileSync,
-	rmSync,
-	statSync,
-	writeFileSync
-} from 'node:fs';
-import { basename, extname, join } from 'node:path';
-import { describe, expect, it, onTestFinished } from 'vitest';
+import { readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { directoriesIn, mediaUnder, onAnotherFilesystem } from './harness/files';
 import {
 	fixtures,
 	hours,
@@ -21,41 +14,11 @@ import { defaultNamingTemplate } from '../src/lib/server/library/naming';
 
 const firstPart = 'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv';
 
-/** A tmpfs the temporary root is never on, so a hardlink between them genuinely fails. */
-function otherFilesystem(): string {
-	const directory = mkdtempSync('/dev/shm/pacerr-downloads-');
-	onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-	return directory;
-}
-
-/** Drive the download Pacerr grabbed last to completion, with real files on a real filesystem. */
-function finish(pacerr: Pacerr, fileCount: number): string {
-	const infohash = pacerr.downloadClient.added.at(-1)!.infohash;
-	const content = join(pacerr.paths.downloads, infohash);
-	mkdirSync(content, { recursive: true });
-	for (let position = 1; position <= fileCount; position += 1) {
-		writeFileSync(join(content, `${position}.mkv`), `video ${position}`);
-	}
-	pacerr.downloadClient.complete(infohash, content);
-	return infohash;
-}
-
 /** The directories at the Library root. The Sidecars beside them are `sidecars.test.ts`'s. */
-const libraryDirectories = (pacerr: Pacerr): string[] =>
-	readdirSync(pacerr.paths.library, { withFileTypes: true })
-		.filter((entry) => entry.isDirectory())
-		.map((entry) => entry.name)
-		.sort();
+const libraryDirectories = (pacerr: Pacerr): string[] => directoriesIn(pacerr.paths.library);
 
 /** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
-const libraryMedia = (pacerr: Pacerr): string[] =>
-	readdirSync(pacerr.paths.library, { recursive: true })
-		.map(String)
-		.filter((entry) => !isSidecar(entry) && statSync(join(pacerr.paths.library, entry)).isFile())
-		.sort();
-
-const isSidecar = (entry: string): boolean =>
-	extname(entry) === '.nfo' || basename(entry) === 'cover.jpg';
+const libraryMedia = (pacerr: Pacerr): string[] => mediaUnder(pacerr.paths.library);
 
 /** Reverie, monitored and downloaded: one Batch Release covering the Arc's three Parts. */
 async function reverie(options: StartOptions = {}): Promise<Pacerr> {
@@ -63,12 +26,13 @@ async function reverie(options: StartOptions = {}): Promise<Pacerr> {
 	await pacerr.connectDownloadClient();
 	pacerr.downloadClient.filesPerTorrent = 3;
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-	finish(pacerr, 3);
+	pacerr.finishDownload(3);
 	await pacerr.advance(minutes(15));
 	return pacerr;
 }
 
-const acrossFilesystems = (): Promise<Pacerr> => reverie({ downloadsDir: otherFilesystem() });
+const acrossFilesystems = (): Promise<Pacerr> =>
+	reverie({ downloadsDir: onAnotherFilesystem('pacerr-downloads-') });
 
 /** Both one-off entries the Catalogue carries, monitored and downloaded: one Part each. */
 async function specials(): Promise<Pacerr> {
@@ -76,7 +40,7 @@ async function specials(): Promise<Pacerr> {
 	await pacerr.connectDownloadClient();
 	for (const arc of ['one-piece-fan-letter', 'warship-island-01-april-fools-2025']) {
 		await pacerr.submit('/', 'toggleMonitoring', { arc });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 	}
 	await pacerr.advance(minutes(15));
 	return pacerr;
@@ -218,7 +182,7 @@ describe('the naming template', () => {
 
 		await pacerr.submit('/settings', 'saveNamingTemplate', { template: mine });
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-		finish(pacerr, 3);
+		pacerr.finishDownload(3);
 		await pacerr.advance(minutes(15));
 
 		expect(libraryMedia(pacerr)).toEqual([
@@ -264,7 +228,7 @@ describe('an Arc that One Pace inserts above one already in the Library', () => 
 		expect((await pacerr.open('/')).text()).toContain('Gold Roger Executed');
 
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
 		expect(libraryMedia(pacerr)).toEqual([
@@ -281,7 +245,7 @@ describe('a special One Pace publishes after the Library already holds one', () 
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 		await pacerr.connectDownloadClient();
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'one-piece-fan-letter' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
 		pacerr.upstream.watchPage.publish(withASpecialInserted(fixtures.watchPage));
@@ -289,7 +253,7 @@ describe('a special One Pace publishes after the Library already holds one', () 
 		expect((await pacerr.open('/')).text()).toContain('The Tatsumaki Incident');
 
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'warship-island-01-april-fools-2025' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
 		expect(libraryMedia(pacerr)).toEqual([

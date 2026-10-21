@@ -203,23 +203,27 @@
 		</form>
 	{/if}
 
-	{#if libraryMove !== null && libraryMove.state !== 'dismissed'}
+	{#if libraryMove !== null && (libraryMove.state !== 'dismissed' || libraryMove.sources.length > 0)}
 		<div class="move">
 			{#if libraryMove.state === 'planned'}
-				<p>
-					{pluralise(libraryMove.parts, 'Part')}, {formatBytes(libraryMove.bytes)}, are still under
-					{libraryMove.source}. Pacerr will move them to {libraryMove.destination}.
-				</p>
+				{#each libraryMove.sources as source (source.path)}
+					<p>
+						{pluralise(source.parts, 'Part')}, {formatBytes(source.bytes)}, {source.parts === 1
+							? 'is'
+							: 'are'} still under {source.path}.
+					</p>
+				{/each}
+				<p>Pacerr will move them to {libraryMove.destination}.</p>
 				{#if libraryMove.sameFilesystem}
 					<p class="note">
-						The two are on the same filesystem, so Pacerr renames each file and the move costs no
-						disk.
+						Source and destination are on the same filesystem, so Pacerr renames each file and the
+						move costs no disk.
 					</p>
 				{:else}
 					<p class="note">
-						The two are on different filesystems, so Pacerr copies each file rather than renaming
-						it. That breaks the hardlinks to your seeding downloads, and the disk anything still
-						seeding occupies roughly doubles.
+						Source and destination are on different filesystems, so Pacerr copies each file rather
+						than renaming it. That breaks the hardlinks to your seeding downloads, and the disk
+						anything still seeding occupies roughly doubles.
 					</p>
 				{/if}
 				<div class="row">
@@ -233,20 +237,23 @@
 			{:else if libraryMove.state === 'moving'}
 				<p>
 					Moving the Library to {libraryMove.destination}: {libraryMove.moved} of {libraryMove.parts}
-					Parts moved, {libraryMove.stranded.length} still under {libraryMove.source}.
+					Parts moved.
 				</p>
+				{#each libraryMove.sources as source (source.path)}
+					<p>{pluralise(source.parts, 'Part')} still under {source.path}.</p>
+				{/each}
 			{:else if libraryMove.state === 'failed'}
 				<p class="alert">
 					Moving the Library stopped after {libraryMove.moved} of {libraryMove.parts} Parts: {libraryMove.reason}
 				</p>
-				<p>
-					{pluralise(libraryMove.stranded.length, 'Part')} are still under {libraryMove.source}:
-				</p>
-				<ul class="stranded">
-					{#each libraryMove.stranded as path (path)}
-						<li>{path}</li>
-					{/each}
-				</ul>
+				{#each libraryMove.sources as source (source.path)}
+					<p>{pluralise(source.parts, 'Part')} are still under {source.path}:</p>
+					<ul class="stranded">
+						{#each source.files as path (path)}
+							<li>{path}</li>
+						{/each}
+					</ul>
+				{/each}
 				<div class="row">
 					<form method="POST" action="?/startLibraryMove">
 						<button class="button" type="submit">Try again</button>
@@ -255,6 +262,22 @@
 						<button class="button" type="submit">Dismiss</button>
 					</form>
 				</div>
+			{:else if libraryMove.state === 'dismissed'}
+				{#each libraryMove.sources as source (source.path)}
+					<p>{pluralise(source.parts, 'Part')} are still under {source.path}:</p>
+					<ul class="stranded">
+						{#each source.files as path (path)}
+							<li>{path}</li>
+						{/each}
+					</ul>
+				{/each}
+				<p class="note">
+					A move that stopped partway left your Library in more than one place, so Pacerr goes on
+					saying where each Part is until one of them holds all of it.
+				</p>
+				<form method="POST" action="?/startLibraryMove">
+					<button class="button" type="submit">Move them to {libraryMove.destination}</button>
+				</form>
 			{:else}
 				<p>Moved {pluralise(libraryMove.parts, 'Part')} to {libraryMove.destination}.</p>
 				<form method="POST" action="?/dismissLibraryMove">

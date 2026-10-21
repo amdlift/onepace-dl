@@ -81,7 +81,7 @@ describe('an Arc with neither a Poster nor a Backdrop', () => {
 		const row = rowFor(await pacerr.open('/'), 'One Piece Fan Letter');
 
 		expect(row.querySelector('img')).toBeNull();
-		expect(row.querySelector('.no-cover')).not.toBeNull();
+		expect(row.querySelector('.no-poster')).not.toBeNull();
 	});
 });
 
@@ -91,11 +91,11 @@ describe('the Arcs view', () => {
 
 		const page = await pacerr.open('/');
 
-		const covers = page.texts('tbody tr td.cover').length;
-		const posters = page.attributes('tbody tr td.cover img', 'src').length;
-		const placeholders = page.texts('tbody tr td.cover .no-cover').length;
-		expect(covers).toBe(38);
-		expect(posters + placeholders).toBe(covers);
+		const cells = page.texts('tbody tr td.poster').length;
+		const artwork = page.attributes('tbody tr td.poster img', 'src').length;
+		const placeholders = page.texts('tbody tr td.poster .no-poster').length;
+		expect(cells).toBe(38);
+		expect(artwork + placeholders).toBe(cells);
 	});
 });
 

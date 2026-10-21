@@ -48,7 +48,7 @@
 	<table class="table">
 		<thead>
 			<tr>
-				<th class="cover"><span class="visually-hidden">Cover</span></th>
+				<th class="poster"><span class="visually-hidden">Poster</span></th>
 				<th>Arc</th>
 				<th class="numeric">Parts</th>
 				<th class="numeric">Had</th>
@@ -58,9 +58,9 @@
 		<tbody>
 			{#each catalogue.arcs as arc (arc.slug)}
 				<tr>
-					<td class="cover">
+					<td class="poster">
 						{#if arc.artwork.kind === 'placeholder'}
-							<span class="no-cover" aria-hidden="true"></span>
+							<span class="no-poster" aria-hidden="true"></span>
 						{:else}
 							<img src={arc.artwork.url} alt="" width="40" height="60" loading="lazy" />
 						{/if}
@@ -104,13 +104,13 @@
 		gap: 0.5rem;
 	}
 
-	.cover {
+	.poster {
 		width: 40px;
 		padding-right: 0;
 	}
 
 	img,
-	.no-cover {
+	.no-poster {
 		display: block;
 		width: 40px;
 		height: 60px;

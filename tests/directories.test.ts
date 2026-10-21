@@ -1,29 +1,7 @@
-import {
-	chmodSync,
-	mkdirSync,
-	mkdtempSync,
-	readdirSync,
-	rmSync,
-	statSync,
-	writeFileSync
-} from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { chmodSync } from 'node:fs';
 import { describe, expect, it, onTestFinished } from 'vitest';
+import { anotherDirectory, filesUnder, onAnotherFilesystem } from './harness/files';
 import { fixtures, minutes, startPacerr, type Pacerr } from './harness/pacerr';
-
-const filesUnder = (directory: string): string[] =>
-	readdirSync(directory, { recursive: true })
-		.map(String)
-		.filter((entry) => statSync(join(directory, entry)).isFile())
-		.sort();
-
-/** Somewhere a user might already keep their media, outside anything Pacerr chose for them. */
-function anotherDirectory(prefix = 'pacerr-media-'): string {
-	const directory = mkdtempSync(join(tmpdir(), prefix));
-	onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-	return directory;
-}
 
 /** Reverie grabbed and finished downloading, with nothing imported yet. */
 async function downloadedReverie(): Promise<Pacerr> {
@@ -31,14 +9,7 @@ async function downloadedReverie(): Promise<Pacerr> {
 	await pacerr.connectDownloadClient();
 	pacerr.downloadClient.filesPerTorrent = 3;
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-
-	const infohash = pacerr.downloadClient.added.at(-1)!.infohash;
-	const content = join(pacerr.paths.downloads, infohash);
-	mkdirSync(content, { recursive: true });
-	for (const position of [1, 2, 3]) {
-		writeFileSync(join(content, `${position}.mkv`), `video ${position}`);
-	}
-	pacerr.downloadClient.complete(infohash, content);
+	pacerr.finishDownload(3);
 	return pacerr;
 }
 
@@ -79,6 +50,36 @@ describe('saving a path Pacerr cannot use', () => {
 		expect(page.text('.paths')).not.toContain('cannot write to it');
 	});
 
+	it('says so on the save itself, rather than only on the page load after it', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.answer('/settings', 'saveLibrary', { library: '/no/such/place' });
+
+		expect(page.text('.paths .alert')).toContain('cannot find the Library at /no/such/place');
+	});
+
+	it('names the problem the save has, where that one is a directory it cannot write', async () => {
+		const pacerr = await startPacerr();
+		const media = anotherDirectory();
+		chmodSync(media, 0o555);
+		onTestFinished(() => chmodSync(media, 0o755));
+
+		const page = await pacerr.answer('/settings', 'saveLibrary', { library: media });
+
+		expect(page.text('.paths .alert')).toContain(`can see the Library at ${media}`);
+		expect(page.text('.paths .alert')).toContain('cannot write to it');
+	});
+
+	it('names it again where it is one the downloads cannot be hardlinked from', async () => {
+		const pacerr = await startPacerr();
+		const media = onAnotherFilesystem();
+
+		const page = await pacerr.answer('/settings', 'saveLibrary', { library: media });
+
+		expect(page.text('.paths .alert')).toContain('on different filesystems');
+		expect(page.text('.paths .alert')).not.toContain('cannot find the Library');
+	});
+
 	it('reads differently for one it can see but not write to', async () => {
 		const pacerr = await startPacerr();
 		const media = anotherDirectory();
@@ -93,8 +94,7 @@ describe('saving a path Pacerr cannot use', () => {
 
 	it('reads differently again for one on a different filesystem from the downloads', async () => {
 		const pacerr = await startPacerr();
-		const media = mkdtempSync('/dev/shm/pacerr-media-');
-		onTestFinished(() => rmSync(media, { recursive: true, force: true }));
+		const media = onAnotherFilesystem();
 
 		const page = await pacerr.submit('/settings', 'saveLibrary', { library: media });
 

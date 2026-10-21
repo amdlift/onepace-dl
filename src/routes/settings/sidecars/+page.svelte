@@ -12,19 +12,19 @@
 			detail: 'tvshow.nfo at the root of the Library, saying what One Pace is.'
 		},
 		{
-			name: 'seasonNfo',
+			name: 'arcNfo',
 			label: 'Season NFO',
 			detail: "season.nfo in each season directory, carrying the Arc's title and description."
 		},
 		{
-			name: 'episodeNfo',
+			name: 'partNfo',
 			label: 'Episode NFO',
 			detail:
 				"A .nfo beside each video file, carrying the Part's title and description and the " +
 				'manga chapters and anime episodes it covers.'
 		},
 		{
-			name: 'seasonPoster',
+			name: 'arcPoster',
 			label: 'Season Poster',
 			detail: 'cover.jpg in each season directory, the portrait artwork for the Arc.'
 		}

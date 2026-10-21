@@ -1,16 +1,8 @@
-import {
-	mkdirSync,
-	mkdtempSync,
-	readdirSync,
-	readFileSync,
-	rmSync,
-	statSync,
-	writeFileSync
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { describe, expect, it, onTestFinished } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { anotherDirectory, directoriesIn, filesUnder } from './harness/files';
 import {
 	fixtures,
 	hours,
@@ -20,29 +12,9 @@ import {
 	type PacerrPage
 } from './harness/pacerr';
 
-/** Drive the download Pacerr grabbed last to completion, with real files on a real filesystem. */
-function finish(pacerr: Pacerr, fileCount: number): string {
-	const infohash = pacerr.downloadClient.added.at(-1)!.infohash;
-	const content = join(pacerr.paths.downloads, infohash);
-	mkdirSync(content, { recursive: true });
-	for (let position = 1; position <= fileCount; position += 1) {
-		writeFileSync(join(content, `${position}.mkv`), `video ${position}`);
-	}
-	pacerr.downloadClient.complete(infohash, content);
-	return infohash;
-}
+const libraryFiles = (pacerr: Pacerr): string[] => filesUnder(pacerr.paths.library);
 
-const libraryFiles = (pacerr: Pacerr): string[] =>
-	readdirSync(pacerr.paths.library, { recursive: true })
-		.map(String)
-		.filter((entry) => statSync(join(pacerr.paths.library, entry)).isFile())
-		.sort();
-
-const libraryDirectories = (pacerr: Pacerr): string[] =>
-	readdirSync(pacerr.paths.library, { withFileTypes: true })
-		.filter((entry) => entry.isDirectory())
-		.map((entry) => entry.name)
-		.sort();
+const libraryDirectories = (pacerr: Pacerr): string[] => directoriesIn(pacerr.paths.library);
 
 const libraryTimestamps = (pacerr: Pacerr): Record<string, bigint> =>
 	Object.fromEntries(
@@ -70,7 +42,7 @@ async function reverie(): Promise<Pacerr> {
 	await pacerr.connectDownloadClient();
 	pacerr.downloadClient.filesPerTorrent = 3;
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-	finish(pacerr, 3);
+	pacerr.finishDownload(3);
 	await pacerr.advance(minutes(15));
 	return pacerr;
 }
@@ -83,7 +55,7 @@ const aCorrectedWatchPage = (): string =>
 /** The same correction, reaching an Arc's description as well as a Part's. */
 const aCorrectedArcAndPart = (): string => aCorrectedWatchPage().replaceAll('agendas', 'schemes');
 
-const sidecarKinds = ['showNfo', 'seasonNfo', 'episodeNfo', 'seasonPoster'] as const;
+const sidecarKinds = ['showNfo', 'arcNfo', 'partNfo', 'arcPoster'] as const;
 
 type SidecarKind = (typeof sidecarKinds)[number];
 
@@ -104,7 +76,7 @@ async function reverieWithout(...off: SidecarKind[]): Promise<Pacerr> {
 	pacerr.downloadClient.filesPerTorrent = 3;
 	await turnOff(pacerr, ...off);
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-	finish(pacerr, 3);
+	pacerr.finishDownload(3);
 	await pacerr.advance(minutes(15));
 	return pacerr;
 }
@@ -114,7 +86,7 @@ async function warshipIsland(): Promise<Pacerr> {
 	const pacerr = await startPacerr({ feed: fixtures.feed });
 	await pacerr.connectDownloadClient();
 	await pacerr.submit('/', 'toggleMonitoring', { arc: 'warship-island-01-april-fools-2025' });
-	finish(pacerr, 1);
+	pacerr.finishDownload(1);
 	await pacerr.advance(minutes(15));
 	return pacerr;
 }
@@ -200,7 +172,7 @@ describe('a Library filed under a naming template the user set', () => {
 			template: '{arc}/{arc} - {season}x{episode} - {part}'
 		});
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-		finish(pacerr, 3);
+		pacerr.finishDownload(3);
 		await pacerr.advance(minutes(15));
 
 		expect(libraryFiles(pacerr)).toEqual([
@@ -230,7 +202,7 @@ describe('a description One Pace writes a markup character into', () => {
 		await pacerr.connectDownloadClient();
 		pacerr.downloadClient.filesPerTorrent = 3;
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-		finish(pacerr, 3);
+		pacerr.finishDownload(3);
 		await pacerr.advance(minutes(15));
 
 		expect(
@@ -249,7 +221,7 @@ describe('a description One Pace writes a markup character into', () => {
 		await pacerr.connectDownloadClient();
 		pacerr.downloadClient.filesPerTorrent = 3;
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
-		finish(pacerr, 3);
+		pacerr.finishDownload(3);
 		await pacerr.advance(minutes(15));
 
 		expect(inLibrary(pacerr, 'Season 34/season.nfo')).toContain(
@@ -261,8 +233,7 @@ describe('a description One Pace writes a markup character into', () => {
 describe('a Part the user imported by hand', () => {
 	it('gets the Sidecar a downloaded Part gets, from the Catalogue either way', async () => {
 		const pacerr = await startPacerr();
-		const source = mkdtempSync(join(tmpdir(), 'pacerr-source-'));
-		onTestFinished(() => rmSync(source, { recursive: true, force: true }));
+		const source = anotherDirectory('pacerr-source-');
 		writeFileSync(join(source, 'Drum Island 01.mkv'), 'video');
 		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
 
@@ -325,7 +296,7 @@ describe('the Poster a media server shows for a season', () => {
 		writeFileSync(join(pacerr.paths.config, 'posters', 'gaimon.jpg'), mine);
 
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
 		expect(readFileSync(join(pacerr.paths.library, 'Season 04/cover.jpg'))).toEqual(mine);
@@ -443,9 +414,9 @@ describe('the Sidecars Pacerr writes', () => {
 
 		expect(switchesOn(page)).toEqual({
 			showNfo: true,
-			seasonNfo: true,
-			episodeNfo: true,
-			seasonPoster: true
+			arcNfo: true,
+			partNfo: true,
+			arcPoster: true
 		});
 	});
 
@@ -460,7 +431,7 @@ describe('the Sidecars Pacerr writes', () => {
 
 describe('a kind of Sidecar the user switched off', () => {
 	it('is not written for a Part imported afterwards, and no other kind is affected', async () => {
-		const pacerr = await reverieWithout('seasonPoster');
+		const pacerr = await reverieWithout('arcPoster');
 
 		expect(libraryFiles(pacerr)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
@@ -487,7 +458,7 @@ describe('a kind of Sidecar the user switched off', () => {
 	});
 
 	it('takes the season NFO with it when it is that kind', async () => {
-		const pacerr = await reverieWithout('seasonNfo');
+		const pacerr = await reverieWithout('arcNfo');
 
 		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo',
@@ -499,7 +470,7 @@ describe('a kind of Sidecar the user switched off', () => {
 	});
 
 	it('takes the episode NFO with it when it is that kind', async () => {
-		const pacerr = await reverieWithout('episodeNfo');
+		const pacerr = await reverieWithout('partNfo');
 
 		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
 			'Season 34/cover.jpg',
@@ -520,8 +491,7 @@ describe('a kind of Sidecar the user switched off', () => {
 
 	it('is skipped by a Manual Import too, which files a Part just as a download does', async () => {
 		const pacerr = await startPacerr();
-		const source = mkdtempSync(join(tmpdir(), 'pacerr-source-'));
-		onTestFinished(() => rmSync(source, { recursive: true, force: true }));
+		const source = anotherDirectory('pacerr-source-');
 		writeFileSync(join(source, 'Drum Island 01.mkv'), 'video');
 		await pacerr.submit('/settings', 'saveImportSource', { importSource: source });
 		await turnOff(pacerr, ...sidecarKinds);
@@ -553,15 +523,15 @@ describe('switching a kind of Sidecar off', () => {
 
 	it('survives the container being recreated, so it is not reconfigured every upgrade', async () => {
 		const pacerr = await startPacerr();
-		await turnOff(pacerr, 'episodeNfo', 'seasonPoster');
+		await turnOff(pacerr, 'partNfo', 'arcPoster');
 
 		await pacerr.restart();
 
 		expect(switchesOn(await pacerr.open('/settings/sidecars'))).toEqual({
 			showNfo: true,
-			seasonNfo: true,
-			episodeNfo: false,
-			seasonPoster: false
+			arcNfo: true,
+			partNfo: false,
+			arcPoster: false
 		});
 	});
 });
@@ -573,7 +543,7 @@ describe('switching a kind of Sidecar back on', () => {
 
 		await turnOff(pacerr);
 		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
-		finish(pacerr, 1);
+		pacerr.finishDownload(1);
 		await pacerr.advance(minutes(15));
 
 		expect(libraryFiles(pacerr).filter((file) => !file.endsWith('.mkv'))).toEqual([
@@ -588,7 +558,7 @@ describe('switching a kind of Sidecar back on', () => {
 describe('a kind of Sidecar switched off after the Library already holds some', () => {
 	it('is passed over by a clean scrape that refreshes the kinds still on', async () => {
 		const pacerr = await reverie();
-		await turnOff(pacerr, 'episodeNfo');
+		await turnOff(pacerr, 'partNfo');
 		const before = libraryTimestamps(pacerr);
 
 		pacerr.upstream.watchPage.publish(aCorrectedArcAndPart());

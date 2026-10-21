@@ -11,14 +11,14 @@ import {
 } from '../catalogue/store';
 import type { Coverage } from '../catalogue/watch-page';
 import { showTitle } from './naming';
-import { readHadParts, type HadPart } from './store';
+import { readHadParts } from './store';
 
 /**
- * Sidecars are the Library edge, so this is one of the few places `season` and `episode` are a
- * media server's words rather than One Piece's. A document names the element a media server looks
- * for; where it goes is the caller's to say, because that follows the rendered path of the media.
+ * What one Sidecar is about, in Pacerr's words: the show, an Arc, a Part. The element a media
+ * server reads is a media server's word for the same thing and is settled below; where the file
+ * goes is the caller's to say, because that follows the rendered path of the media.
  */
-export type SidecarKind = 'show' | 'season' | 'episode';
+export type SidecarKind = 'show' | 'arc' | 'part';
 
 export interface SidecarDocument {
 	kind: SidecarKind;
@@ -26,48 +26,50 @@ export interface SidecarDocument {
 	plot: string | null;
 }
 
+// Sidecar contents are the Library edge, so this is where an Arc becomes a season and a Part an
+// episode: these are the element names a media server looks for and nothing else parses.
 const rootElement: Record<SidecarKind, string> = {
 	show: 'tvshow',
-	season: 'season',
-	episode: 'episodedetails'
+	arc: 'season',
+	part: 'episodedetails'
 };
 
 /**
  * The kinds of Sidecar a user can switch off, which is every kind there is. A Poster is a Sidecar
  * too, so it carries a switch alongside the three NFO documents.
  */
-export type SidecarSwitch = 'showNfo' | 'seasonNfo' | 'episodeNfo' | 'seasonPoster';
+export type SidecarSwitch = 'showNfo' | 'arcNfo' | 'partNfo' | 'arcPoster';
 
 export type SidecarSwitches = Record<SidecarSwitch, boolean>;
 
 interface SidecarRow {
 	show_nfo: number;
-	season_nfo: number;
-	episode_nfo: number;
-	season_poster: number;
+	arc_nfo: number;
+	part_nfo: number;
+	arc_poster: number;
 }
 
 export function readSidecarSwitches(db: Database): SidecarSwitches {
 	const row = db
-		.prepare('select show_nfo, season_nfo, episode_nfo, season_poster from sidecar where id = 1')
+		.prepare('select show_nfo, arc_nfo, part_nfo, arc_poster from sidecar where id = 1')
 		.get() as SidecarRow;
 	return {
 		showNfo: row.show_nfo === 1,
-		seasonNfo: row.season_nfo === 1,
-		episodeNfo: row.episode_nfo === 1,
-		seasonPoster: row.season_poster === 1
+		arcNfo: row.arc_nfo === 1,
+		partNfo: row.part_nfo === 1,
+		arcPoster: row.arc_poster === 1
 	};
 }
 
 export function writeSidecarSwitches(db: Database, switches: SidecarSwitches): void {
 	db.prepare(
-		'update sidecar set show_nfo = ?, season_nfo = ?, episode_nfo = ?, season_poster = ? ' +
+		'update sidecar set show_nfo = ?, arc_nfo = ?, part_nfo = ?, arc_poster = ? ' +
 			'where id = 1'
 	).run(
 		flag(switches.showNfo),
-		flag(switches.seasonNfo),
-		flag(switches.episodeNfo),
-		flag(switches.seasonPoster)
+		flag(switches.arcNfo),
+		flag(switches.partNfo),
+		flag(switches.arcPoster)
 	);
 }
 
@@ -80,12 +82,7 @@ const flag = (value: boolean): number => (value ? 1 : 0);
  */
 const writes = (db: Database, kind: SidecarSwitch): boolean => readSidecarSwitches(db)[kind];
 
-/** Writes one document into the Library, unless what is there already says exactly that. */
-export function writeSidecar(
-	library: string,
-	sidecarPath: string,
-	document: SidecarDocument
-): void {
+function writeDocument(library: string, sidecarPath: string, document: SidecarDocument): void {
 	const destination = join(library, sidecarPath);
 	const rendered = render(document);
 	if (alreadySays(destination, rendered)) return;
@@ -98,25 +95,46 @@ export function writeSidecar(
 const alreadySays = (destination: string, rendered: string): boolean =>
 	existsSync(destination) && readFileSync(destination, 'utf8') === rendered;
 
+const alreadyHolds = (destination: string, source: string): boolean =>
+	existsSync(destination) && readFileSync(destination).equals(readFileSync(source));
+
+/** The Part one set of Sidecars is about, and where in the Library its file landed. */
+export interface SidecarTarget {
+	arcSlug: string;
+	partSlug: string;
+	libraryPath: string;
+}
+
+/**
+ * Every Sidecar describing one Part the Library holds, written beside it. The one way metadata
+ * reaches the Library: an import, a Manual Import and a refresh after a scrape all come through
+ * here, so no kind of Sidecar can end up written down one path and skipped down another.
+ */
+export function writeSidecars(
+	db: Database,
+	posters: Posters,
+	library: string,
+	target: SidecarTarget
+): void {
+	writeShowSidecar(db, library);
+	writeArcSidecar(db, library, target);
+	writeArcPoster(db, posters, library, target);
+	writePartSidecar(db, library, target);
+}
+
 /**
  * Offers every Sidecar again from the Catalogue as it now stands, so a description One Pace
  * corrected reaches the Library instead of going stale in it. Only a Part Pacerr holds a file for
- * is described, and the show only once the Library holds one, so a correction upstream never
- * conjures a season of metadata and no video.
+ * is described, so a correction upstream never conjures a season of metadata and no video.
  */
-export function refreshSidecars(db: Database, library: string): void {
-	const had = [...readHadParts(db).values()];
-	// A Part a half-finished move has left behind is described in the Library still holding it,
-	// so a correction upstream never files metadata into one the media has not reached.
-	const rootOf = (part: HadPart): string => part.libraryRoot ?? library;
-	for (const root of new Set(had.map(rootOf))) writeShowSidecar(db, root);
-	for (const part of had) {
-		writeSeasonSidecar(db, rootOf(part), part.arcSlug, part.libraryPath);
-		writeEpisodeSidecar(db, rootOf(part), part.partSlug, part.libraryPath);
+export function refreshSidecars(db: Database, posters: Posters, library: string): void {
+	for (const part of readHadParts(db).values()) {
+		// A Part a half-finished move has left behind is described in the Library still holding it,
+		// so a correction upstream never files metadata into one the media has not reached.
+		writeSidecars(db, posters, part.libraryRoot ?? library, part);
 	}
 }
 
-/** Where the Sidecar describing the file at one Library path lives. */
 export const sidecarPathFor = (libraryPath: string): string =>
 	`${libraryPath.slice(0, libraryPath.length - extname(libraryPath).length)}.nfo`;
 
@@ -132,9 +150,9 @@ export const sharedSidecarPaths = (libraryPath: string): string[] => [
 ];
 
 /** Describes the one show the Library holds, at its root, where a media server looks for it. */
-export function writeShowSidecar(db: Database, library: string): void {
+function writeShowSidecar(db: Database, library: string): void {
 	if (!writes(db, 'showNfo')) return;
-	writeSidecar(library, 'tvshow.nfo', {
+	writeDocument(library, 'tvshow.nfo', {
 		kind: 'show',
 		title: showTitle,
 		plot: showDescription
@@ -150,37 +168,27 @@ const showDescription =
 	'correcting subtitles.';
 
 /** Describes the Arc a Part belongs to, in the season directory that Part's file landed in. */
-export function writeSeasonSidecar(
-	db: Database,
-	library: string,
-	arcSlug: string,
-	libraryPath: string
-): void {
-	if (!writes(db, 'seasonNfo')) return;
-	const arc = readArcDescription(db, arcSlug);
+function writeArcSidecar(db: Database, library: string, target: SidecarTarget): void {
+	if (!writes(db, 'arcNfo')) return;
+	const arc = readArcDescription(db, target.arcSlug);
 	if (arc === null) return;
-	writeSidecar(library, join(dirname(libraryPath), 'season.nfo'), seasonOf(arc));
+	writeDocument(library, join(dirname(target.libraryPath), 'season.nfo'), describing(arc));
 }
 
 // Every special shares one season, so naming that season after an Arc would retitle the whole of
-// it after whichever special was imported last.
-const seasonOf = (arc: StoredArcDescription): SidecarDocument =>
+// it after whichever special was imported last. ADR-0008 settles that against #29's criterion.
+const describing = (arc: StoredArcDescription): SidecarDocument =>
 	arc.special
-		? { kind: 'season', title: 'Specials', plot: null }
-		: { kind: 'season', title: arc.title, plot: arc.description };
+		? { kind: 'arc', title: 'Specials', plot: null }
+		: { kind: 'arc', title: arc.title, plot: arc.description };
 
-/** Describes the Part whose file has just landed at `libraryPath`, beside that file. */
-export function writeEpisodeSidecar(
-	db: Database,
-	library: string,
-	partSlug: string,
-	libraryPath: string
-): void {
-	if (!writes(db, 'episodeNfo')) return;
-	const part = readPartDescription(db, partSlug);
+/** Describes the Part whose file landed at `target.libraryPath`, beside that file. */
+function writePartSidecar(db: Database, library: string, target: SidecarTarget): void {
+	if (!writes(db, 'partNfo')) return;
+	const part = readPartDescription(db, target.partSlug);
 	if (part === null) return;
-	writeSidecar(library, sidecarPathFor(libraryPath), {
-		kind: 'episode',
+	writeDocument(library, sidecarPathFor(target.libraryPath), {
+		kind: 'part',
 		title: part.title,
 		plot: plotOf(part)
 	});
@@ -193,17 +201,18 @@ export function writeEpisodeSidecar(
  * is written at all until a Part is there to be shown, so a media server is never offered a season
  * of artwork and no video.
  */
-export function writeSeasonPoster(
+function writeArcPoster(
 	db: Database,
 	posters: Posters,
 	library: string,
-	libraryPath: string,
-	arcSlug: string
+	target: SidecarTarget
 ): void {
-	if (!writes(db, 'seasonPoster')) return;
-	const poster = posters.library(arcSlug);
+	if (!writes(db, 'arcPoster')) return;
+	const poster = posters.library(target.arcSlug);
 	if (poster === null) return;
-	copyFileSync(poster.path, join(library, dirname(libraryPath), 'cover.jpg'));
+	const destination = join(library, dirname(target.libraryPath), 'cover.jpg');
+	if (alreadyHolds(destination, poster.path)) return;
+	copyFileSync(poster.path, destination);
 }
 
 /**

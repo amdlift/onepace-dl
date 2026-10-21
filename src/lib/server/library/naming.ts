@@ -2,8 +2,9 @@ import type { Resolution } from '../catalogue/watch-page';
 
 /**
  * Arcs render as seasons and Parts as episodes, because `SxxEyy` is the one shape Jellyfin and
- * Plex parse without a custom agent. Those two words live here and in the paths this renders,
- * and nowhere else in Pacerr.
+ * Plex parse without a custom agent. Those two words belong to the Library edge — the paths this
+ * renders, the season directory names, the Sidecars written beside the media and the copy that
+ * describes them — and appear nowhere in Pacerr as a type or a column name.
  *
  * Season directories sit at the Library root with no Arc folder above them, because a folder per
  * Arc reads as a show per Arc rather than as one show with many seasons.

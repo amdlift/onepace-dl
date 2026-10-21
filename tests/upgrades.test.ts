@@ -1,16 +1,8 @@
-import {
-	existsSync,
-	mkdirSync,
-	mkdtempSync,
-	readdirSync,
-	readFileSync,
-	rmSync,
-	statSync,
-	writeFileSync
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
+import { filesUnder, mediaUnder } from './harness/files';
 import {
 	fixtures,
 	hours,
@@ -118,18 +110,10 @@ const upgraded = async (options: StartOptions = {}): Promise<Pacerr> =>
 	recut(await holdingTheEarlierCut(options));
 
 /** The media in the Library. What its Sidecars say is `tests/sidecars.test.ts`'s business. */
-const libraryMedia = (pacerr: Pacerr): string[] => libraryEntries(pacerr, '.mkv');
+const libraryMedia = (pacerr: Pacerr): string[] => mediaUnder(pacerr.paths.library);
 
-const librarySidecars = (pacerr: Pacerr): string[] => libraryEntries(pacerr, '.nfo');
-
-const libraryEntries = (pacerr: Pacerr, extension: string): string[] =>
-	readdirSync(pacerr.paths.library, { recursive: true })
-		.map(String)
-		.filter(
-			(entry) =>
-				extname(entry) === extension && statSync(join(pacerr.paths.library, entry)).isFile()
-		)
-		.sort();
+const librarySidecars = (pacerr: Pacerr): string[] =>
+	filesUnder(pacerr.paths.library).filter((entry) => extname(entry) === '.nfo');
 
 const contentOf = (pacerr: Pacerr, file: string): string =>
 	readFileSync(join(pacerr.paths.library, file), 'utf8');
