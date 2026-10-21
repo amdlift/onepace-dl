@@ -14,8 +14,6 @@ WORKDIR /app
 ENV NODE_ENV=production \
 	PROTOCOL_HEADER=x-forwarded-proto \
 	PACERR_CONFIG_DIR=/config \
-	PACERR_LIBRARY_DIR=/library \
-	PACERR_DOWNLOADS_DIR=/downloads \
 	PORT=3000
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci --omit dev --ignore-scripts

@@ -11,7 +11,7 @@ import type { AddressInfo } from 'node:net';
 import { onTestFinished } from 'vitest';
 import { declareConnectionProtocol, protocolHeader } from '../../src/lib/connection-protocol';
 import type { App } from '../../src/lib/server/app';
-import { getApp, setRuntime, stopApp } from '../../src/lib/server/runtime';
+import { getApp, setRuntime, stopApp, type EnvironmentPaths } from '../../src/lib/server/runtime';
 import { hours, minutes, ManualClock } from './clock';
 import { FakeDownloadClient } from './download-client';
 import { PacerrPage } from './page';
@@ -45,6 +45,9 @@ export interface StartOptions {
 	 * deployment whose Library and downloads cannot be hardlinked between.
 	 */
 	downloadsDir?: string;
+	/** Paths the container was pinned to by environment variable, which Settings cannot change. */
+	libraryFromEnvironment?: string;
+	downloadsFromEnvironment?: string;
 }
 
 export interface PacerrPaths {
@@ -80,14 +83,19 @@ export class Pacerr {
 	#app: App | null = null;
 	#url = '';
 	#cookies = new Map<string, string>();
+	#unconfigured: string;
 
 	private constructor(
 		readonly upstream: Upstream,
 		readonly clock: ManualClock,
 		readonly downloadClient: FakeDownloadClient,
 		readonly paths: PacerrPaths,
-		readonly environmentCredentials: { username: string; password: string } | null
-	) {}
+		unconfigured: string,
+		readonly environmentCredentials: { username: string; password: string } | null,
+		readonly environmentPaths: EnvironmentPaths
+	) {
+		this.#unconfigured = unconfigured;
+	}
 
 	static async start(options: StartOptions = {}): Promise<Pacerr> {
 		const root = mkdtempSync(join(tmpdir(), 'pacerr-'));
@@ -96,14 +104,24 @@ export class Pacerr {
 			library: join(root, 'library'),
 			downloads: options.downloadsDir ?? join(root, 'downloads')
 		};
-		for (const path of Object.values(paths)) mkdirSync(path, { recursive: true });
+		// Where an unconfigured Pacerr would mount them, and somewhere no test ever looks: the
+		// Library a test reads is then only ever one Settings was actually told about.
+		const unconfigured = join(root, 'unconfigured');
+		for (const path of [...Object.values(paths), unconfigured]) {
+			mkdirSync(path, { recursive: true });
+		}
 
 		const pacerr = new Pacerr(
 			await Upstream.start(options.watchPage ?? fixtures.watchPage, options.feed),
 			new ManualClock(options.now ?? new Date('2026-10-19T22:00:00Z')),
 			new FakeDownloadClient(),
 			paths,
-			options.authentication ?? null
+			unconfigured,
+			options.authentication ?? null,
+			{
+				library: options.libraryFromEnvironment ?? null,
+				downloads: options.downloadsFromEnvironment ?? null
+			}
 		);
 		onTestFinished(async () => {
 			await pacerr.stop();
@@ -111,6 +129,7 @@ export class Pacerr {
 			rmSync(root, { recursive: true, force: true });
 		});
 		await pacerr.#boot();
+		await pacerr.#configureDirectories();
 		return pacerr;
 	}
 
@@ -172,6 +191,18 @@ export class Pacerr {
 		});
 	}
 
+	/**
+	 * Point Pacerr at this test's directories the way a person does — by typing them into Settings
+	 * — so every test runs against a Library that was configured through the application itself.
+	 */
+	async #configureDirectories(): Promise<void> {
+		const credentials = this.environmentCredentials;
+		if (credentials !== null) await this.submit('/login', 'logIn', credentials);
+		await this.submit('/settings', 'saveLibrary', { library: this.paths.library });
+		await this.submit('/settings', 'saveDownloads', { downloads: this.paths.downloads });
+		if (credentials !== null) this.forget();
+	}
+
 	/** Recreate the container: same config volume and same upstream, everything else new. */
 	async restart(): Promise<void> {
 		await this.stop();
@@ -194,11 +225,16 @@ export class Pacerr {
 			clock: this.clock,
 			downloadClients: () => this.downloadClient,
 			onePaceBaseUrl: this.upstream.url,
-			paths: this.paths,
+			paths: {
+				config: this.paths.config,
+				library: this.#unconfigured,
+				downloads: this.#unconfigured
+			},
 			catalogueRefreshInterval: hours(24),
 			feedPollInterval: minutes(15),
 			polls: false,
-			environmentCredentials: this.environmentCredentials
+			environmentCredentials: this.environmentCredentials,
+			environmentPaths: this.environmentPaths
 		});
 		this.#app = getApp();
 		await this.#app.ready;

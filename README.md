@@ -82,14 +82,20 @@ containers, or add a **Remote Path Mapping** in Settings. See
 
 ## Volumes
 
-| Mount        | Holds                                                     | Override               |
-| ------------ | --------------------------------------------------------- | ---------------------- |
-| `/config`    | `pacerr.db` — the Catalogue, Monitoring, Profile, History | `PACERR_CONFIG_DIR`    |
-| `/library`   | The Library a media server reads                          | `PACERR_LIBRARY_DIR`   |
-| `/downloads` | The download directory the Download Client writes into    | `PACERR_DOWNLOADS_DIR` |
+| Mount        | Holds                                                     | Set in                             |
+| ------------ | --------------------------------------------------------- | ---------------------------------- |
+| `/config`    | `pacerr.db` — the Catalogue, Monitoring, Profile, History | `PACERR_CONFIG_DIR`                |
+| `/library`   | The Library a media server reads                          | Settings → Directories             |
+| `/downloads` | The download directory the Download Client writes into    | Settings → Directories             |
 
 Everything Pacerr must not lose lives in `/config`, so recreating the container loses nothing as
 long as that volume survives.
+
+Those two paths are only where the image mounts them. Point Pacerr at an existing layout —
+`/zfspool/media/Anime/One Pace`, say — in **Settings → Directories**, and mount it in the container
+at whatever path you type there. The setting lives in `/config` and survives being recreated. The
+config directory is the exception: Pacerr cannot read a setting out of a database it has not opened
+yet, so that one stays an environment variable.
 
 Keep `/library` and `/downloads` **on the same filesystem** if you can. Pacerr hardlinks imports so
 a Part does not occupy disk twice while it seeds; across a filesystem boundary it falls back to
@@ -114,13 +120,17 @@ mode of the directory, and both fixes. Read `docker logs pacerr`.
 | `PORT`                            | `3000`                | Port to listen on inside the container                         |
 | `HOST`                            | `0.0.0.0`             | Address to bind                                                |
 | `PACERR_CONFIG_DIR`               | `/config`             | Where `pacerr.db` lives                                        |
-| `PACERR_LIBRARY_DIR`              | `/library`            | The Library                                                    |
-| `PACERR_DOWNLOADS_DIR`            | `/downloads`          | The download directory                                         |
+| `PACERR_LIBRARY_DIR`              | unset                 | Pins the Library, making the Settings field read-only          |
+| `PACERR_DOWNLOADS_DIR`            | unset                 | Pins the download directory the same way                       |
 | `PACERR_AUTH_USERNAME`            | unset                 | Configures the login from the environment                      |
 | `PACERR_AUTH_PASSWORD`            | unset                 | Configures the login from the environment                      |
 | `PACERR_FEED_INTERVAL_MINUTES`    | `15`                  | How often the release feed is polled                           |
 | `PACERR_CATALOGUE_INTERVAL_HOURS` | `24`                  | How often the watch page is scraped                            |
 | `PACERR_ONEPACE_URL`              | `https://onepace.net` | Where the Catalogue and feed come from                         |
+
+The image sets neither `PACERR_LIBRARY_DIR` nor `PACERR_DOWNLOADS_DIR`, because a variable that is
+always set would permanently lock both fields. Set one only if you want a deployment to configure
+Pacerr from outside: the value then wins, and Settings shows it read-only saying where it came from.
 
 Authentication is **off by default**, so a first run behind a VPN or a reverse proxy is not gated
 behind creating an account. Setting both `PACERR_AUTH_*` variables turns it on and takes the account

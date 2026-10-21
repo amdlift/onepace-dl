@@ -6,6 +6,7 @@ import { AcquisitionService } from './download/acquisition';
 import { DownloadService } from './download/service';
 import { ImportService } from './library/import';
 import { assignLibraryIndexes } from './library/store';
+import { PathService } from './paths/service';
 import { openConfigDirectory, reportPathValidation, validatePaths } from './paths/validation';
 import { ReleaseService } from './releases/service';
 import type { Runtime } from './runtime';
@@ -25,6 +26,7 @@ export interface App {
 	downloads: DownloadService;
 	acquisition: AcquisitionService;
 	imports: ImportService;
+	paths: PathService;
 	scheduler: Scheduler;
 	/** Resolves once the startup scrape has run; the HTTP surface waits on it. */
 	ready: Promise<void>;
@@ -44,7 +46,8 @@ export function createApp(runtime: Runtime): App {
 	);
 	const downloads = new DownloadService(db, runtime.downloadClients);
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
-	const imports = new ImportService(db, runtime.clock, downloads, runtime.paths.library);
+	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
+	const imports = new ImportService(db, runtime.clock, downloads, paths);
 	const scheduler = new Scheduler(runtime.clock);
 	scheduler.add({
 		name: catalogueJob,
@@ -88,12 +91,13 @@ export function createApp(runtime: Runtime): App {
 		downloads,
 		acquisition,
 		imports,
+		paths,
 		scheduler,
 		ready: (async () => {
 			// Before anything else, because the download directory worth validating is the one the
 			// Download Client will report, and only asking it produces that path.
 			await downloads.test();
-			reportPathValidation(validatePaths(runtime.paths, downloads.downloadDirectory()));
+			reportPathValidation(validatePaths(paths.current(), downloads.downloadDirectory()));
 			await scheduler.tick();
 			if (runtime.polls) scheduler.startPolling();
 		})(),
