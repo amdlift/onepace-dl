@@ -1,12 +1,14 @@
 import { readdirSync, statSync } from 'node:fs';
 import { basename, extname, join, relative, resolve } from 'node:path';
 import type { Database } from 'better-sqlite3';
+import type { Posters } from '../artwork';
 import type { Clock } from '../clock';
 import { reasonOf } from '../failure';
 import { recordHistory, type HistoryEntry } from '../history/store';
 import { hidesNothing, permit, type BrowsePolicy } from '../paths/browse';
 import { copiedInsteadOfLinked, placeIntoLibrary, type Placing } from './import';
 import type { NamingFields } from './naming';
+import { writeEpisodeSidecar, writeSeasonPoster } from './sidecars';
 import { partLibraryIndex, readNamingTemplate, recordHadPart } from './store';
 
 const videoExtensions = new Set([
@@ -142,6 +144,7 @@ interface NamingRow {
 	slug: string;
 	part_title: string;
 	part_number: number;
+	arc_slug: string;
 	arc_title: string;
 	library_index: number;
 	part_library_index: number | null;
@@ -149,6 +152,7 @@ interface NamingRow {
 }
 
 interface NamingTarget {
+	arcSlug: string;
 	partSlug: string;
 	partTitle: string;
 	naming: NamingFields;
@@ -159,7 +163,8 @@ function readNamingFields(db: Database, slugs: string[]): Map<string, NamingTarg
 	const rows = db
 		.prepare(
 			`select part.slug, part.title as part_title, part.number as part_number,
-				arc.title as arc_title, i.library_index, pi.library_index as part_library_index,
+				arc.slug as arc_slug, arc.title as arc_title,
+				i.library_index, pi.library_index as part_library_index,
 				(select count(*) from part sibling where sibling.arc_slug = arc.slug) as arc_part_count
 			from part
 			join arc on arc.slug = part.arc_slug
@@ -172,6 +177,7 @@ function readNamingFields(db: Database, slugs: string[]): Map<string, NamingTarg
 		rows.map((row) => [
 			row.slug,
 			{
+				arcSlug: row.arc_slug,
 				partSlug: row.slug,
 				partTitle: row.part_title,
 				naming: {
@@ -201,6 +207,7 @@ function readNamingFields(db: Database, slugs: string[]): Map<string, NamingTarg
 export function manualImport(
 	db: Database,
 	clock: Clock,
+	posters: Posters,
 	library: string,
 	policy: BrowsePolicy | null,
 	confirmed: ConfirmedImport[],
@@ -233,6 +240,8 @@ export function manualImport(
 
 		try {
 			const placed = placeIntoLibrary(library, source, template, target.naming, placing);
+			writeSeasonPoster(posters, library, placed.libraryPath, target.arcSlug);
+			writeEpisodeSidecar(db, library, target.partSlug, placed.libraryPath);
 			// No infohash: Pacerr did not download this file and has no Release to attribute it to,
 			// so it records having the Part and claims nothing further about it.
 			recordHadPart(

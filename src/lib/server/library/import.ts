@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
+import type { Posters } from '../artwork';
 import type { Clock } from '../clock';
 import type { DownloadClient } from '../download/client';
 import { DownloadService } from '../download/service';
@@ -21,6 +22,7 @@ import {
 	recordUpgradeImported
 } from '../upgrade/store';
 import { renderLibraryPath, type NamingFields } from './naming';
+import { sidecarPathFor, writeEpisodeSidecar, writeSeasonPoster } from './sidecars';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -97,12 +99,20 @@ export class ImportService {
 	#db: Database;
 	#clock: Clock;
 	#downloads: DownloadService;
+	#posters: Posters;
 	#paths: PathService;
 
-	constructor(db: Database, clock: Clock, downloads: DownloadService, paths: PathService) {
+	constructor(
+		db: Database,
+		clock: Clock,
+		downloads: DownloadService,
+		posters: Posters,
+		paths: PathService
+	) {
 		this.#db = db;
 		this.#clock = clock;
 		this.#downloads = downloads;
+		this.#posters = posters;
 		this.#paths = paths;
 	}
 
@@ -178,12 +188,10 @@ export class ImportService {
 			const target = grab.targets[position];
 			if (target === undefined || target.had) continue;
 			try {
-				const placed = placeIntoLibrary(
-					this.#paths.library().path,
-					source,
-					template,
-					target.naming
-				);
+				const library = this.#paths.library().path;
+				const placed = placeIntoLibrary(library, source, template, target.naming);
+				writeSeasonPoster(this.#posters, library, placed.libraryPath, target.arcSlug);
+				writeEpisodeSidecar(this.#db, library, target.partSlug, placed.libraryPath);
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(
 					this.#db,
@@ -223,8 +231,10 @@ export class ImportService {
 	 */
 	#forgetReplaced(target: ImportTarget, libraryPath: string): void {
 		const replaced = target.replaces?.libraryPath;
-		if (replaced !== undefined && replaced !== libraryPath)
-			rmSync(join(this.#paths.library().path, replaced), { force: true });
+		if (replaced === undefined || replaced === libraryPath) return;
+		const library = this.#paths.library().path;
+		rmSync(join(library, replaced), { force: true });
+		rmSync(join(library, sidecarPathFor(replaced)), { force: true });
 	}
 
 	/**

@@ -177,6 +177,34 @@ export function readArcDetail(db: Database, slug: string): StoredArcDetail | nul
 	};
 }
 
+/** Everything One Pace says about one Part, which is everything a Sidecar describes it with. */
+export interface StoredPartDescription {
+	title: string;
+	description: string | null;
+	chapters: Coverage | null;
+	episodes: Coverage | null;
+}
+
+interface PartDescriptionRow {
+	title: string;
+	description: string | null;
+	chapters: string | null;
+	episodes: string | null;
+}
+
+export function readPartDescription(db: Database, slug: string): StoredPartDescription | null {
+	const row = db
+		.prepare('select title, description, chapters, episodes from part where slug = ?')
+		.get(slug) as PartDescriptionRow | undefined;
+	if (row === undefined) return null;
+	return {
+		title: row.title,
+		description: row.description,
+		chapters: parseCoverage(row.chapters),
+		episodes: parseCoverage(row.episodes)
+	};
+}
+
 interface FullArcRow {
 	slug: string;
 	title: string;
