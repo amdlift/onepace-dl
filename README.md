@@ -94,9 +94,11 @@ long as that volume survives. That includes any Poster you supply yourself — s
 
 Those two paths are only where the image mounts them. Point Pacerr at an existing layout —
 `/zfspool/media/Anime/One Pace`, say — in **Settings → Directories**, and mount it in the container
-at whatever path you type there. The setting lives in `/config` and survives being recreated. The
-config directory is the exception: Pacerr cannot read a setting out of a database it has not opened
-yet, so that one stays an environment variable.
+at whatever path you type there. The setting lives in `/config` and survives being recreated.
+Changing it shows you what moving the Parts already there would do — how many, how much data, from
+where to where, and whether a copy is involved — and moves them in the background once you
+confirm. The config directory is the exception: Pacerr cannot read a setting out of a database it
+has not opened yet, so that one stays an environment variable.
 
 Keep `/library` and `/downloads` **on the same filesystem** if you can. Pacerr hardlinks imports so
 a Part does not occupy disk twice while it seeds; across a filesystem boundary it falls back to

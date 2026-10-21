@@ -1,11 +1,13 @@
 import { join } from 'node:path';
 import { Posters } from './artwork';
 import { AuthenticationService } from './auth/service';
+import { Background } from './background';
 import { CatalogueService } from './catalogue/service';
 import { openDatabase, type Database } from './db/database';
 import { AcquisitionService } from './download/acquisition';
 import { DownloadService } from './download/service';
 import { ImportService } from './library/import';
+import { LibraryMoveService } from './library/move';
 import { assignLibraryIndexes } from './library/store';
 import { PathService } from './paths/service';
 import { openConfigDirectory, reportPathValidation, validatePaths } from './paths/validation';
@@ -29,7 +31,10 @@ export interface App {
 	acquisition: AcquisitionService;
 	imports: ImportService;
 	paths: PathService;
+	moves: LibraryMoveService;
 	scheduler: Scheduler;
+	/** Work a request started and did not wait for; seam 1 awaits it rather than racing it. */
+	background: Background;
 	/** Resolves once the startup scrape has run; the HTTP surface waits on it. */
 	ready: Promise<void>;
 	stop(): void;
@@ -51,6 +56,9 @@ export function createApp(runtime: Runtime): App {
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
 	const paths = new PathService(db, runtime.paths, runtime.environmentPaths);
 	const imports = new ImportService(db, runtime.clock, downloads, paths);
+	const background = new Background();
+	const moves = new LibraryMoveService(db, runtime.clock, paths, background);
+	moves.recordInterruption();
 	const scheduler = new Scheduler(runtime.clock);
 	scheduler.add({
 		name: catalogueJob,
@@ -96,7 +104,9 @@ export function createApp(runtime: Runtime): App {
 		acquisition,
 		imports,
 		paths,
+		moves,
 		scheduler,
+		background,
 		ready: (async () => {
 			// Before anything else, because the download directory worth validating is the one the
 			// Download Client will report, and only asking it produces that path.
@@ -106,6 +116,7 @@ export function createApp(runtime: Runtime): App {
 			if (runtime.polls) scheduler.startPolling();
 		})(),
 		stop() {
+			background.stop();
 			scheduler.stop();
 			db.close();
 		}
