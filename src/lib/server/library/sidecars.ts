@@ -2,15 +2,21 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import { formatCoverage } from '../../format';
-import { readPartDescription, type StoredPartDescription } from '../catalogue/store';
+import {
+	readArcDescription,
+	readPartDescription,
+	type StoredArcDescription,
+	type StoredPartDescription
+} from '../catalogue/store';
 import type { Coverage } from '../catalogue/watch-page';
+import { showTitle } from './naming';
 
 /**
- * Sidecars are the Library edge, so this is one of the few places `episode` is a media server's
- * word rather than One Piece's. A document names the element a media server looks for; where it
- * goes is the caller's to say, because that follows the rendered path of the file it describes.
+ * Sidecars are the Library edge, so this is one of the few places `season` and `episode` are a
+ * media server's words rather than One Piece's. A document names the element a media server looks
+ * for; where it goes is the caller's to say, because that follows the rendered path of the media.
  */
-export type SidecarKind = 'episode';
+export type SidecarKind = 'show' | 'season' | 'episode';
 
 export interface SidecarDocument {
 	kind: SidecarKind;
@@ -18,7 +24,11 @@ export interface SidecarDocument {
 	plot: string | null;
 }
 
-const rootElement: Record<SidecarKind, string> = { episode: 'episodedetails' };
+const rootElement: Record<SidecarKind, string> = {
+	show: 'tvshow',
+	season: 'season',
+	episode: 'episodedetails'
+};
 
 /** Writes one document into the Library at a path relative to its root. */
 export function writeSidecar(
@@ -34,6 +44,42 @@ export function writeSidecar(
 /** Where the Sidecar describing the file at one Library path lives. */
 export const sidecarPathFor = (libraryPath: string): string =>
 	`${libraryPath.slice(0, libraryPath.length - extname(libraryPath).length)}.nfo`;
+
+/** Describes the one show the Library holds, at its root, where a media server looks for it. */
+export function writeShowSidecar(library: string): void {
+	writeSidecar(library, 'tvshow.nfo', {
+		kind: 'show',
+		title: showTitle,
+		plot: showDescription
+	});
+}
+
+// One Pace's own account of itself, because nothing in the Catalogue describes the project, only
+// the Arcs and Parts within it.
+const showDescription =
+	'One Pace is a fan project that recuts the One Piece anime in an endeavor to bring it more ' +
+	'in line with the pacing of the original manga by Eiichiro Oda. The team accomplishes this ' +
+	'by removing filler scenes not present in the source material, fixing animation errors, and ' +
+	'correcting subtitles.';
+
+/** Describes the Arc a Part belongs to, in the season directory that Part's file landed in. */
+export function writeSeasonSidecar(
+	db: Database,
+	library: string,
+	arcSlug: string,
+	libraryPath: string
+): void {
+	const arc = readArcDescription(db, arcSlug);
+	if (arc === null) return;
+	writeSidecar(library, join(dirname(libraryPath), 'season.nfo'), seasonOf(arc));
+}
+
+// Every special shares one season, so naming that season after an Arc would retitle the whole of
+// it after whichever special was imported last.
+const seasonOf = (arc: StoredArcDescription): SidecarDocument =>
+	arc.special
+		? { kind: 'season', title: 'Specials', plot: null }
+		: { kind: 'season', title: arc.title, plot: arc.description };
 
 /** Describes the Part whose file has just landed at `libraryPath`, beside that file. */
 export function writeEpisodeSidecar(

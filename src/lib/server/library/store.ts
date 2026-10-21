@@ -180,6 +180,7 @@ export interface ReplacedRelease {
 
 /** One Part a completed download owes the Library, and everything its name is rendered from. */
 export interface ImportTarget {
+	arcSlug: string;
 	partSlug: string;
 	partTitle: string;
 	had: boolean;
@@ -201,6 +202,7 @@ export interface PendingImport {
 interface PendingRow {
 	infohash: string;
 	release_title: string;
+	arc_slug: string;
 	part_slug: string;
 	part_title: string;
 	part_number: number;
@@ -225,7 +227,7 @@ function replacedBy(row: PendingRow): ReplacedRelease | null {
 export function readPendingImports(db: Database): PendingImport[] {
 	const rows = db
 		.prepare(
-			`select g.infohash, g.release_title, gp.part_slug,
+			`select g.infohash, g.release_title, gp.part_slug, part.arc_slug,
 				part.title as part_title, part.number as part_number,
 				arc.title as arc_title, i.library_index, pi.library_index as part_library_index,
 				(select count(*) from part sibling where sibling.arc_slug = arc.slug) as arc_part_count,
@@ -250,6 +252,7 @@ export function readPendingImports(db: Database): PendingImport[] {
 	const pending = new Map<string, PendingImport>();
 	for (const row of rows) {
 		const target: ImportTarget = {
+			arcSlug: row.arc_slug,
 			partSlug: row.part_slug,
 			partTitle: row.part_title,
 			had: row.had === 1,
