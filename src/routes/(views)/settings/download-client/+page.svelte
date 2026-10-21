@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Chrome from '../../../../lib/components/Chrome.svelte';
+	import SettingsChrome from '../../../../lib/components/SettingsChrome.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -10,7 +10,7 @@
 
 <svelte:head><title>Download Client - Pacerr</title></svelte:head>
 
-<Chrome title="Settings">
+<SettingsChrome>
 	<section>
 		<h2>Download Client</h2>
 
@@ -41,7 +41,7 @@
 			<p class="connection" class:bad={!connection.ok}>{connection.detail}</p>
 		{/if}
 	</section>
-</Chrome>
+</SettingsChrome>
 
 <style>
 	form {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Chrome from '../../../lib/components/Chrome.svelte';
+	import SettingsChrome from '../../../lib/components/SettingsChrome.svelte';
 	import { formatResolution, formatResolutionOrder, formatVariant } from '../../../lib/format';
 	import type { PageProps } from './$types';
 
@@ -15,7 +15,7 @@
 
 <svelte:head><title>Settings - Pacerr</title></svelte:head>
 
-<Chrome title="Settings">
+<SettingsChrome>
 	<section>
 		<h2>Profile</h2>
 
@@ -69,16 +69,7 @@
 		</form>
 	</section>
 
-	<section class="sidecars">
-		<h2>Sidecars</h2>
-
-		<p class="note">
-			The NFO documents and the Poster Pacerr writes into the Library beside the media they describe,
-			so a media server reads what only One Pace knows. Each kind has a switch of its own.
-		</p>
-		<a class="button" href="/settings/metadata">Sidecars</a>
-	</section>
-</Chrome>
+</SettingsChrome>
 
 <style>
 	form {
@@ -118,8 +109,4 @@
 		color: var(--ink-bright);
 	}
 
-	.sidecars .note {
-		max-width: var(--prose-width);
-		margin-bottom: var(--space-3);
-	}
 </style>

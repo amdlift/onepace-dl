@@ -66,7 +66,7 @@ describe('the toolbar', () => {
 		expect((await pacerr.open('/arcs/reverie')).texts('.page-toolbar .actions button')).toEqual([
 			'Not monitored'
 		]);
-		expect((await pacerr.open('/settings/metadata')).texts('.page-toolbar .actions a')).toEqual([
+		expect((await pacerr.open('/settings/browse')).texts('.page-toolbar .actions a')).toEqual([
 			'Back to Settings'
 		]);
 	});

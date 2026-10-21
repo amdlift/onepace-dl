@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Chrome from '../../../../lib/components/Chrome.svelte';
+	import SettingsChrome from '../../../../lib/components/SettingsChrome.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -10,7 +10,7 @@
 
 <svelte:head><title>Security - Pacerr</title></svelte:head>
 
-<Chrome title="Settings">
+<SettingsChrome>
 	<section>
 		<h2>Security</h2>
 
@@ -52,7 +52,7 @@
 			</form>
 		{/if}
 	</section>
-</Chrome>
+</SettingsChrome>
 
 <style>
 	form {

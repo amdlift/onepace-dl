@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Chrome from '../../../../lib/components/Chrome.svelte';
+	import SettingsChrome from '../../../../lib/components/SettingsChrome.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -9,7 +9,7 @@
 
 <svelte:head><title>Manual Import - Pacerr</title></svelte:head>
 
-<Chrome title="Settings">
+<SettingsChrome>
 	<section>
 		<h2>Manual Import</h2>
 
@@ -30,7 +30,7 @@
 			</div>
 		</form>
 	</section>
-</Chrome>
+</SettingsChrome>
 
 <style>
 	form {

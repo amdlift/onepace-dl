@@ -74,3 +74,29 @@ describe('Metadata', () => {
 		expect(page.attributes('input[name="showNfo"]', 'checked')).toEqual([null]);
 	});
 });
+
+describe('the Settings sub-navigation', () => {
+	const categories = [
+		['/settings', 'Profile'],
+		['/settings/media-management', 'Media Management'],
+		['/settings/download-client', 'Download Client'],
+		['/settings/metadata', 'Metadata'],
+		['/settings/manual-import', 'Manual Import'],
+		['/settings/security', 'Security']
+	];
+
+	it('reaches six pages directly and marks the one being looked at', async () => {
+		const pacerr = await startPacerr();
+		const labels = categories.map(([, label]) => label);
+
+		for (const [path, label] of categories) {
+			const page = await pacerr.open(path ?? '/settings');
+
+			expect(page.texts('nav[aria-label="Settings"] a')).toEqual(labels);
+			expect(page.attributes('nav[aria-label="Settings"] a', 'href')).toEqual(
+				categories.map(([href]) => href)
+			);
+			expect(page.texts('nav[aria-label="Settings"] a[aria-current="page"]')).toEqual([label]);
+		}
+	});
+});

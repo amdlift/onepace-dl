@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Chrome from '../../../../lib/components/Chrome.svelte';
+	import SettingsChrome from '../../../../lib/components/SettingsChrome.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -34,11 +34,7 @@
 
 <svelte:head><title>Metadata - Pacerr</title></svelte:head>
 
-<Chrome title="Settings">
-	{#snippet actions()}
-		<a class="button" href="/settings">Back to Settings</a>
-	{/snippet}
-
+<SettingsChrome>
 	<h2>Sidecars</h2>
 
 	{#if form?.saved}
@@ -62,7 +58,7 @@
 		{/each}
 		<button class="button" type="submit">Save</button>
 	</form>
-</Chrome>
+</SettingsChrome>
 
 <style>
 	form {
