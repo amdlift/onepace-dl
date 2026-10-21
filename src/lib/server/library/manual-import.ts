@@ -245,9 +245,9 @@ export function manualImport(
 
 		try {
 			const placed = placeIntoLibrary(library, source, template, target.naming, placing);
-			writeShowSidecar(library);
+			writeShowSidecar(db, library);
 			writeSeasonSidecar(db, library, target.arcSlug, placed.libraryPath);
-			writeSeasonPoster(posters, library, placed.libraryPath, target.arcSlug);
+			writeSeasonPoster(db, posters, library, placed.libraryPath, target.arcSlug);
 			writeEpisodeSidecar(db, library, target.partSlug, placed.libraryPath);
 			// No infohash: Pacerr did not download this file and has no Release to attribute it to,
 			// so it records having the Part and claims nothing further about it.

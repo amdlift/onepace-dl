@@ -267,6 +267,18 @@ const migrations = [
 		planned_at text not null,
 		finished_at text
 	);
+	`,
+	`
+	-- One row rather than a row per kind, because the four kinds are fixed by what a media server
+	-- reads and a user switching one off is editing a single standing instruction.
+	create table sidecar (
+		id integer primary key check (id = 1),
+		show_nfo integer not null default 1,
+		season_nfo integer not null default 1,
+		episode_nfo integer not null default 1,
+		season_poster integer not null default 1
+	);
+	insert into sidecar (id) values (1);
 	`
 ];
 
