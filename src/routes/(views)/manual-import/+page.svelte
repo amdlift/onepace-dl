@@ -125,6 +125,10 @@
 		gap: var(--space-3);
 	}
 
+	.roots a {
+		color: var(--ink-dim);
+	}
+
 	.roots a[aria-current='page'] {
 		color: var(--ink-bright);
 	}

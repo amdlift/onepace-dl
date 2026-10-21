@@ -19,6 +19,7 @@
 	{#snippet actions()}
 		<a class="button" href="/settings">Back to Settings</a>
 	{/snippet}
+
 	{#if data.problem}
 		<p class="alert">{data.problem}</p>
 	{/if}

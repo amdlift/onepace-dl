@@ -38,6 +38,7 @@
 	{#snippet actions()}
 		<a class="button" href="/settings">Back to Settings</a>
 	{/snippet}
+
 	{#if form?.saved}
 		<p class="note saved">Saved.</p>
 	{/if}
