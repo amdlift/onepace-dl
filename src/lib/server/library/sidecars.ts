@@ -165,7 +165,7 @@ export function writeArcSidecar(
 }
 
 // Every special shares one season, so naming that season after an Arc would retitle the whole of
-// it after whichever special was imported last.
+// it after whichever special was imported last. ADR-0008 settles that against #29's criterion.
 const describing = (arc: StoredArcDescription): SidecarDocument =>
 	arc.special
 		? { kind: 'arc', title: 'Specials', plot: null }
