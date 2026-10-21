@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
+import type { Posters } from '../artwork';
 import type { Clock } from '../clock';
 import type { DownloadClient } from '../download/client';
 import { DownloadService } from '../download/service';
@@ -20,6 +21,7 @@ import {
 	recordUpgradeImported
 } from '../upgrade/store';
 import { renderLibraryPath, type NamingFields } from './naming';
+import { writeSeasonPoster } from './sidecars';
 import {
 	readNamingTemplate,
 	readPendingImports,
@@ -96,12 +98,20 @@ export class ImportService {
 	#db: Database;
 	#clock: Clock;
 	#downloads: DownloadService;
+	#posters: Posters;
 	#library: string;
 
-	constructor(db: Database, clock: Clock, downloads: DownloadService, library: string) {
+	constructor(
+		db: Database,
+		clock: Clock,
+		downloads: DownloadService,
+		posters: Posters,
+		library: string
+	) {
 		this.#db = db;
 		this.#clock = clock;
 		this.#downloads = downloads;
+		this.#posters = posters;
 		this.#library = library;
 	}
 
@@ -178,6 +188,7 @@ export class ImportService {
 			if (target === undefined || target.had) continue;
 			try {
 				const placed = placeIntoLibrary(this.#library, source, template, target.naming);
+				writeSeasonPoster(this.#posters, this.#library, placed.libraryPath, target.arcSlug);
 				this.#forgetReplaced(target, placed.libraryPath);
 				recordHadPart(
 					this.#db,

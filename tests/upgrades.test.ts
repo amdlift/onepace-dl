@@ -90,10 +90,13 @@ async function holdingSevenTwenty(): Promise<Pacerr> {
 	return pacerr;
 }
 
+const seasonPoster = 'Season 34/cover.jpg';
+
 const reverieAt720 = [
 	'Season 34/One Pace - S34E01 - The Fifth Emperor [720p].mkv',
 	'Season 34/One Pace - S34E02 - A Beautiful World [720p].mkv',
-	'Season 34/One Pace - S34E03 - The Empty Throne [720p].mkv'
+	'Season 34/One Pace - S34E03 - The Empty Throne [720p].mkv',
+	seasonPoster
 ];
 
 const callAPartDoneAt = (pacerr: Pacerr, cutoff: string): Promise<unknown> =>
@@ -128,11 +131,13 @@ const contentOf = (pacerr: Pacerr, file: string): string =>
 
 const firstPart = 'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv';
 
-const reverieInTheLibrary = [
+const reverieParts = [
 	firstPart,
 	'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
 	'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
 ];
+
+const reverieInTheLibrary = [...reverieParts, seasonPoster];
 
 describe('a Release that drops out of the watch page current set', () => {
 	it('is replaced by the Release that superseded it, unasked', async () => {
@@ -178,11 +183,12 @@ describe('the torrent an Upgrade superseded', () => {
 		const pacerr = await upgraded();
 
 		expect(existsSync(join(pacerr.paths.downloads, earlierCut))).toBe(false);
-		expect(libraryFiles(pacerr).map((file) => contentOf(pacerr, file))).toEqual([
+		expect(reverieParts.map((file) => contentOf(pacerr, file))).toEqual([
 			'the current cut 1',
 			'the current cut 2',
 			'the current cut 3'
 		]);
+		expect(libraryFiles(pacerr)).toEqual(reverieInTheLibrary);
 	});
 });
 
@@ -246,7 +252,7 @@ describe('History', () => {
 			`Replaced Reverie · ${earlierCut}`
 		]);
 		// Newest first, so the three Upgrades sit above the three imports that preceded them.
-		expect(page.texts('.history .detail').slice(0, 3)).toEqual([...reverieInTheLibrary].reverse());
+		expect(page.texts('.history .detail').slice(0, 3)).toEqual([...reverieParts].reverse());
 	});
 });
 

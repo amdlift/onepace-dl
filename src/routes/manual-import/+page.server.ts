@@ -40,6 +40,7 @@ export const actions: Actions = {
 		manualImport(
 			app.db,
 			app.runtime.clock,
+			app.posters,
 			app.runtime.paths.library,
 			rootDirectory(app.db, app.runtime.paths.library, root),
 			confirmedIn(submitted),
@@ -58,6 +59,7 @@ export const actions: Actions = {
 		manualImport(
 			app.db,
 			app.runtime.clock,
+			app.posters,
 			app.runtime.paths.library,
 			rootDirectory(app.db, app.runtime.paths.library, root),
 			path === '' || partSlug === '' ? [] : [{ path, partSlug }],

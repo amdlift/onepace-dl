@@ -32,6 +32,8 @@ function importSource(files: string[]): string {
 	return root;
 }
 
+const seasonPoster = 'Season 13/cover.jpg';
+
 const libraryFiles = (pacerr: Pacerr): string[] =>
 	readdirSync(pacerr.paths.library, { recursive: true })
 		.map(String)
@@ -123,10 +125,20 @@ describe('committing a Manual Import', () => {
 			'part:Drum Island 01.mkv': 'drum-island-01'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryFiles(pacerr)).toEqual([drumIsland, seasonPoster]);
 		expect(statSync(join(pacerr.paths.library, drumIsland)).ino).toBe(
 			statSync(join(source, 'Drum Island 01.mkv')).ino
 		);
+	});
+
+	it("writes the Arc's Poster into the season directory, as a download does", async () => {
+		const { pacerr } = await pacerrWith(['Drum Island 01.mkv']);
+
+		await pacerr.submit('/manual-import', 'import', {
+			'part:Drum Island 01.mkv': 'drum-island-01'
+		});
+
+		expect(libraryFiles(pacerr)).toEqual([drumIsland, seasonPoster]);
 	});
 
 	it('leaves a file the user did not assign a Part alone', async () => {
@@ -137,7 +149,7 @@ describe('committing a Manual Import', () => {
 			'part:Drum Island 02.mkv': ''
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryFiles(pacerr)).toEqual([drumIsland, seasonPoster]);
 	});
 
 	it('shows the Part as had with no Release, because Pacerr does not know what the file is', async () => {
@@ -179,7 +191,7 @@ describe('moving rather than hardlinking', () => {
 			placing: 'move'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryFiles(pacerr)).toEqual([drumIsland, seasonPoster]);
 		expect(existsSync(join(source, 'Drum Island 01.mkv'))).toBe(false);
 	});
 
@@ -268,7 +280,7 @@ describe('filling a single gap from Wanted', () => {
 			file: 'Wano 60.mkv'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryFiles(pacerr)).toEqual([drumIsland, seasonPoster]);
 	});
 });
 
@@ -305,7 +317,7 @@ describe('an Import Source on a filesystem the Library cannot be hardlinked to',
 			'part:Drum Island 01.mkv': 'drum-island-01'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryFiles(pacerr)).toEqual([drumIsland, seasonPoster]);
 		const page = await pacerr.open('/activity');
 		expect(page.texts('.history .event')).toContain('Manually imported, with a warning');
 		expect(page.text('.history')).toContain('on different filesystems');
@@ -319,7 +331,7 @@ describe('an Import Source on a filesystem the Library cannot be hardlinked to',
 			placing: 'move'
 		});
 
-		expect(libraryFiles(pacerr)).toEqual([drumIsland]);
+		expect(libraryFiles(pacerr)).toEqual([drumIsland, seasonPoster]);
 		expect((await pacerr.open('/activity')).texts('.history .event')).toEqual([
 			'Manually imported'
 		]);

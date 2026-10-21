@@ -8,6 +8,7 @@ import {
 	writeFileSync
 } from 'node:fs';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import {
 	fixtures,
@@ -118,7 +119,8 @@ describe('importing a completed download', () => {
 		expect(libraryFiles(pacerr)).toEqual([
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
-			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
+			'Season 34/cover.jpg'
 		]);
 	});
 
@@ -161,6 +163,42 @@ describe('importing a completed download', () => {
 		expect(statSync(join(pacerr.paths.library, firstPart)).ino).toBe(
 			statSync(join(pacerr.paths.downloads, infohash, '1.mkv')).ino
 		);
+	});
+});
+
+describe('the Poster a media server shows for a season', () => {
+	it('lands in the season directory as cover.jpg, at Poster dimensions', async () => {
+		const pacerr = await reverie();
+
+		const poster = await sharp(join(pacerr.paths.library, 'Season 34/cover.jpg')).metadata();
+
+		expect(poster.format).toBe('jpeg');
+		expect([poster.width, poster.height]).toEqual([1000, 1500]);
+	});
+
+	it('is the one the user supplied for the Arc, where they have supplied one', async () => {
+		const pacerr = await reverie();
+		const mine = Buffer.from('\xff\xd8\xffthe Poster I chose myself', 'latin1');
+		mkdirSync(join(pacerr.paths.config, 'posters'), { recursive: true });
+		writeFileSync(join(pacerr.paths.config, 'posters', 'gaimon.jpg'), mine);
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
+		finish(pacerr, 1);
+		await pacerr.advance(minutes(15));
+
+		expect(readFileSync(join(pacerr.paths.library, 'Season 04/cover.jpg'))).toEqual(mine);
+	});
+
+	it('is not written for a season holding no Part, which would be artwork and no video', async () => {
+		const pacerr = await reverie();
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'gaimon' });
+		await pacerr.advance(minutes(15));
+
+		expect(libraryEntries(pacerr)).toEqual(['Season 34']);
+		expect(libraryFiles(pacerr).filter((entry) => entry.endsWith('cover.jpg'))).toEqual([
+			'Season 34/cover.jpg'
+		]);
 	});
 });
 
@@ -215,7 +253,8 @@ describe('the naming template', () => {
 		expect(libraryFiles(pacerr)).toEqual([
 			'Reverie/Reverie - 34x01 - The Fifth Emperor.mkv',
 			'Reverie/Reverie - 34x02 - A Beautiful World.mkv',
-			'Reverie/Reverie - 34x03 - The Empty Throne.mkv'
+			'Reverie/Reverie - 34x03 - The Empty Throne.mkv',
+			'Reverie/cover.jpg'
 		]);
 	});
 
@@ -260,9 +299,11 @@ describe('an Arc that One Pace inserts above one already in the Library', () => 
 
 		expect(libraryFiles(pacerr)).toEqual([
 			"Season 04/One Pace - S04E01 - You're the Weird Animal [1080p].mkv",
+			'Season 04/cover.jpg',
 			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].mkv',
 			'Season 34/One Pace - S34E02 - A Beautiful World [1080p].mkv',
-			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv'
+			'Season 34/One Pace - S34E03 - The Empty Throne [1080p].mkv',
+			'Season 34/cover.jpg'
 		]);
 	});
 });

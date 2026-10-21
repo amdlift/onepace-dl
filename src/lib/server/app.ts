@@ -47,7 +47,7 @@ export function createApp(runtime: Runtime): App {
 	);
 	const downloads = new DownloadService(db, runtime.downloadClients);
 	const acquisition = new AcquisitionService(db, runtime.clock, downloads);
-	const imports = new ImportService(db, runtime.clock, downloads, runtime.paths.library);
+	const imports = new ImportService(db, runtime.clock, downloads, posters, runtime.paths.library);
 	const scheduler = new Scheduler(runtime.clock);
 	scheduler.add({
 		name: catalogueJob,
