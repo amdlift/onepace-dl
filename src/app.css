@@ -293,3 +293,11 @@ h2 {
 .pill.complete {
 	background: var(--success);
 }
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
