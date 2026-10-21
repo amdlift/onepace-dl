@@ -286,5 +286,5 @@ const failed = (grab: PendingImport, target: ImportTarget, reason: string): Hist
 	reason
 });
 
-const crossesFilesystems = (error: unknown): boolean =>
+export const crossesFilesystems = (error: unknown): boolean =>
 	(error as NodeJS.ErrnoException | null)?.code === 'EXDEV';

@@ -72,6 +72,11 @@ The instance stops itself when the test finishes.
   see, so make a directory under it to browse to one. Sidecar content is asserted with
   `toMatchFileSnapshot` against the golden documents under `tests/fixtures/sidecars/`, read off the
   Library the application wrote; a diff there is a signal to read rather than noise to regenerate.
+- `pacerr.settle()` — let whatever a form action started in the background run to completion.
+  Scheduled work is driven by `advance`; work a request triggers, such as a move of the Library,
+  is driven by this. Nothing in the background finishes because a test waited.
+- `pacerr.hold()` — park background work at its next pause and return once it is all parked, so a
+  test can read a job that is still running. `settle()` releases it.
 - `pacerr.restart()` — recreate the container: same config volume, everything else new.
 
 The suite builds the app once (`tests/harness/build.ts`) because seam 1 drives the real

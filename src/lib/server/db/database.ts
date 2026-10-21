@@ -250,6 +250,25 @@ const migrations = [
 	insert into directory (id) values (1);
 	`,
 	`
+	-- Where a Part's file actually is when that is not the configured Library, which a move
+	-- partway through makes true of some Parts and not others. Null means the configured Library.
+	alter table had_part add column library_root text;
+	-- A move outlives the request that started it and the process that was running it, so one
+	-- stopped partway still knows where it was going and why it stopped.
+	create table library_move (
+		id integer primary key autoincrement,
+		source text not null,
+		destination text not null,
+		parts integer not null,
+		bytes integer not null,
+		same_filesystem integer not null,
+		state text not null,
+		reason text,
+		planned_at text not null,
+		finished_at text
+	);
+	`,
+	`
 	-- One row rather than a row per kind, because the four kinds are fixed by what a media server
 	-- reads and a user switching one off is editing a single standing instruction.
 	create table sidecar (

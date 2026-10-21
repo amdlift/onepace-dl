@@ -100,9 +100,11 @@ know is pasted into the field above the listing. It leaves out the container's o
 directories — `/app`, `/proc`, `/sys`, `/dev`, `/bin`, `/sbin`, `/lib*`, `/usr`, `/etc`, `/var`,
 `/run` and `/tmp` — so what you are looking at is effectively your mounts.
 
-The setting lives in `/config` and survives being recreated. The config directory is the exception:
-Pacerr cannot read a setting out of a database it has not opened yet, so that one stays an
-environment variable.
+The setting lives in `/config` and survives being recreated. Changing the Library shows you what
+moving the Parts already there would do — how many, how much data, from where to where, and
+whether a copy is involved — and moves them in the background once you confirm. The config
+directory is the exception: Pacerr cannot read a setting out of a database it has not opened yet,
+so that one stays an environment variable.
 
 Keep `/library` and `/downloads` **on the same filesystem** if you can. Pacerr hardlinks imports so
 a Part does not occupy disk twice while it seeds; across a filesystem boundary it falls back to
