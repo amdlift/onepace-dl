@@ -26,7 +26,7 @@
 <table class="table">
 	<thead>
 		<tr>
-			<th class="numeric">Part</th>
+			<th>Part</th>
 			<th>Title</th>
 			<th>Would grab</th>
 			<th>Have</th>
@@ -37,7 +37,7 @@
 	<tbody>
 		{#each arc.rows as row (row.number)}
 			<tr class={{ gap: !row.released }}>
-				<td class="numeric">{row.number}</td>
+				<td>{row.number}</td>
 				{#if row.released}
 					<td>
 						{row.title}

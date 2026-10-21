@@ -214,12 +214,6 @@ h2 {
 	background: var(--surface-hover);
 }
 
-.table .numeric {
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-
 .badge {
 	display: inline-block;
 	margin-left: var(--space-1);
