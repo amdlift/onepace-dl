@@ -20,6 +20,7 @@ export function readHadPartCountsByArc(db: Database): Map<string, number> {
 /** The file Pacerr holds for a Part, and what the Release that satisfied it was. */
 export interface HadPart {
 	partSlug: string;
+	arcSlug: string;
 	/** Relative to the Library root, which is a mount point and may be remounted elsewhere. */
 	libraryPath: string;
 	infohash: string | null;
@@ -32,6 +33,7 @@ export interface HadPart {
 
 interface HadRow {
 	part_slug: string;
+	arc_slug: string;
 	library_path: string;
 	infohash: string | null;
 	release_title: string | null;
@@ -43,10 +45,11 @@ interface HadRow {
 export function readHadParts(db: Database): Map<string, HadPart> {
 	const rows = db
 		.prepare(
-			`select h.part_slug, h.library_path, h.infohash, h.had_at,
+			`select h.part_slug, p.arc_slug, h.library_path, h.infohash, h.had_at,
 				r.title as release_title, coalesce(c.resolution, r.resolution) as resolution,
 				coalesce(c.variant, r.variant) as variant
 			from had_part h
+			join part p on p.slug = h.part_slug
 			left join feed_release r on r.infohash = h.infohash
 			left join catalogue_release c on c.infohash = h.infohash`
 		)
@@ -56,6 +59,7 @@ export function readHadParts(db: Database): Map<string, HadPart> {
 			row.part_slug,
 			{
 				partSlug: row.part_slug,
+				arcSlug: row.arc_slug,
 				libraryPath: row.library_path,
 				infohash: row.infohash,
 				releaseTitle: row.release_title,

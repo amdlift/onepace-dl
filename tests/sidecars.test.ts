@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { describe, expect, it, onTestFinished } from 'vitest';
-import { fixtures, minutes, startPacerr, type Pacerr } from './harness/pacerr';
+import { fixtures, hours, minutes, startPacerr, type Pacerr } from './harness/pacerr';
 
 /** Drive the download Pacerr grabbed last to completion, with real files on a real filesystem. */
 function finish(pacerr: Pacerr, fileCount: number): string {
@@ -37,6 +37,14 @@ const libraryDirectories = (pacerr: Pacerr): string[] =>
 		.map((entry) => entry.name)
 		.sort();
 
+const libraryTimestamps = (pacerr: Pacerr): Record<string, bigint> =>
+	Object.fromEntries(
+		libraryFiles(pacerr).map((file) => [
+			file,
+			statSync(join(pacerr.paths.library, file), { bigint: true }).mtimeNs
+		])
+	);
+
 const inLibrary = (pacerr: Pacerr, path: string): string =>
 	readFileSync(join(pacerr.paths.library, path), 'utf8');
 
@@ -50,6 +58,11 @@ async function reverie(): Promise<Pacerr> {
 	await pacerr.advance(minutes(15));
 	return pacerr;
 }
+
+/** The watch page as it reads once One Pace has corrected one Part's description. */
+const aCorrectedWatchPage = (): string =>
+	// Same length, because the payload the watch page carries is chunked by byte count.
+	fixtures.watchPage.replaceAll('a vicious band of pirates', 'a brutish band of pirates');
 
 /** The one-off entry One Pace publishes no description for, monitored and downloaded alone. */
 async function warshipIsland(): Promise<Pacerr> {
@@ -283,5 +296,96 @@ describe('the Poster a media server shows for a season', () => {
 		expect(libraryFiles(pacerr).filter((file) => file.endsWith('cover.jpg'))).toEqual([
 			'Season 34/cover.jpg'
 		]);
+	});
+});
+
+describe('a description One Pace corrects upstream', () => {
+	it('reaches the Sidecar describing that Part, after a clean scrape', async () => {
+		const pacerr = await reverie();
+
+		pacerr.upstream.watchPage.publish(aCorrectedWatchPage());
+		await pacerr.advance(hours(24));
+
+		expect(
+			inLibrary(pacerr, 'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo')
+		).toContain('a brutish band of pirates on the Kingdom');
+	});
+});
+
+describe('a clean scrape that corrects one description', () => {
+	it('rewrites that Sidecar and leaves every other file in the Library untouched', async () => {
+		const pacerr = await reverie();
+		const before = libraryTimestamps(pacerr);
+
+		pacerr.upstream.watchPage.publish(aCorrectedWatchPage());
+		await pacerr.advance(hours(24));
+
+		const after = libraryTimestamps(pacerr);
+		expect(Object.keys(after).filter((file) => after[file] !== before[file])).toEqual([
+			'Season 34/One Pace - S34E01 - The Fifth Emperor [1080p].nfo'
+		]);
+	});
+});
+
+describe('a scrape that brings back the Catalogue Pacerr already had', () => {
+	it('rewrites nothing in the Library at all', async () => {
+		const pacerr = await reverie();
+		const before = libraryTimestamps(pacerr);
+		const scrapes = pacerr.upstream.watchPage.requestCount;
+
+		await pacerr.advance(hours(24));
+
+		expect(pacerr.upstream.watchPage.requestCount).toBe(scrapes + 1);
+		expect(libraryTimestamps(pacerr)).toEqual(before);
+	});
+});
+
+describe('the Arcs a clean scrape describes again', () => {
+	it('are only the ones Pacerr holds a Part of, so no season is metadata and no video', async () => {
+		const pacerr = await reverie();
+		const files = libraryFiles(pacerr);
+
+		pacerr.upstream.watchPage.publish(aCorrectedWatchPage());
+		await pacerr.advance(hours(24));
+
+		expect(libraryDirectories(pacerr)).toEqual(['Season 34']);
+		expect(libraryFiles(pacerr)).toEqual(files);
+	});
+});
+
+describe('a Sidecar someone wrote over by hand', () => {
+	const writtenOver = async (): Promise<Pacerr> => {
+		const pacerr = await reverie();
+		writeFileSync(join(pacerr.paths.library, 'Season 34/season.nfo'), 'written over by hand');
+		return pacerr;
+	};
+
+	it('survives a scrape One Pace did not answer, which corrects nothing', async () => {
+		const pacerr = await writtenOver();
+		pacerr.upstream.watchPage.fail(503);
+
+		await pacerr.advance(hours(24));
+
+		expect(inLibrary(pacerr, 'Season 34/season.nfo')).toBe('written over by hand');
+	});
+
+	it('is put back by the next scrape that arrives whole', async () => {
+		const pacerr = await writtenOver();
+
+		pacerr.upstream.watchPage.publish(aCorrectedWatchPage());
+		await pacerr.advance(hours(24));
+
+		expect(inLibrary(pacerr, 'Season 34/season.nfo')).toContain('<title>Reverie</title>');
+	});
+});
+
+describe('a Library Pacerr has put nothing in yet', () => {
+	it('stays empty through a clean scrape, rather than gaining a show with no Parts', async () => {
+		const pacerr = await startPacerr();
+
+		pacerr.upstream.watchPage.publish(aCorrectedWatchPage());
+		await pacerr.advance(hours(24));
+
+		expect(libraryFiles(pacerr)).toEqual([]);
 	});
 });
