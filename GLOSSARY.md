@@ -135,6 +135,14 @@ instead of consulting an online metadata provider. Covers both the Poster writte
 and the NFO files describing the show, an Arc and a Part.
 _Avoid_: Metadata file (ambiguous with the Catalogue), NFO (that is one format, not the concept)
 
+**Layout**:
+One of the three ways the Arcs view arranges the Catalogue — Poster, Overview or Table. Which one
+is chosen changes how much artwork an Arc is given and nothing about what is known: every layout
+states how many of an Arc's Parts are had. Distinct from a **view**, which is one of the six
+destinations in the sidebar; the Arcs view has three layouts, and the other five views have one
+arrangement each and so never name it.
+_Avoid_: View (that is the sidebar destination), mode, display
+
 ### Selection
 
 **Profile**:
