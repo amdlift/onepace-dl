@@ -10,7 +10,8 @@
 <ul class="overview">
 	{#each arcs as arc (arc.slug)}
 		<li class="arc">
-			<a class="artwork" href="/arcs/{arc.slug}">
+			<!-- The detail beside it carries the same link under the Arc's own name. -->
+			<a class="artwork" href="/arcs/{arc.slug}" tabindex="-1" aria-hidden="true">
 				{#if arc.artwork.kind === 'placeholder'}
 					<span class="no-poster" aria-hidden="true"></span>
 				{:else}

@@ -35,7 +35,8 @@ interface ArcRow {
 export function readArcs(db: Database): StoredArc[] {
 	const rows = db
 		.prepare(
-			`select arc.slug, arc.title, arc.description, arc.special, arc.unfinished, arc.cover_image_url,
+			`select arc.slug, arc.title, arc.description, arc.special, arc.unfinished,
+				arc.cover_image_url,
 				(select count(*) from part where part.arc_slug = arc.slug) as part_count,
 				(select count(*) from unreleased_part where unreleased_part.arc_slug = arc.slug)
 					as unreleased_part_count

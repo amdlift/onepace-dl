@@ -9,18 +9,21 @@
 <ul class="poster-grid">
 	{#each arcs as arc (arc.slug)}
 		<li class="arc">
-			<a class="artwork" href="/arcs/{arc.slug}">
-				{#if arc.artwork.kind === 'placeholder'}
-					<span class="no-poster">{arc.title}</span>
-				{:else}
-					<img src={arc.artwork.url} alt="" loading="lazy" />
-				{/if}
+			<a class="card" href="/arcs/{arc.slug}">
+				<span class="artwork">
+					{#if arc.artwork.kind === 'placeholder'}
+						<!-- No artwork to crop to, so the Arc fills its own place by naming itself. -->
+						<span class="no-poster">{arc.title}</span>
+					{:else}
+						<img src={arc.artwork.url} alt="" loading="lazy" />
+					{/if}
+				</span>
+				<span class="title">{arc.title}</span>
 			</a>
 			<div class="caption">
-				<a class="title" href="/arcs/{arc.slug}">{arc.title}</a>
 				<HadOfTotal hadCount={arc.hadCount} partCount={arc.partCount} />
+				<MonitorArc slug={arc.slug} monitored={arc.monitored} />
 			</div>
-			<MonitorArc slug={arc.slug} monitored={arc.monitored} />
 		</li>
 	{/each}
 </ul>
@@ -36,6 +39,12 @@
 	}
 
 	.arc {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.card {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-2);

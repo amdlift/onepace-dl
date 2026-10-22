@@ -4,6 +4,14 @@ import { fixtures, startPacerr, type PacerrPage } from './harness/pacerr';
 
 const monitorToggles = 'form[action="?/toggleMonitoring"] button';
 
+const cardFor = (page: PacerrPage, title: string): Element => {
+	const card = [...page.document.querySelectorAll('.poster-grid .arc')].find((candidate) =>
+		(candidate.textContent ?? '').includes(title)
+	);
+	if (card === undefined) throw new Error(`The Poster grid has no card for ${title}`);
+	return card;
+};
+
 /** The Arcs shown as monitored, read the same way whichever layout is rendering them. */
 const monitoredArcs = (page: PacerrPage): string[] =>
 	[...page.document.querySelectorAll('form[action="?/toggleMonitoring"]')]
@@ -81,12 +89,10 @@ describe('every layout', () => {
 				'Refresh Releases'
 			]);
 
-			expect(monitoredArcs(await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' })), layout).toEqual(
-				['reverie']
-			);
-			expect(monitoredArcs(await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' })), layout).toEqual(
-				[]
-			);
+			const monitor = async (): Promise<string[]> =>
+				monitoredArcs(await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' }));
+			expect(await monitor(), layout).toEqual(['reverie']);
+			expect(await monitor(), layout).toEqual([]);
 
 			pacerr.upstream.watchPage.publish(
 				fixtures.watchPage.replaceAll('Whisky Peak', `Whisky Peak ${layout}`)
@@ -99,5 +105,44 @@ describe('every layout', () => {
 			await pacerr.submit('/', 'refreshReleases');
 			expect(pacerr.upstream.feed.requestCount, layout).toBeGreaterThan(polls);
 		}
+	});
+});
+
+describe('the chosen layout', () => {
+	it('is still the chosen one after the container is recreated', async () => {
+		const pacerr = await startPacerr();
+		await pacerr.submit('/', 'chooseLayout', { layout: 'poster' });
+
+		await pacerr.open('/wanted');
+		await pacerr.restart();
+		pacerr.forget();
+
+		const page = await pacerr.open('/');
+		expect(page.texts('.page-toolbar .controls button[aria-pressed="true"]')).toEqual(['Poster']);
+		expect(page.texts('.poster-grid .arc')).toHaveLength(38);
+	});
+});
+
+describe('an Arc with neither a Poster nor a Backdrop', () => {
+	it('names itself in its place in the Poster grid rather than leaving a hole', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.submit('/', 'chooseLayout', { layout: 'poster' });
+
+		const card = cardFor(page, 'One Piece Fan Letter');
+		expect(card.querySelector('img')).toBeNull();
+		expect(card.querySelector('.no-poster')?.textContent?.trim()).toBe('One Piece Fan Letter');
+	});
+
+	it('leaves no card in the grid showing neither artwork nor a placeholder', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.submit('/', 'chooseLayout', { layout: 'poster' });
+
+		const cards = page.texts('.poster-grid .arc').length;
+		const artwork = page.attributes('.poster-grid .arc img', 'src').length;
+		const placeholders = page.texts('.poster-grid .arc .no-poster').length;
+		expect(cards).toBe(38);
+		expect(artwork + placeholders).toBe(cards);
 	});
 });
