@@ -12,7 +12,7 @@ The five canonical triage roles, each using its default label string. See `docs/
 
 ### Testing
 
-Three seams, and a harness that boots the whole app for seam 1. See `docs/agents/testing.md`.
+Five seams, and a harness that boots the whole app for seam 1. See `docs/agents/testing.md`.
 
 ### Domain docs
 

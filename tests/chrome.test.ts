@@ -1,40 +1,25 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { startPacerr } from './harness/pacerr';
 import { declarationsFor } from './harness/sources';
 
-const viewsDirectory = fileURLToPath(new URL('../src/routes/(views)', import.meta.url));
 const chrome = fileURLToPath(new URL('../src/lib/components/Chrome.svelte', import.meta.url));
 
-/** Every view the shared layout wraps, read off the route tree so a view added later is covered. */
-function everyView(directory = viewsDirectory): string[] {
-	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
-		entry.isDirectory()
-			? everyView(join(directory, entry.name))
-			: entry.name === '+page.svelte'
-				? [join(directory, entry.name)]
-				: []
-	);
-}
-
-const ownChrome = /<h1|class="toolbar"/;
+const headings = [
+	['/', 'Arcs'],
+	['/activity', 'Activity'],
+	['/wanted', 'Wanted'],
+	['/manual-import', 'Manual Import'],
+	['/settings', 'Settings'],
+	['/system', 'System'],
+	['/settings/metadata', 'Settings'],
+	['/settings/browse', 'Choose the Library'],
+	['/arcs/reverie', 'Reverie']
+];
 
 describe('the page header', () => {
 	it('names whichever view is open', async () => {
 		const pacerr = await startPacerr();
-
-		const headings = [
-			['/', 'Arcs'],
-			['/activity', 'Activity'],
-			['/wanted', 'Wanted'],
-			['/manual-import', 'Manual Import'],
-			['/settings', 'Settings'],
-			['/system', 'System'],
-			['/settings/metadata', 'Settings'],
-			['/arcs/reverie', 'Reverie']
-		];
 
 		for (const [path, heading] of headings) {
 			expect((await pacerr.open(path ?? '/')).text('.page-header h1')).toBe(heading);
@@ -115,13 +100,15 @@ describe('the sidebar', () => {
 });
 
 describe('a view', () => {
-	it('defines no chrome of its own', () => {
-		const views = everyView();
+	it('defines no chrome of its own', async () => {
+		const pacerr = await startPacerr();
 
-		const own = views.filter((view) => ownChrome.test(readFileSync(view, 'utf8')));
+		for (const [path] of headings) {
+			const page = await pacerr.open(path ?? '/');
 
-		expect(views.length).toBeGreaterThan(1);
-		expect(own).toEqual([]);
+			expect(page.texts('h1')).toHaveLength(1);
+			expect(page.texts('.page-toolbar')).toHaveLength(1);
+		}
 	});
 });
 

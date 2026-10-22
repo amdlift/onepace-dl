@@ -1,6 +1,6 @@
 # Testing
 
-Four seams. Add tests at seam 1 by default; a new seam needs a reason that
+Five seams. Add tests at seam 1 by default; a new seam needs a reason that
 "it would be convenient" does not satisfy.
 
 | Seam | What it is | Where |
@@ -9,6 +9,7 @@ Four seams. Add tests at seam 1 by default; a new seam needs a reason that
 | 2 | The Catalogue parser, a pure function with golden-file assertions | `src/lib/server/catalogue/watch-page.test.ts` |
 | 3 | Batch expansion, a pure function | `src/lib/server/batch/expansion.test.ts` |
 | 4 | The qBittorrent adapter, against a stub HTTP daemon | `src/lib/server/download/qbittorrent.test.ts` |
+| 5 | The checked-in sources, read off disk | `tests/*.test.ts` via `tests/harness/sources.ts` |
 
 A good test states a user-visible outcome and asserts nothing about how it was reached. Asserting
 that a function was called, or reading a column out of SQLite, tests the implementation.
@@ -81,3 +82,29 @@ The instance stops itself when the test finishes.
 
 The suite builds the app once (`tests/harness/build.ts`) because seam 1 drives the real
 adapter-node output over a real socket. Expect the first run after a source change to be slower.
+
+## Seam 5
+
+Spec #20 pinned the interface to a measured reference, and the two properties that keeps — every
+token declared at the measured value, and no component declaring a colour, a size or a measurement
+of its own — are properties of the source rather than of any page. Seam 1 parses markup with
+linkedom and cannot compute styles, so nothing above this seam can see them: a stylesheet that
+drifts a pixel at a time still renders a page saying all the right words. That is the reason the
+seam exists, and the whole of it.
+
+`tests/harness/sources.ts` is the one way a test reads the sources: `declarationsFor(selector,
+file?)` for what a rule declares, `stylesheetsOutsideTheTokenSheet()` for every rule the token
+declarations do not own, `rootBlock()` for those declarations themselves, `everyStyledSource()`
+for the files whole.
+
+What belongs here is a declared value nobody can observe: the measured tokens against
+`tests/fixtures/tokens.json`, which is a golden file in the spirit of the Catalogue's — a diff is
+a signal to read, not noise to regenerate — the row height and cell padding, the Settings row's
+columns, the toolbar's type size, and the colour each state is painted with. The assertions
+`tests/state.test.ts` makes against `GLOSSARY.md` are the same seam pointed at the documentation,
+which is what holds the written legend and the painted one together.
+
+What does not belong here is anything a person can see on a page. A table filling every column its
+header declares, and a view announcing itself in one page header and no more, were both asserted
+by reading the sources and are now asserted at seam 1, where they are the user-visible outcome
+rather than a proxy for it.
