@@ -19,6 +19,17 @@ export interface ConnectionView {
 	username: string;
 }
 
+export const answered: ConnectionTest = {
+	ok: true,
+	detail: 'The Download Client answered.'
+};
+
+export const unreachable = (error: unknown): ConnectionTest => ({
+	ok: false,
+	failure: 'unreachable',
+	detail: `The Download Client is unreachable: ${reasonOf(error)}`
+});
+
 const unconfigured: ConnectionTest = {
 	ok: false,
 	failure: 'unconfigured',
@@ -104,15 +115,11 @@ export class DownloadService {
 	}
 
 	noteSuccess(): void {
-		this.#record({ ok: true, detail: 'The Download Client answered.' });
+		this.#record(answered);
 	}
 
 	noteFailure(error: unknown): ConnectionTest {
-		return this.#record({
-			ok: false,
-			failure: 'unreachable',
-			detail: `The Download Client is unreachable: ${reasonOf(error)}`
-		});
+		return this.#record(unreachable(error));
 	}
 
 	#unmapped(): DownloadClient | null {

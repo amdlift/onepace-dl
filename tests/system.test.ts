@@ -121,6 +121,18 @@ describe('an unreachable Download Client', () => {
 		expect((await pacerr.open('/')).text('.banner')).toBe('');
 	});
 
+	it('is not raised by somebody opening a view that asks what is downloading', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		await pacerr.connectDownloadClient();
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+		pacerr.downloadClient.reachable = false;
+
+		await pacerr.open('/wanted');
+		await pacerr.open('/arcs/reverie');
+
+		expect((await pacerr.open('/')).text('.banner')).toBe('');
+	});
+
 	it('is not raised against a Pacerr that has simply not been given one yet', async () => {
 		const pacerr = await startPacerr();
 

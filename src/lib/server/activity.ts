@@ -24,14 +24,14 @@ export interface ActivityView {
 /** What Pacerr is doing now and what it has done, both read from the Download Client live. */
 export async function activityView(app: App): Promise<ActivityView> {
 	const grabs = readGrabs(app.db);
-	const statuses = await currentStatuses(
+	const reading = await currentStatuses(
 		app,
 		grabs.map((grab) => grab.infohash)
 	);
 
 	return {
 		queue: grabs.map((grab) => {
-			const status = statuses?.get(grab.infohash);
+			const status = reading.statuses.get(grab.infohash);
 			return {
 				infohash: grab.infohash,
 				releaseTitle: grab.releaseTitle,
@@ -42,6 +42,6 @@ export async function activityView(app: App): Promise<ActivityView> {
 			};
 		}),
 		history: readHistory(app.db),
-		connection: app.downloads.health()
+		connection: reading.outcome ?? app.downloads.health()
 	};
 }
