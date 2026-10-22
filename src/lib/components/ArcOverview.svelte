@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatResolution, pluralise } from '../format';
 	import type { ArcSummary } from '../server/arcs';
+	import HadOfTotal from './HadOfTotal.svelte';
 
 	let { arcs }: { arcs: ArcSummary[] } = $props();
 </script>
@@ -33,6 +34,7 @@
 					{#if arc.unreleasedPartCount > 0}
 						<span class="badge">+{arc.unreleasedPartCount} unreleased</span>
 					{/if}
+					<HadOfTotal hadCount={arc.hadCount} partCount={arc.partCount} />
 				</p>
 				{#if arc.description !== null}
 					<p class="synopsis">{arc.description}</p>

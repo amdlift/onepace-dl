@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { arcsLayouts } from '../src/lib/arcs-layout';
 import { startPacerr } from './harness/pacerr';
 
 describe('the Arcs view', () => {
@@ -42,5 +43,19 @@ describe('the Overview layout', () => {
 		expect(arcs[0]).toContain('Monkey D. Luffy sets out on an adventure to form a crew');
 		expect(page.attributes('.overview .arc img', 'src')[0]).toBe('/arcs/romance-dawn/poster');
 		expect(page.document.querySelector('table')).toBeNull();
+	});
+});
+
+describe('every layout', () => {
+	it('states how many of an Arc’s Parts are had', async () => {
+		const pacerr = await startPacerr();
+
+		for (const layout of arcsLayouts) {
+			const page = await pacerr.submit('/', 'chooseLayout', { layout });
+
+			const had = page.texts('.pill');
+			expect(had, layout).toHaveLength(38);
+			expect(had[0], layout).toBe('0 of 4');
+		}
 	});
 });

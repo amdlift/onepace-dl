@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ArcSummary } from '../server/arcs';
+	import HadOfTotal from './HadOfTotal.svelte';
 
 	let { arcs }: { arcs: ArcSummary[] } = $props();
 </script>
@@ -14,7 +15,10 @@
 					<img src={arc.artwork.url} alt="" loading="lazy" />
 				{/if}
 			</a>
-			<a class="title" href="/arcs/{arc.slug}">{arc.title}</a>
+			<div class="caption">
+				<a class="title" href="/arcs/{arc.slug}">{arc.title}</a>
+				<HadOfTotal hadCount={arc.hadCount} partCount={arc.partCount} />
+			</div>
 		</li>
 	{/each}
 </ul>
@@ -48,6 +52,14 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+	}
+
+	.caption {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-2);
 	}
 
 	.no-poster {

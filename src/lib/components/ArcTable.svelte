@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatResolution, pluralise } from '../format';
 	import type { ArcSummary } from '../server/arcs';
+	import HadOfTotal from './HadOfTotal.svelte';
 
 	let { arcs }: { arcs: ArcSummary[] } = $props();
 </script>
@@ -44,9 +45,7 @@
 					{/if}
 				</td>
 				<td class="had">
-					<span class="pill" class:complete={arc.hadCount === arc.partCount}>
-						{arc.hadCount} of {arc.partCount}
-					</span>
+					<HadOfTotal hadCount={arc.hadCount} partCount={arc.partCount} />
 				</td>
 				<td class="monitoring">
 					<form method="POST" action="?/toggleMonitoring">
