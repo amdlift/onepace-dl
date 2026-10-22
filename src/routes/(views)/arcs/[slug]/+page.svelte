@@ -156,9 +156,9 @@
 		background: repeating-linear-gradient(
 			135deg,
 			transparent,
-			transparent 6px,
-			var(--surface-panel) 6px,
-			var(--surface-panel) 12px
+			transparent var(--space-1),
+			var(--surface-panel) var(--space-1),
+			var(--surface-panel) var(--space-2)
 		);
 	}
 </style>

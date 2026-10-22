@@ -284,8 +284,8 @@ h2 {
 
 .visually-hidden {
 	position: absolute;
-	width: 1px;
-	height: 1px;
+	width: var(--hairline);
+	height: var(--hairline);
 	overflow: hidden;
 	clip-path: inset(50%);
 }

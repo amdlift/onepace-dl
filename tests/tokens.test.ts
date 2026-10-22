@@ -22,6 +22,11 @@ const sizedProperties =
 
 const keywords = ['0', 'auto', 'inherit', 'initial', 'normal', 'none'];
 
+const lengths = /(?<![\w-])\d*\.?\d+(?:px|rem|em|pt)(?![\w-])/gi;
+
+// A media query is evaluated before custom properties resolve, so its breakpoint cannot be one.
+const outsideMediaQueries = (css: string): string => css.replace(/@[a-z-]+[^{;]*/gi, '');
+
 describe('the token sheet', () => {
 	it('declares every token at the measured value, and declares nothing else', () => {
 		const reference = Object.fromEntries(
@@ -62,5 +67,16 @@ describe('a stylesheet outside the token sheet', () => {
 
 		expect(stylesheets.length).toBeGreaterThan(1);
 		expect(hardcoded).toEqual([]);
+	});
+
+	it('measures nothing of its own, whatever it is the property measures', () => {
+		const stylesheets = stylesheetsOutsideTheTokenSheet();
+
+		const measurements = stylesheets.flatMap(({ file, css }) =>
+			(outsideMediaQueries(css).match(lengths) ?? []).map((literal) => `${file}: ${literal}`)
+		);
+
+		expect(rootBlock().match(lengths) ?? []).not.toHaveLength(0);
+		expect(measurements).toEqual([]);
 	});
 });
