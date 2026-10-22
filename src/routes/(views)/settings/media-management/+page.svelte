@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Setting from '../../../../lib/components/Setting.svelte';
 	import SettingsChrome from '../../../../lib/components/SettingsChrome.svelte';
 	import { formatBytes, pluralise } from '../../../../lib/format';
 	import type { PageProps } from './$types';
@@ -22,17 +23,20 @@
 		<h2>Library</h2>
 
 		<form method="POST" action="?/saveNamingTemplate">
-			<label>
-				<span>Naming template</span>
-				<input class="input" name="template" autocomplete="off" value={namingTemplate} />
-			</label>
-			<p class="note">
-				Arcs render as seasons and Parts as episodes, which is what Jellyfin and Plex parse.
-				Available tokens: {tokens}, where {'{seasonDirectory}'} is Specials for the one-off entries and
-				Season followed by the number for everything else. A slash starts a new folder, and the file
-				keeps the extension it was downloaded with. Leave this empty to go back to the default.
-			</p>
-			<button class="button" type="submit">Save</button>
+			<Setting label="Naming template" field="template">
+				<input class="input" id="template" name="template" autocomplete="off" value={namingTemplate} />
+				{#snippet help()}
+					Arcs render as seasons and Parts as episodes, which is what Jellyfin and Plex parse.
+					Available tokens: {tokens}, where {'{seasonDirectory}'} is Specials for the one-off entries
+					and Season followed by the number for everything else. A slash starts a new folder, and the
+					file keeps the extension it was downloaded with. Leave this empty to go back to the default.
+				{/snippet}
+			</Setting>
+			<div class="setting">
+				<div class="control">
+					<button class="button" type="submit">Save</button>
+				</div>
+			</div>
 		</form>
 	</section>
 
@@ -44,28 +48,26 @@
 		{/if}
 
 		{#if library.source === 'environment'}
-			<div class="pinned">
-				<label>
-					<span>Library</span>
-					<input class="input" name="library" value={library.path} readonly />
-				</label>
-				<p class="note">
+			<Setting label="Library" field="library">
+				<input class="input" id="library" name="library" value={library.path} readonly />
+				{#snippet help()}
 					The Library is configured by {library.variable}, and cannot be changed here.
-				</p>
-			</div>
+				{/snippet}
+			</Setting>
 		{:else}
 			<form method="POST" action="?/saveLibrary">
-				<label>
-					<span>Library</span>
-					<input class="input" name="library" autocomplete="off" value={library.path} />
-				</label>
-				<p class="note">
-					Where Pacerr files every import. Setting {library.variable} pins it from the environment
-					instead and makes this field read-only.
-				</p>
-				<div class="row">
-					<button class="button" type="submit">Save</button>
-					<a class="button" href="/settings/browse?for=library">Browse</a>
+				<Setting label="Library" field="library">
+					<input class="input" id="library" name="library" autocomplete="off" value={library.path} />
+					{#snippet help()}
+						Where Pacerr files every import. Setting {library.variable} pins it from the environment
+						instead and makes this field read-only.
+					{/snippet}
+				</Setting>
+				<div class="setting">
+					<div class="control row">
+						<button class="button" type="submit">Save</button>
+						<a class="button" href="/settings/browse?for=library">Browse</a>
+					</div>
 				</div>
 			</form>
 		{/if}
@@ -159,42 +161,49 @@
 		{/if}
 
 		{#if downloads.source === 'environment'}
-			<div class="pinned">
-				<label>
-					<span>Download directory</span>
-					<input class="input" name="downloads" value={downloads.path} readonly />
-				</label>
-				<p class="note">
+			<Setting label="Download directory" field="downloads">
+				<input class="input" id="downloads" name="downloads" value={downloads.path} readonly />
+				{#snippet help()}
 					The download directory is configured by {downloads.variable}, and cannot be changed here.
-				</p>
-			</div>
+				{/snippet}
+			</Setting>
 		{:else}
 			<form method="POST" action="?/saveDownloads">
-				<label>
-					<span>Download directory</span>
-					<input class="input" name="downloads" autocomplete="off" value={downloads.path} />
-				</label>
-				<p class="note">
-					Where this container sees the completed downloads the Download Client writes. Setting
-					{downloads.variable} pins it from the environment instead and makes this field read-only.
-				</p>
-				<div class="row">
-					<button class="button" type="submit">Save</button>
-					<a class="button" href="/settings/browse?for=downloads">Browse</a>
+				<Setting label="Download directory" field="downloads">
+					<input
+						class="input"
+						id="downloads"
+						name="downloads"
+						autocomplete="off"
+						value={downloads.path}
+					/>
+					{#snippet help()}
+						Where this container sees the completed downloads the Download Client writes. Setting
+						{downloads.variable} pins it from the environment instead and makes this field read-only.
+					{/snippet}
+				</Setting>
+				<div class="setting">
+					<div class="control row">
+						<button class="button" type="submit">Save</button>
+						<a class="button" href="/settings/browse?for=downloads">Browse</a>
+					</div>
 				</div>
 			</form>
 		{/if}
 
-		<ul>
-			{#each paths.directories as directory (directory.directory)}
-				<li class:bad={directory.condition !== 'ok'}>{directory.diagnostic}</li>
-			{/each}
-			<li class:warned={!paths.hardlinking.sameFilesystem}>{paths.hardlinking.diagnostic}</li>
-		</ul>
-
-		<form method="POST" action="?/testPaths">
-			<button class="button" type="submit">Test</button>
-		</form>
+		<div class="setting">
+			<div class="control">
+				<ul class="diagnostics">
+					{#each paths.directories as directory (directory.directory)}
+						<li class:bad={directory.condition !== 'ok'}>{directory.diagnostic}</li>
+					{/each}
+					<li class:warned={!paths.hardlinking.sameFilesystem}>{paths.hardlinking.diagnostic}</li>
+				</ul>
+				<form method="POST" action="?/testPaths">
+					<button class="button" type="submit">Test</button>
+				</form>
+			</div>
+		</div>
 	</section>
 
 	<section class="mappings">
@@ -205,76 +214,64 @@
 		{/if}
 
 		{#if remotePathMappings.length > 0}
-			<ul class="mapping-list">
-				{#each remotePathMappings as mapping (mapping.id)}
-					<li>
-						<code>{mapping.remotePath}</code>
-						<span aria-hidden="true">&rarr;</span>
-						<code>{mapping.localPath}</code>
-						<form method="POST" action="?/removeRemotePathMapping">
-							<input type="hidden" name="id" value={mapping.id} />
-							<button class="button" type="submit">Remove</button>
-						</form>
-					</li>
-				{/each}
-			</ul>
+			<table class="table mapping-list">
+				<thead>
+					<tr>
+						<th>Path on the Download Client</th>
+						<th>The same place as Pacerr sees it</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each remotePathMappings as mapping (mapping.id)}
+						<tr>
+							<td>{mapping.remotePath}</td>
+							<td>{mapping.localPath}</td>
+							<td>
+								<form method="POST" action="?/removeRemotePathMapping">
+									<input type="hidden" name="id" value={mapping.id} />
+									<button class="button" type="submit">Remove</button>
+								</form>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
 		{/if}
 
-		<form method="POST" action="?/addRemotePathMapping">
-			<label>
-				<span>Path on the Download Client</span>
-				<input class="input" name="remotePath" autocomplete="off" placeholder="/data/torrents" />
-			</label>
-			<label>
-				<span>The same place as Pacerr sees it</span>
-				<input class="input" name="localPath" autocomplete="off" placeholder="/downloads" />
-			</label>
-			<p class="note">
-				Only needed when the two do not share a mount layout. The Download Client reports where it
-				put a completed download using its own paths; a mapping rewrites that prefix to the
-				equivalent path inside this container.
-			</p>
+		<form class="add-mapping" method="POST" action="?/addRemotePathMapping">
+			<input
+				class="input"
+				name="remotePath"
+				autocomplete="off"
+				aria-label="Path on the Download Client"
+				placeholder="/data/torrents"
+			/>
+			<input
+				class="input"
+				name="localPath"
+				autocomplete="off"
+				aria-label="The same place as Pacerr sees it"
+				placeholder="/downloads"
+			/>
 			<button class="button" type="submit">Add</button>
 		</form>
+
+		<p class="note">
+			Only needed when the two do not share a mount layout. The Download Client reports where it put
+			a completed download using its own paths; a mapping rewrites that prefix to the equivalent path
+			inside this container.
+		</p>
 	</section>
 </SettingsChrome>
 
 <style>
-	form {
-		display: grid;
-		gap: var(--space-3);
-		justify-items: start;
-		max-width: var(--form-width);
-	}
-
-	label {
-		display: grid;
-		gap: var(--space-1);
-		width: 100%;
-	}
-
-	label span {
-		color: var(--ink-dim);
-	}
-
-	.row {
-		display: flex;
-		gap: var(--space-2);
-	}
-
-	.pinned {
-		display: grid;
-		gap: var(--space-3);
-		max-width: var(--form-width);
-		margin-bottom: var(--space-3);
-	}
-
 	.move {
 		display: grid;
 		gap: var(--space-2);
 		justify-items: start;
 		max-width: var(--prose-width);
-		margin: 0 0 var(--space-3);
+		margin: 0 0 var(--space-4);
 		padding: var(--space-3);
 		border: var(--hairline) solid var(--border);
 		border-radius: var(--radius-control);
@@ -294,45 +291,34 @@
 		word-break: break-all;
 	}
 
-	.paths ul {
+	.diagnostics {
 		display: grid;
+		width: 100%;
 		gap: var(--space-1);
-		max-width: var(--prose-width);
-		margin: 0 0 var(--space-3);
+		margin: 0;
 		padding: 0;
 		list-style: none;
 		color: var(--ink-dim);
 	}
 
-	.paths li.warned {
+	.diagnostics li.warned {
 		color: var(--ink-bright);
 	}
 
-	.paths li.bad {
+	.diagnostics li.bad {
 		color: var(--danger);
 	}
 
-	.mapping-list {
+	.mapping-list,
+	.add-mapping,
+	.mappings > .note {
+		max-width: calc(var(--label-width) + var(--label-gutter) + var(--control-width));
+		margin-bottom: var(--space-3);
+	}
+
+	.add-mapping {
 		display: grid;
-		gap: var(--space-1);
-		margin: 0 0 var(--space-3);
-		padding: 0;
-		list-style: none;
-	}
-
-	.mapping-list li {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
+		grid-template-columns: 1fr 1fr auto;
 		gap: var(--space-2);
-	}
-
-	.mapping-list code {
-		color: var(--ink-bright);
-	}
-
-	.mapping-list form {
-		display: inline;
-		max-width: none;
 	}
 </style>
