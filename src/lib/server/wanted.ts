@@ -1,4 +1,4 @@
-import type { State } from '../state';
+import type { PartState } from '../state';
 import type { App } from './app';
 import { downloadingParts } from './downloading';
 import { grabRow, type GrabRow } from './selection/grab-row';
@@ -21,7 +21,7 @@ export interface WantedRow {
 	title: string | null;
 	state: WantedState;
 	/** Which of the six legend states the row is in, which `state` alone cannot say. */
-	legend: State;
+	legend: PartState;
 	toBeRedone: boolean;
 	/** Null for an Unreleased Part: there is nothing yet for Selection to choose between. */
 	grab: GrabRow | null;
@@ -100,7 +100,7 @@ function stateOf(row: GapRow): WantedState {
 }
 
 // Wanted lists only monitored Arcs, so every gap it shows is one the user asked Pacerr to fill.
-const legendOf = (state: WantedState, downloading: boolean): State => {
+const legendOf = (state: WantedState, downloading: boolean): PartState => {
 	if (state === 'unreleased') return 'unreleased';
 	return downloading ? 'downloading' : 'missing';
 };

@@ -195,29 +195,65 @@ const selectorsPainted = (token: string): string[] =>
 		.map((rule) => rule.selector)
 		.sort();
 
-describe('the legend', () => {
-	it('gives each of the six states a treatment of its own, every one a token', () => {
-		const treatments = {
-			had: colourOf('.state-icon.had'),
-			missing: colourOf('.state-icon.missing'),
-			unmonitored: colourOf('.state-icon.unmonitored'),
-			downloading: colourOf('.state-icon.downloading'),
-			unreleased: colourOf('.state-icon.unreleased'),
-			toBeRedone: colourOf('.state-icon.to-be-redone')
-		};
+// The sixth is a Release state, so it is named in a badge beside the Release rather than in the
+// column the five Part states share.
+const treatmentOf: Record<State, string> = {
+	had: '.state-icon.had',
+	downloading: '.state-icon.downloading',
+	missing: '.state-icon.missing',
+	unmonitored: '.state-icon.unmonitored',
+	unreleased: '.state-icon.unreleased',
+	'to-be-redone': '.badge.redone'
+};
 
-		expect(treatments).toEqual({
+const paintedStates = (): string[] =>
+	everyRule()
+		.map((rule) => /^\.state-icon\.([a-z-]+)$/.exec(rule.selector)?.[1])
+		.filter((state) => state !== undefined)
+		.sort();
+
+const statesShown = (page: PacerrPage): string[] =>
+	page
+		.attributes('tbody .state-icon', 'class')
+		.flatMap((classes) => (classes ?? '').split(/\s+/))
+		.filter((name) => name !== 'state-icon' && name !== '');
+
+describe('the legend', () => {
+	it('paints no state treatment the interface cannot reach', async () => {
+		const pacerr = await startPacerr({ feed: fixtures.feed });
+		const shown: string[] = [];
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'egghead' });
+		shown.push(...statesShown(await pacerr.open('/arcs/egghead')));
+
+		await pacerr.connectDownloadClient();
+		pacerr.downloadClient.filesPerTorrent = 3;
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'reverie' });
+		pacerr.finishDownload(3);
+		await pacerr.advance(minutes(15));
+		shown.push(...statesShown(await pacerr.open('/arcs/reverie')));
+
+		await pacerr.submit('/', 'toggleMonitoring', { arc: 'zou' });
+		shown.push(...statesShown(await pacerr.open('/arcs/zou')));
+		shown.push(...statesShown(await pacerr.open('/arcs/romance-dawn')));
+
+		expect(paintedStates()).not.toHaveLength(0);
+		expect([...new Set(shown)].sort()).toEqual(paintedStates());
+	});
+
+	it('gives each of the six states a treatment of its own, every one a token', () => {
+		const painted = Object.fromEntries(
+			Object.entries(treatmentOf).map(([state, selector]) => [state, colourOf(selector)])
+		);
+
+		expect(painted).toEqual({
 			had: 'var(--success)',
 			missing: 'var(--danger)',
 			unmonitored: 'var(--warning)',
 			downloading: 'var(--downloading)',
 			unreleased: 'var(--ink-dim)',
-			toBeRedone: 'var(--brand)'
+			'to-be-redone': 'var(--brand)'
 		});
-	});
-
-	it('names a to-be-redone Release in the same cyan wherever it is named', () => {
-		expect(colourOf('.badge.redone')).toBe(colourOf('.state-icon.to-be-redone'));
 	});
 
 	it('spends warning orange on nothing but a gap nobody is monitoring', () => {
@@ -253,7 +289,7 @@ describe('the legend in the glossary', () => {
 
 	it('names the token each state is painted with, so the two cannot drift apart', () => {
 		const unnamed = everyState
-			.map((state) => colourOf(`.state-icon.${state}`))
+			.map((state) => colourOf(treatmentOf[state]))
 			.filter((treatment) => treatment === undefined || !glossary.includes(treatment));
 
 		expect(unnamed).toEqual([]);

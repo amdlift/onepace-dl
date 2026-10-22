@@ -1,23 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { startPacerr, type Pacerr } from './harness/pacerr';
-
-const tokenSheet = fileURLToPath(new URL('../src/app.css', import.meta.url));
-
-function declarationsFor(selector: string): Record<string, string> {
-	const rule = readFileSync(tokenSheet, 'utf8')
-		.split('}')
-		.map((block) => block.split('{'))
-		.find(([heading, body]) => body !== undefined && heading?.trim() === selector);
-
-	return Object.fromEntries(
-		[...(rule?.[1] ?? '').matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)].map((declaration) => [
-			declaration[1] ?? '',
-			(declaration[2] ?? '').trim()
-		])
-	);
-}
+import { declarationsFor } from './harness/sources';
 
 const settingsPages = [
 	'/settings',
@@ -53,9 +36,9 @@ describe('a setting', () => {
 });
 
 describe('a section of a Settings page', () => {
-	it('carries a legend at the reference size with a rule beneath it', () => {
+	it('carries a heading at the reference size with a rule beneath it', () => {
 		expect(declarationsFor('h2')).toMatchObject({
-			'font-size': 'var(--type-legend)',
+			'font-size': 'var(--type-heading)',
 			'border-bottom': 'var(--hairline) solid var(--border)'
 		});
 	});

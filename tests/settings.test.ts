@@ -73,6 +73,20 @@ describe('Metadata', () => {
 		expect(page.attributes('input[name="arcNfo"]', 'checked')).toEqual(['']);
 		expect(page.attributes('input[name="showNfo"]', 'checked')).toEqual([null]);
 	});
+
+	it('is where a bookmark to the old Sidecars page lands', async () => {
+		const pacerr = await startPacerr();
+
+		const page = await pacerr.open('/settings/sidecars');
+
+		expect(page.status).toBe(200);
+		expect(page.texts('.setting > .label')).toEqual([
+			'Show NFO',
+			'Season NFO',
+			'Episode NFO',
+			'Season Poster'
+		]);
+	});
 });
 
 describe('the Settings sub-navigation', () => {

@@ -12,7 +12,6 @@
 			<a class="card" href="/arcs/{arc.slug}">
 				<span class="artwork">
 					{#if arc.artwork.kind === 'placeholder'}
-						<!-- No artwork to crop to, so the Arc fills its own place by naming itself. -->
 						<span class="no-poster">{arc.title}</span>
 					{:else}
 						<img src={arc.artwork.url} alt="" loading="lazy" />

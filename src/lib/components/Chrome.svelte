@@ -48,6 +48,7 @@
 		background: var(--surface-toolbar);
 		border-bottom: var(--hairline) solid var(--border);
 		color: var(--ink-bright);
+		font-size: var(--type-small);
 	}
 
 	.actions,

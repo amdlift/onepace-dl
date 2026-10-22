@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Chrome from '../../../lib/components/Chrome.svelte';
 	import { formatResolution, formatVariant, formatWantedState } from '../../../lib/format';
-	import StateIcon from '../../../lib/StateIcon.svelte';
+	import StateCell from '../../../lib/StateCell.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -30,7 +30,7 @@
 			<tbody>
 				{#each wanted as row (`${row.arcSlug}/${row.number}`)}
 					<tr>
-						<StateIcon state={row.legend} />
+						<StateCell state={row.legend} />
 						<td><a href="/arcs/{row.arcSlug}">{row.arcTitle}</a></td>
 						<td>{row.number}</td>
 						<td>

@@ -1,9 +1,14 @@
 /**
- * The six states Pacerr colours. Five describe a Part and are mutually exclusive; `to-be-redone`
- * describes a Release, which is why it can sit alongside any of the other five. The reference's
- * legend could not be borrowed for either group — see ADR-0010.
+ * The five states a Part can be in, mutually exclusive and in that order of precedence. The state
+ * column carries one of these; see ADR-0010 for why the reference's legend could not be borrowed.
  */
-export type State = 'had' | 'downloading' | 'missing' | 'unmonitored' | 'unreleased' | 'to-be-redone';
+export type PartState = 'had' | 'downloading' | 'missing' | 'unmonitored' | 'unreleased';
+
+/**
+ * The six states Pacerr colours. `to-be-redone` describes a Release rather than a Part, so it sits
+ * alongside any of the five and is named in a badge beside the Release instead of in the column.
+ */
+export type State = PartState | 'to-be-redone';
 
 export function formatState(state: State): string {
 	return {
@@ -16,15 +21,14 @@ export function formatState(state: State): string {
 	}[state];
 }
 
-/** What the Download Client says about a transfer. Unknown while it is not saying. */
 export type TransferState = 'downloading' | 'completed' | 'failed' | 'unknown';
 
 /**
  * How a transfer reads in the legend. The Queue lists Releases rather than Parts, so it borrows
  * the treatments and keeps the Download Client's own words for them.
  */
-export function transferTreatment(state: TransferState): State {
-	const treatments: Record<TransferState, State> = {
+export function transferTreatment(state: TransferState): PartState {
+	const treatments: Record<TransferState, PartState> = {
 		downloading: 'downloading',
 		completed: 'had',
 		failed: 'missing',
