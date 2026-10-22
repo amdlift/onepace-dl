@@ -279,6 +279,15 @@ const migrations = [
 		arc_poster integer not null default 1
 	);
 	insert into sidecar (id) values (1);
+	`,
+	`
+	-- One row, because which layout the Arcs view opens in is a standing preference of the
+	-- install rather than something an Arc, a session or a browser carries.
+	create table arcs_layout (
+		id integer primary key check (id = 1),
+		layout text not null default 'table'
+	);
+	insert into arcs_layout (id) values (1);
 	`
 ];
 

@@ -1,12 +1,17 @@
 <script lang="ts">
+	import { arcsLayouts, formatArcsLayout } from '../../lib/arcs-layout';
+	import ArcOverview from '../../lib/components/ArcOverview.svelte';
+	import ArcPosters from '../../lib/components/ArcPosters.svelte';
+	import ArcTable from '../../lib/components/ArcTable.svelte';
 	import Chrome from '../../lib/components/Chrome.svelte';
-	import { formatResolution, formatTimestamp, pluralise } from '../../lib/format';
+	import { formatTimestamp, pluralise } from '../../lib/format';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const catalogue = $derived(data.catalogue);
 	const feed = $derived(data.feed);
+	const layout = $derived(data.layout);
 </script>
 
 <svelte:head><title>Arcs - Pacerr</title></svelte:head>
@@ -21,6 +26,22 @@
 		</form>
 		<form method="POST" action="?/refreshReleases">
 			<button class="button" type="submit">Refresh Releases</button>
+		</form>
+	{/snippet}
+
+	{#snippet controls()}
+		<form class="layouts" method="POST" action="?/chooseLayout">
+			{#each arcsLayouts as option (option)}
+				<button
+					class="toggle"
+					type="submit"
+					name="layout"
+					value={option}
+					aria-pressed={option === layout}
+				>
+					{formatArcsLayout(option)}
+				</button>
+			{/each}
 		</form>
 	{/snippet}
 
@@ -43,83 +64,18 @@
 
 	{#if catalogue.arcs.length === 0}
 		<p class="empty">No Catalogue yet. One Pace has not been scraped successfully.</p>
+	{:else if layout === 'poster'}
+		<ArcPosters arcs={catalogue.arcs} />
+	{:else if layout === 'overview'}
+		<ArcOverview arcs={catalogue.arcs} />
 	{:else}
-		<table class="table">
-			<thead>
-				<tr>
-					<th class="poster"><span class="visually-hidden">Poster</span></th>
-					<th>Arc</th>
-					<th>Parts</th>
-					<th>Had</th>
-					<th class="monitoring">Monitoring</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each catalogue.arcs as arc (arc.slug)}
-					<tr>
-						<td class="poster">
-							{#if arc.artwork.kind === 'placeholder'}
-								<span class="no-poster" aria-hidden="true"></span>
-							{:else}
-								<img src={arc.artwork.url} alt="" width="40" height="60" loading="lazy" />
-							{/if}
-						</td>
-						<td>
-							<a href="/arcs/{arc.slug}">{arc.title}</a>
-							{#if arc.special}<span class="badge">Special</span>{/if}
-							{#if arc.unfinished}<span class="badge unfinished">Unfinished</span>{/if}
-							{#if arc.batchOnly !== null}
-								<span class="badge batch">
-									Batch only{arc.batchOnly.resolution === null
-										? ''
-										: ` ${formatResolution(arc.batchOnly.resolution)}`}
-								</span>
-							{/if}
-						</td>
-						<td>
-							{pluralise(arc.partCount, 'Part')}
-							{#if arc.unreleasedPartCount > 0}
-								<span class="badge">+{arc.unreleasedPartCount} unreleased</span>
-							{/if}
-						</td>
-						<td class="had">
-							<span class="pill" class:complete={arc.hadCount === arc.partCount}>
-								{arc.hadCount} of {arc.partCount}
-							</span>
-						</td>
-						<td class="monitoring">
-							<form method="POST" action="?/toggleMonitoring">
-								<input type="hidden" name="arc" value={arc.slug} />
-								<button class="toggle" type="submit" aria-pressed={arc.monitored}>
-									{arc.monitored ? 'Monitored' : 'Not monitored'}
-								</button>
-							</form>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+		<ArcTable arcs={catalogue.arcs} />
 	{/if}
 </Chrome>
 
 <style>
-	.poster {
-		width: var(--poster-width);
-		padding-right: 0;
-	}
-
-	img,
-	.no-poster {
-		display: block;
-		width: var(--poster-width);
-		height: var(--poster-height);
-		object-fit: cover;
-		border-radius: var(--radius-card);
-		background: var(--surface-panel);
-	}
-
-	.monitoring {
-		width: 1%;
-		white-space: nowrap;
+	.layouts {
+		display: flex;
+		gap: var(--space-1);
 	}
 </style>
