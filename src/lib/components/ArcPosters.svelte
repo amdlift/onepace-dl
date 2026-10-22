@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ArcSummary } from '../server/arcs';
 	import HadOfTotal from './HadOfTotal.svelte';
+	import MonitorArc from './MonitorArc.svelte';
 
 	let { arcs }: { arcs: ArcSummary[] } = $props();
 </script>
@@ -19,6 +20,7 @@
 				<a class="title" href="/arcs/{arc.slug}">{arc.title}</a>
 				<HadOfTotal hadCount={arc.hadCount} partCount={arc.partCount} />
 			</div>
+			<MonitorArc slug={arc.slug} monitored={arc.monitored} />
 		</li>
 	{/each}
 </ul>

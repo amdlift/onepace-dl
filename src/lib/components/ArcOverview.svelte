@@ -2,6 +2,7 @@
 	import { formatResolution, pluralise } from '../format';
 	import type { ArcSummary } from '../server/arcs';
 	import HadOfTotal from './HadOfTotal.svelte';
+	import MonitorArc from './MonitorArc.svelte';
 
 	let { arcs }: { arcs: ArcSummary[] } = $props();
 </script>
@@ -39,6 +40,9 @@
 				{#if arc.description !== null}
 					<p class="synopsis">{arc.description}</p>
 				{/if}
+				<div class="monitoring">
+					<MonitorArc slug={arc.slug} monitored={arc.monitored} />
+				</div>
 			</div>
 		</li>
 	{/each}
@@ -104,6 +108,10 @@
 		gap: var(--space-2);
 		margin: 0;
 		color: var(--ink-dim);
+	}
+
+	.monitoring {
+		margin-top: var(--space-2);
 	}
 
 	.synopsis {

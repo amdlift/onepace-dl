@@ -2,6 +2,7 @@
 	import { formatResolution, pluralise } from '../format';
 	import type { ArcSummary } from '../server/arcs';
 	import HadOfTotal from './HadOfTotal.svelte';
+	import MonitorArc from './MonitorArc.svelte';
 
 	let { arcs }: { arcs: ArcSummary[] } = $props();
 </script>
@@ -48,12 +49,7 @@
 					<HadOfTotal hadCount={arc.hadCount} partCount={arc.partCount} />
 				</td>
 				<td class="monitoring">
-					<form method="POST" action="?/toggleMonitoring">
-						<input type="hidden" name="arc" value={arc.slug} />
-						<button class="toggle" type="submit" aria-pressed={arc.monitored}>
-							{arc.monitored ? 'Monitored' : 'Not monitored'}
-						</button>
-					</form>
+					<MonitorArc slug={arc.slug} monitored={arc.monitored} />
 				</td>
 			</tr>
 		{/each}
