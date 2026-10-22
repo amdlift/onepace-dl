@@ -63,7 +63,7 @@ describe('the Overview layout', () => {
 });
 
 describe('every layout', () => {
-	it('states how many of an Arc’s Parts are had', async () => {
+	it("states how many of an Arc's Parts are had", async () => {
 		const pacerr = await startPacerr();
 
 		for (const layout of arcsLayouts) {
@@ -74,9 +74,7 @@ describe('every layout', () => {
 			expect(had[0], layout).toBe('0 of 4');
 		}
 	});
-});
 
-describe('every layout', () => {
 	it('monitors an Arc, refreshes the Catalogue and refreshes the Releases', async () => {
 		const pacerr = await startPacerr({ feed: fixtures.feed });
 
