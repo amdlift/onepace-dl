@@ -1,45 +1,13 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { fixtures, startPacerr, type PacerrPage } from './harness/pacerr';
-
-const sourceDirectory = fileURLToPath(new URL('../src', import.meta.url));
-const tokenSheet = join(sourceDirectory, 'app.css');
-
-function everyFileUnder(directory: string): string[] {
-	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
-		entry.isDirectory()
-			? everyFileUnder(join(directory, entry.name))
-			: [join(directory, entry.name)]
-	);
-}
-
-/** Every file that styles a table or renders one, read off the checked-in tree. */
-function everyStyledSource(): { file: string; contents: string }[] {
-	return everyFileUnder(sourceDirectory)
-		.filter((file) => file.endsWith('.css') || file.endsWith('.svelte'))
-		.map((file) => ({ file, contents: readFileSync(file, 'utf8') }));
-}
+import { declarationsFor, everyStyledSource } from './harness/sources';
 
 const occurrences = (pattern: RegExp): string[] =>
 	everyStyledSource().flatMap(({ file, contents }) =>
 		[...contents.matchAll(pattern)].map(() => file)
 	);
-
-function declarationsFor(selector: string): Record<string, string> {
-	const rule = readFileSync(tokenSheet, 'utf8')
-		.split('}')
-		.map((block) => block.split('{'))
-		.find(([heading, body]) => body !== undefined && heading?.trim() === selector);
-
-	return Object.fromEntries(
-		[...(rule?.[1] ?? '').matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)].map((declaration) => [
-			declaration[1] ?? '',
-			(declaration[2] ?? '').trim()
-		])
-	);
-}
 
 describe('a table column', () => {
 	it('is never right-aligned', () => {

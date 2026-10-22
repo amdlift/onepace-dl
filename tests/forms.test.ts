@@ -1,23 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { startPacerr, type Pacerr } from './harness/pacerr';
-
-const tokenSheet = fileURLToPath(new URL('../src/app.css', import.meta.url));
-
-function declarationsFor(selector: string): Record<string, string> {
-	const rule = readFileSync(tokenSheet, 'utf8')
-		.split('}')
-		.map((block) => block.split('{'))
-		.find(([heading, body]) => body !== undefined && heading?.trim() === selector);
-
-	return Object.fromEntries(
-		[...(rule?.[1] ?? '').matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)].map((declaration) => [
-			declaration[1] ?? '',
-			(declaration[2] ?? '').trim()
-		])
-	);
-}
+import { declarationsFor } from './harness/sources';
 
 const settingsPages = [
 	'/settings',
