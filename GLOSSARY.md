@@ -98,6 +98,12 @@ Taking a completed download and placing it in the Library under a media-server-l
 after which the Part counts as acquired.
 _Avoid_: Organise, move, file, sort
 
+**Had**:
+A Part the Library holds a file for, together with the Release that file came from. The opposite
+of missing, and the only one of the two that survives a restart as a fact rather than a
+derivation. An Arc's completeness is stated as how many of its Parts are had.
+_Avoid_: Owned, downloaded (that is the transfer), complete, present
+
 **Library**:
 The destination directory tree that a media server such as Jellyfin or Plex reads. Its edge is
 where Season and Episode appear as words — in generated filenames, season directory names, Sidecar
@@ -128,6 +134,14 @@ A metadata file Pacerr writes into the Library beside what it describes, for a m
 instead of consulting an online metadata provider. Covers both the Poster written as `cover.jpg`
 and the NFO files describing the show, an Arc and a Part.
 _Avoid_: Metadata file (ambiguous with the Catalogue), NFO (that is one format, not the concept)
+
+**Layout**:
+One of the three ways the Arcs view arranges the Catalogue — Poster, Overview or Table. Which one
+is chosen changes how much artwork an Arc is given and nothing about what is known: every layout
+states how many of an Arc's Parts are had. Distinct from a **view**, which is one of the six
+destinations in the sidebar; the Arcs view has three layouts, and the other five views have one
+arrangement each and so never name it.
+_Avoid_: View (that is the sidebar destination), mode, display
 
 ### Selection
 
@@ -163,3 +177,35 @@ _Avoid_: Source folder, watch folder (nothing is watched)
 A configured rewrite from a path as the Download Client reports it to the equivalent path as
 Pacerr sees it, for deployments where the two do not share a mount layout.
 _Avoid_: Path translation, path alias
+
+## The state legend
+
+Pacerr borrows this family of tools' grammar for state — an icon in a narrow column, coloured
+pills for counts and qualities — and defines its own meanings, because theirs do not map. An Arc
+is a stretch of a recut, not a broadcast series with a run that ends, and two of the six states
+below have no equivalent anywhere in that family. See ADR-0010.
+
+Each treatment is a token in `src/app.css`, declared once and named here, so the legend can be
+learned rather than inferred from colour.
+
+| State | Treatment | Token | What it means |
+| --- | --- | --- | --- |
+| **Had** | Success green | `var(--success)` | The Library holds a file for this Part. |
+| **Missing, monitored** | Danger red | `var(--danger)` | No file, and the Arc's Monitoring says Pacerr should get one. This is the gap worth acting on. |
+| **Missing, not monitored** | Warning orange | `var(--warning)` | No file, and nobody has asked for one. A gap, not a failure. |
+| **Downloading** | Purple | `var(--downloading)` | The Download Client is working on a Release that covers this Part, so progress is visible without opening Activity. |
+| **Unreleased Part** | Muted grey | `var(--ink-dim)` | One Pace has announced the number and published nothing. A gap in the Catalogue, never a gap in the collection. |
+| **To Be Redone** | Brand cyan | `var(--brand)` | The Release Status of the same name: the current Release stands, and the project intends to replace it. A Release state, so it sits alongside any of the five above, and is named in a badge beside the Release rather than in the state column. |
+
+The first five describe a Part and are mutually exclusive, in that order of precedence: a Part
+Pacerr has is had even while a newer Release for it is downloading.
+
+The Queue lists Releases rather than Parts, so it borrows the same treatments and keeps the
+Download Client's own words for them: a transfer in flight is **Downloading**, a finished one
+takes the had treatment under the word **Completed**, a failed one the missing-monitored
+treatment under **Failed**, and one the client is not reporting on the muted grey under
+**Unknown**.
+
+Warning orange and danger red are spent on nothing else where a Part or a Release is listed.
+System speaks its own vocabulary — a Health check is `ok`, `warned` or `failed`, and a History
+entry `succeeded`, `warned` or `failed` — and that is deliberately not this legend.

@@ -13,6 +13,7 @@ import type { Validators } from '../upstream/source';
 export interface StoredArc {
 	slug: string;
 	title: string;
+	description: string | null;
 	special: boolean;
 	unfinished: boolean;
 	partCount: number;
@@ -23,6 +24,7 @@ export interface StoredArc {
 interface ArcRow {
 	slug: string;
 	title: string;
+	description: string | null;
 	special: number;
 	unfinished: number;
 	cover_image_url: string | null;
@@ -33,7 +35,8 @@ interface ArcRow {
 export function readArcs(db: Database): StoredArc[] {
 	const rows = db
 		.prepare(
-			`select arc.slug, arc.title, arc.special, arc.unfinished, arc.cover_image_url,
+			`select arc.slug, arc.title, arc.description, arc.special, arc.unfinished,
+				arc.cover_image_url,
 				(select count(*) from part where part.arc_slug = arc.slug) as part_count,
 				(select count(*) from unreleased_part where unreleased_part.arc_slug = arc.slug)
 					as unreleased_part_count
@@ -43,6 +46,7 @@ export function readArcs(db: Database): StoredArc[] {
 	return rows.map((row) => ({
 		slug: row.slug,
 		title: row.title,
+		description: row.description,
 		special: row.special === 1,
 		unfinished: row.unfinished === 1,
 		partCount: row.part_count,

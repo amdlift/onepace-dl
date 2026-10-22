@@ -34,8 +34,8 @@ qBittorrent `-v /srv/downloads:/downloads` too, and nothing else is needed.
 ### When they disagree
 
 When you cannot change qBittorrent's layout — it is on another host, or it predates Pacerr and
-other tools depend on its paths — add a **Remote Path Mapping** in **Settings → Remote Path
-Mappings**:
+other tools depend on its paths — add a **Remote Path Mapping** in **Settings → Media
+Management**:
 
 | Path on the Download Client | The same place as Pacerr sees it |
 | --------------------------- | -------------------------------- |
@@ -75,7 +75,7 @@ unexplained `SqliteError: unable to open database file` at boot.
 The other two raise a health check, which is visible in **System** and as a banner on every view,
 and clears on its own once the mount is fixed.
 
-**Settings → Directories → Test** re-runs exactly the same validation on demand.
+**Settings → Media Management → Directories → Test** re-runs exactly the same validation on demand.
 
 ## Who can browse your filesystem
 

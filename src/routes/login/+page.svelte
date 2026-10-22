@@ -6,47 +6,72 @@
 
 <svelte:head><title>Log in - Pacerr</title></svelte:head>
 
-<h1>Log in</h1>
+<div class="screen">
+	<div class="panel">
+		<p class="brand">Pacerr</p>
+		<h1>Log in</h1>
 
-{#if form?.problem}
-	<p class="alert">{form.problem}</p>
-{/if}
+		{#if form?.problem}
+			<p class="alert">{form.problem}</p>
+		{/if}
 
-<form method="POST" action="?/logIn">
-	<label>
-		<span>Username</span>
-		<input name="username" autocomplete="username" required />
-	</label>
-	<label>
-		<span>Password</span>
-		<input name="password" type="password" autocomplete="current-password" required />
-	</label>
-	<button class="button" type="submit">Log in</button>
-</form>
+		<form method="POST" action="?/logIn">
+			<label>
+				<span>Username</span>
+				<input class="input" name="username" autocomplete="username" required />
+			</label>
+			<label>
+				<span>Password</span>
+				<input
+					class="input"
+					name="password"
+					type="password"
+					autocomplete="current-password"
+					required
+				/>
+			</label>
+			<button class="button" type="submit">Log in</button>
+		</form>
+	</div>
+</div>
 
 <style>
+	.screen {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 100vh;
+		padding: var(--content-padding);
+	}
+
+	.panel {
+		width: 100%;
+		max-width: var(--form-width);
+		padding: var(--space-6);
+		border-radius: var(--radius-control);
+		background: var(--surface-raised);
+	}
+
+	.brand {
+		margin: 0 0 var(--space-2);
+		color: var(--brand);
+		font-size: var(--type-modal-title);
+		letter-spacing: var(--type-tracking);
+		text-transform: uppercase;
+	}
+
 	form {
 		display: grid;
-		gap: 0.75rem;
-		max-width: 18rem;
-		margin-top: 1rem;
+		gap: var(--space-3);
+		margin-top: var(--space-4);
 	}
 
 	label {
 		display: grid;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 
-	span {
+	label span {
 		color: var(--ink-dim);
-		font-size: 0.8rem;
-	}
-
-	input {
-		padding: 0.35rem 0.5rem;
-		border: 1px solid var(--border);
-		border-radius: 2px;
-		background: var(--surface-raised);
-		color: var(--ink);
 	}
 </style>

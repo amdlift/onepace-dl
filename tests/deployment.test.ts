@@ -31,7 +31,7 @@ describe('a Download Client that reports a path Pacerr does not have', () => {
 	it('imports once a Remote Path Mapping says where that path is here', async () => {
 		const pacerr = await grabbedUnderARemoteRoot();
 
-		await pacerr.submit('/settings', 'addRemotePathMapping', {
+		await pacerr.submit('/settings/media-management', 'addRemotePathMapping', {
 			remotePath: remoteRoot,
 			localPath: pacerr.paths.downloads
 		});
@@ -129,13 +129,13 @@ describe('the Test action for paths', () => {
 		const pacerr = await startPacerr();
 
 		rmSync(pacerr.paths.downloads, { recursive: true, force: true });
-		const after = await pacerr.submit('/settings', 'testPaths');
+		const after = await pacerr.submit('/settings/media-management', 'testPaths');
 
 		expect(after.text('.paths')).toContain('cannot find the download directory');
 		expect(after.text('.paths')).toContain(pacerr.paths.downloads);
 
 		mkdirSync(pacerr.paths.downloads, { recursive: true });
-		expect((await pacerr.submit('/settings', 'testPaths')).text('.paths')).toContain(
+		expect((await pacerr.submit('/settings/media-management', 'testPaths')).text('.paths')).toContain(
 			'can read and write'
 		);
 	});
@@ -198,7 +198,7 @@ describe('a Download Client that saves somewhere Pacerr cannot reach', () => {
 		pacerr.downloadClient.savePath = remoteRoot;
 		await pacerr.connectDownloadClient();
 
-		await pacerr.submit('/settings', 'addRemotePathMapping', {
+		await pacerr.submit('/settings/media-management', 'addRemotePathMapping', {
 			remotePath: remoteRoot,
 			localPath: pacerr.paths.downloads
 		});
@@ -213,7 +213,7 @@ describe('a Download Client that saves somewhere Pacerr cannot reach', () => {
 		expect((await pacerr.open('/')).text('.banner')).toContain('cannot find');
 
 		pacerr.downloadClient.reachable = false;
-		await pacerr.submit('/settings', 'testPaths');
+		await pacerr.submit('/settings/media-management', 'testPaths');
 
 		expect((await pacerr.open('/')).text('.banner')).not.toContain('cannot find');
 	});

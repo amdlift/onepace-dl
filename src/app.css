@@ -1,15 +1,74 @@
 :root {
-	--surface: #1c1c1c;
-	--surface-raised: #262626;
-	--surface-hover: #2f2f2f;
-	--border: #3a3a3a;
-	--ink: #cfcfcf;
-	--ink-dim: #959595;
-	--ink-bright: #ffffff;
-	--accent: #5d9cec;
-	--warning: #f0ad4e;
-	--danger: #d9534f;
-	--row-height: 2.25rem;
+	--surface: #202020;
+	--surface-raised: #2a2a2a;
+	--surface-toolbar: #262626;
+	--surface-panel: #333;
+	--surface-hover: rgba(255, 255, 255, 0.08);
+
+	--border: #858585;
+	--ink: #ccc;
+	--ink-bright: #e1e2e3;
+	--ink-dim: #909293;
+
+	--link: #5d9cec;
+	--brand: #35c5f4;
+	--nav-active: #2193b5;
+
+	--success: #00853d;
+	--success-fill: #27c24c;
+	--warning: #ffa500;
+	--warning-fill: #ff902b;
+	--danger: #f05050;
+	--downloading: #7a43b6;
+
+	--font-sans: Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+	--type-base: 14px;
+	--type-line: 21.4px;
+	--type-small: 11px;
+	--type-modal-title: 18px;
+	--type-heading: 21px;
+	--type-tracking: 0.04em;
+	--weight-normal: 400;
+	--weight-medium: 500;
+	--weight-bold: 700;
+
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-8: 32px;
+
+	--radius-pill: 2px;
+	--radius-card: 3px;
+	--radius-control: 4px;
+	--radius-modal: 6px;
+
+	--header-height: 60px;
+	--sidebar-width: 210px;
+	--toolbar-height: 60px;
+	--toolbar-padding: 20px;
+	--content-padding: 20px;
+	--row-height: 38px;
+	--cell-padding: 8px;
+	--hairline: 1px;
+	--input-height: 35px;
+	--label-width: 250px;
+	--label-gutter: 20px;
+	--control-width: 530px;
+
+	--accent-bar: 4px;
+	--column-narrow: 176px;
+	--form-width: 320px;
+	--prose-width: 704px;
+	--icon-size: 14px;
+	--poster-width: 40px;
+	--poster-height: 60px;
+	--poster-card-width: 162px;
+	--backdrop-width: 240px;
+	--scroll-height: 192px;
 }
 
 * {
@@ -20,13 +79,13 @@ body {
 	margin: 0;
 	background: var(--surface);
 	color: var(--ink);
-	font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-	font-size: 14px;
-	line-height: 1.4;
+	font-family: var(--font-sans);
+	font-size: var(--type-base);
+	line-height: var(--type-line);
 }
 
 a {
-	color: var(--accent);
+	color: var(--link);
 	text-decoration: none;
 }
 
@@ -36,43 +95,47 @@ a:hover {
 
 h1 {
 	margin: 0;
-	font-size: 1.35rem;
-	font-weight: 400;
+	font-size: var(--type-heading);
+	font-weight: var(--weight-normal);
 	color: var(--ink-bright);
 }
 
-.toolbar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 1rem;
-	padding-bottom: 0.75rem;
-	border-bottom: 1px solid var(--border);
-	margin-bottom: 0.75rem;
+h2 {
+	margin: var(--space-4) 0 var(--space-2);
+	padding-bottom: var(--space-2);
+	border-bottom: var(--hairline) solid var(--border);
+	font-size: var(--type-heading);
+	font-weight: var(--weight-normal);
+	color: var(--ink-bright);
 }
 
 .status {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 1rem;
+	gap: var(--space-4);
 	color: var(--ink-dim);
-	font-size: 0.8rem;
-	margin: 0 0 0.75rem;
+	font-size: var(--type-small);
+	margin: 0 0 var(--space-3);
 }
 
 .alert {
-	padding: 0.5rem 0.75rem;
-	margin-bottom: 0.75rem;
-	border-left: 3px solid var(--danger);
-	background: var(--surface-raised);
+	padding: var(--space-2) var(--space-3);
+	margin-bottom: var(--space-3);
+	border-left: var(--accent-bar) solid var(--danger);
+	background: var(--surface-panel);
 	color: var(--ink);
 }
 
+.note {
+	margin: 0;
+	color: var(--ink-dim);
+}
+
 .button {
-	padding: 0.35rem 0.8rem;
-	border: 1px solid var(--border);
-	border-radius: 2px;
-	background: var(--surface-raised);
+	padding: var(--space-2) var(--space-3);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--radius-control);
+	background: var(--surface-panel);
 	color: var(--ink);
 	font: inherit;
 	cursor: pointer;
@@ -84,18 +147,18 @@ h1 {
 }
 
 .button[aria-pressed='true'] {
-	border-color: var(--accent);
+	border-color: var(--brand);
 	color: var(--ink-bright);
 }
 
 .toggle {
-	padding: 0.1rem 0.5rem;
-	border: 1px solid var(--border);
-	border-radius: 2px;
-	background: var(--surface-raised);
+	padding: var(--space-1) var(--space-2);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--radius-pill);
+	background: var(--surface-panel);
 	color: var(--ink-dim);
 	font: inherit;
-	font-size: 0.75rem;
+	font-size: var(--type-small);
 	cursor: pointer;
 	white-space: nowrap;
 }
@@ -105,8 +168,18 @@ h1 {
 }
 
 .toggle[aria-pressed='true'] {
-	border-color: var(--accent);
+	border-color: var(--brand);
 	color: var(--ink-bright);
+}
+
+.input {
+	height: var(--input-height);
+	padding: 0 var(--space-2);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--radius-control);
+	background: var(--surface-panel);
+	color: var(--ink);
+	font: inherit;
 }
 
 .table {
@@ -115,50 +188,164 @@ h1 {
 }
 
 .table th {
-	padding: 0.4rem 0.6rem;
-	border-bottom: 1px solid var(--border);
-	color: var(--ink-dim);
-	font-weight: 500;
-	font-size: 0.75rem;
+	padding: var(--cell-padding);
+	font-weight: var(--weight-bold);
+	font-size: var(--type-base);
 	text-align: left;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
 }
 
 .table td {
 	height: var(--row-height);
-	padding: 0.25rem 0.6rem;
-	border-bottom: 1px solid var(--border);
+	padding: var(--cell-padding);
 	vertical-align: middle;
 }
 
-.table tbody tr:hover {
-	background: var(--surface-raised);
+.table tbody tr {
+	border-top: var(--hairline) solid var(--border);
 }
 
-.table .numeric {
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
+.table tbody tr:hover {
+	background: var(--surface-hover);
 }
 
 .badge {
 	display: inline-block;
-	margin-left: 0.4rem;
-	padding: 0 0.35rem;
-	border-radius: 2px;
-	background: var(--surface-hover);
+	margin-left: var(--space-1);
+	padding: 0 var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--surface-panel);
 	color: var(--ink-dim);
-	font-size: 0.7rem;
+	font-size: var(--type-small);
 	text-transform: uppercase;
-	letter-spacing: 0.04em;
+	letter-spacing: var(--type-tracking);
 }
 
 .badge.unfinished {
 	color: var(--warning);
 }
 
+.badge.redone {
+	color: var(--brand);
+}
+
 .empty {
-	padding: 2rem 0;
+	padding: var(--space-8) 0;
 	color: var(--ink-dim);
+}
+
+.state-icon {
+	width: 1%;
+	color: var(--ink-dim);
+}
+
+.state-icon svg {
+	display: block;
+	width: var(--icon-size);
+	height: var(--icon-size);
+	fill: none;
+	stroke: currentcolor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.state-icon.had {
+	color: var(--success);
+}
+
+.state-icon.downloading {
+	color: var(--downloading);
+}
+
+.state-icon.missing {
+	color: var(--danger);
+}
+
+.state-icon.unmonitored {
+	color: var(--warning);
+}
+
+.state-icon.unreleased {
+	color: var(--ink-dim);
+}
+
+.pill {
+	display: inline-block;
+	padding: 0 var(--space-1);
+	border-radius: var(--radius-pill);
+	background: var(--surface-panel);
+	color: var(--ink-bright);
+	font-size: var(--type-small);
+}
+
+.pill.complete {
+	background: var(--success);
+}
+
+.visually-hidden {
+	position: absolute;
+	width: var(--hairline);
+	height: var(--hairline);
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+.setting {
+	display: grid;
+	grid-template-columns: var(--label-width) var(--control-width);
+	align-items: start;
+	gap: var(--label-gutter);
+	margin-bottom: var(--space-4);
+}
+
+.setting > .label {
+	justify-self: end;
+	line-height: var(--input-height);
+	color: var(--ink);
+}
+
+.setting > .control {
+	display: grid;
+	grid-column: 2;
+	justify-items: start;
+	gap: var(--space-1);
+	min-width: 0;
+}
+
+.setting > .control .input {
+	width: 100%;
+}
+
+.setting > .control > input[type='checkbox'] {
+	width: var(--space-4);
+	height: var(--space-4);
+	margin: var(--space-2) 0;
+	accent-color: var(--brand);
+}
+
+.help {
+	margin: 0;
+	color: var(--ink-dim);
+}
+
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+
+/* A media query is evaluated before custom properties resolve, so the breakpoint cannot be one. */
+@media (max-width: 1080px) {
+	.setting {
+		grid-template-columns: 1fr;
+	}
+
+	.setting > .label {
+		justify-self: start;
+		line-height: inherit;
+	}
+
+	.setting > .control {
+		grid-column: 1;
+	}
 }

@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import { isArcsLayout, type ArcsLayout } from '../arcs-layout';
 import type { App } from './app';
 import { arcArtwork, type ArcArtwork } from './artwork';
 import type { ArcListing, CatalogueView } from './catalogue/service';
@@ -43,6 +44,17 @@ export function arcsView(app: App): ArcsView {
 			batchOnly: batchOnly.get(arc.slug) ?? null
 		}))
 	};
+}
+
+export function readArcsLayout(db: Database): ArcsLayout {
+	const row = db.prepare('select layout from arcs_layout where id = 1').get() as {
+		layout: string;
+	};
+	return isArcsLayout(row.layout) ? row.layout : 'table';
+}
+
+export function writeArcsLayout(db: Database, layout: ArcsLayout): void {
+	db.prepare('update arcs_layout set layout = ? where id = 1').run(layout);
 }
 
 function batchOnlyArcs(db: Database): Map<string, BatchOnlyCoverage> {
