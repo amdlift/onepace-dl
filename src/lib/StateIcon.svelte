@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { formatState, type State } from './state';
+	import { formatState, type PartState } from './state';
 
 	// The Queue names the same treatments in the Download Client's words, so the word is separable
 	// from the colour and the glyph that carry it.
-	let { state, label = formatState(state) }: { state: State; label?: string } = $props();
+	let { state, label = formatState(state) }: { state: PartState; label?: string } = $props();
 </script>
 
 <td class="state-icon {state}">
@@ -18,9 +18,6 @@
 			<circle cx="7" cy="7" r="4.25" />
 		{:else if state === 'unreleased'}
 			<path d="M2.75 7h8.5" />
-		{:else if state === 'to-be-redone'}
-			<path d="M11.25 7a4.25 4.25 0 1 1-1.25-3" />
-			<path d="M11.25 1.75v2.75H8.5" />
 		{/if}
 	</svg>
 </td>

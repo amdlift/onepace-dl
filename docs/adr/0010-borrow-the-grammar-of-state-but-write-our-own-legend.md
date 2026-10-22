@@ -39,6 +39,11 @@ Three of the six are not a restyle of anything that was on the wire:
 - **Warning orange changed meaning.** It marked a missing Part on the Wanted list; it now marks a
   gap nobody is monitoring, which Wanted can never show. A test asserts orange and red are each
   spent on one thing wherever a Part or a Release is listed.
+- **The state column carries five states, not six.** The five that describe a Part are mutually
+  exclusive, which is what lets one column stand for all of them. To Be Redone describes the
+  Release instead and can be true alongside any of the five, so it is named in a badge beside the
+  Release. A sixth glyph would have had to displace one of the five to be seen at all, and a test
+  holds the sheet to painting no treatment the interface cannot reach.
 - **System is outside the legend.** A Health check is `ok`, `warned` or `failed` and a History
   entry `succeeded`, `warned` or `failed`. Those are their own vocabularies, they are not about a
   Part, and folding them in would recreate exactly the overloading this decision rejects.

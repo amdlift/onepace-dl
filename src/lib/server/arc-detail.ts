@@ -1,4 +1,4 @@
-import type { State } from '../state';
+import type { PartState } from '../state';
 import type { App } from './app';
 import { readArcDetail } from './catalogue/store';
 import { readHadParts, type HadPart } from './library/store';
@@ -17,13 +17,13 @@ export interface PartRow {
 	/** What Pacerr holds for this Part, and the Release it came from. Null while it is missing. */
 	had: HadPart | null;
 	wanted: boolean;
-	state: State;
+	state: PartState;
 	grab: GrabRow;
 }
 
 export interface UnreleasedPartRow {
 	number: number;
-	state: State;
+	state: PartState;
 }
 
 export type ArcRow = ({ released: true } & PartRow) | ({ released: false } & UnreleasedPartRow);
@@ -85,7 +85,7 @@ export async function arcDetailView(app: App, slug: string): Promise<ArcDetail |
 	};
 }
 
-const partState = (had: HadPart | null, wanted: boolean, downloading: boolean): State => {
+const partState = (had: HadPart | null, wanted: boolean, downloading: boolean): PartState => {
 	if (had !== null) return 'had';
 	if (downloading) return 'downloading';
 	return wanted ? 'missing' : 'unmonitored';

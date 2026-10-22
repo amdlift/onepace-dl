@@ -195,7 +195,7 @@ learned rather than inferred from colour.
 | **Missing, not monitored** | Warning orange | `var(--warning)` | No file, and nobody has asked for one. A gap, not a failure. |
 | **Downloading** | Purple | `var(--downloading)` | The Download Client is working on a Release that covers this Part, so progress is visible without opening Activity. |
 | **Unreleased Part** | Muted grey | `var(--ink-dim)` | One Pace has announced the number and published nothing. A gap in the Catalogue, never a gap in the collection. |
-| **To Be Redone** | Brand cyan | `var(--brand)` | The Release Status of the same name: the current Release stands, and the project intends to replace it. A Release state, so it sits alongside any of the five above. |
+| **To Be Redone** | Brand cyan | `var(--brand)` | The Release Status of the same name: the current Release stands, and the project intends to replace it. A Release state, so it sits alongside any of the five above, and is named in a badge beside the Release rather than in the state column. |
 
 The first five describe a Part and are mutually exclusive, in that order of precedence: a Part
 Pacerr has is had even while a newer Release for it is downloading.

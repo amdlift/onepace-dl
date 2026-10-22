@@ -269,10 +269,6 @@ h2 {
 	color: var(--ink-dim);
 }
 
-.state-icon.to-be-redone {
-	color: var(--brand);
-}
-
 .pill {
 	display: inline-block;
 	padding: 0 var(--space-1);
