@@ -6,7 +6,7 @@
 		formatProgress,
 		formatTimestamp
 	} from '../../../lib/format';
-	import StateIcon from '../../../lib/StateIcon.svelte';
+	import StateCell from '../../../lib/StateCell.svelte';
 	import { transferTreatment } from '../../../lib/state';
 	import type { PageProps } from './$types';
 
@@ -43,7 +43,7 @@
 				<tbody>
 					{#each activity.queue as row (row.infohash)}
 						<tr>
-							<StateIcon
+							<StateCell
 								state={transferTreatment(row.state)}
 								label={formatDownloadState(row.state)}
 							/>

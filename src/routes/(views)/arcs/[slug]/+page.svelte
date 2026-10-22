@@ -6,7 +6,7 @@
 		formatTimestamp,
 		formatVariant
 	} from '../../../../lib/format';
-	import StateIcon from '../../../../lib/StateIcon.svelte';
+	import StateCell from '../../../../lib/StateCell.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -40,7 +40,7 @@
 		<tbody>
 			{#each arc.rows as row (row.number)}
 				<tr class={{ gap: !row.released }}>
-					<StateIcon state={row.state} />
+					<StateCell state={row.state} />
 					<td>{row.number}</td>
 					{#if row.released}
 						<td>
