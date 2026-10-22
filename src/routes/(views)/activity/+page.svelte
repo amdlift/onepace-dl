@@ -73,7 +73,6 @@
 						<th>When</th>
 						<th>Event</th>
 						<th>Part</th>
-						<th class="state-icon"><span class="visually-hidden">State</span></th>
 						<th>Release</th>
 					</tr>
 				</thead>
