@@ -13,7 +13,7 @@
 			<!-- The detail beside it carries the same link under the Arc's own name. -->
 			<a class="artwork" href="/arcs/{arc.slug}" tabindex="-1" aria-hidden="true">
 				{#if arc.artwork.kind === 'placeholder'}
-					<span class="no-poster" aria-hidden="true"></span>
+					<span class="no-poster"></span>
 				{:else}
 					<img src={arc.artwork.url} alt="" loading="lazy" />
 				{/if}
@@ -111,13 +111,13 @@
 		color: var(--ink-dim);
 	}
 
-	.monitoring {
-		margin-top: var(--space-2);
-	}
-
 	.synopsis {
 		max-width: var(--prose-width);
 		margin: 0;
 		color: var(--ink-dim);
+	}
+
+	.monitoring {
+		margin-top: var(--space-2);
 	}
 </style>

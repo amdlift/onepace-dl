@@ -38,12 +38,7 @@
 		list-style: none;
 	}
 
-	.arc {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-
+	.arc,
 	.card {
 		display: flex;
 		flex-direction: column;
