@@ -36,9 +36,9 @@ describe('a setting', () => {
 });
 
 describe('a section of a Settings page', () => {
-	it('carries a legend at the reference size with a rule beneath it', () => {
+	it('carries a heading at the reference size with a rule beneath it', () => {
 		expect(declarationsFor('h2')).toMatchObject({
-			'font-size': 'var(--type-legend)',
+			'font-size': 'var(--type-heading)',
 			'border-bottom': 'var(--hairline) solid var(--border)'
 		});
 	});

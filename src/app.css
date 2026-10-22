@@ -27,7 +27,7 @@
 	--type-line: 21.4px;
 	--type-small: 11px;
 	--type-modal-title: 18px;
-	--type-legend: 21px;
+	--type-heading: 21px;
 	--type-tracking: 0.04em;
 	--weight-normal: 400;
 	--weight-medium: 500;
@@ -95,7 +95,7 @@ a:hover {
 
 h1 {
 	margin: 0;
-	font-size: var(--type-legend);
+	font-size: var(--type-heading);
 	font-weight: var(--weight-normal);
 	color: var(--ink-bright);
 }
@@ -104,7 +104,7 @@ h2 {
 	margin: var(--space-4) 0 var(--space-2);
 	padding-bottom: var(--space-2);
 	border-bottom: var(--hairline) solid var(--border);
-	font-size: var(--type-legend);
+	font-size: var(--type-heading);
 	font-weight: var(--weight-normal);
 	color: var(--ink-bright);
 }
