@@ -3,8 +3,10 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { startPacerr } from './harness/pacerr';
+import { declarationsFor } from './harness/sources';
 
 const viewsDirectory = fileURLToPath(new URL('../src/routes/(views)', import.meta.url));
+const chrome = fileURLToPath(new URL('../src/lib/components/Chrome.svelte', import.meta.url));
 
 /** Every view the shared layout wraps, read off the route tree so a view added later is covered. */
 function everyView(directory = viewsDirectory): string[] {
@@ -73,6 +75,14 @@ describe('the toolbar', () => {
 		expect((await pacerr.open('/settings/browse')).texts('.page-toolbar .actions a')).toEqual([
 			'Back to Settings'
 		]);
+	});
+});
+
+describe('a toolbar label', () => {
+	it('is at the small size the reference measures rather than the body size', () => {
+		expect(declarationsFor('.page-toolbar', chrome)).toMatchObject({
+			'font-size': 'var(--type-small)'
+		});
 	});
 });
 
