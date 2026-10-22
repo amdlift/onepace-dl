@@ -293,3 +293,63 @@ h2 {
 	overflow: hidden;
 	clip-path: inset(50%);
 }
+
+.setting {
+	display: grid;
+	grid-template-columns: var(--label-width) var(--control-width);
+	align-items: start;
+	gap: var(--label-gutter);
+	margin-bottom: var(--space-4);
+}
+
+.setting > .label {
+	justify-self: end;
+	line-height: var(--input-height);
+	color: var(--ink);
+}
+
+.setting > .control {
+	display: grid;
+	grid-column: 2;
+	justify-items: start;
+	gap: var(--space-1);
+	min-width: 0;
+}
+
+.setting > .control .input {
+	width: 100%;
+}
+
+.setting > .control > input[type='checkbox'] {
+	width: var(--space-4);
+	height: var(--space-4);
+	margin: var(--space-2) 0;
+	accent-color: var(--brand);
+}
+
+.help {
+	margin: 0;
+	color: var(--ink-dim);
+}
+
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+
+/* A media query is evaluated before custom properties resolve, so the breakpoint cannot be one. */
+@media (max-width: 1080px) {
+	.setting {
+		grid-template-columns: 1fr;
+	}
+
+	.setting > .label {
+		justify-self: start;
+		line-height: inherit;
+	}
+
+	.setting > .control {
+		grid-column: 1;
+	}
+}
