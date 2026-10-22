@@ -21,7 +21,6 @@ export function formatState(state: State): string {
 	}[state];
 }
 
-/** What the Download Client says about a transfer. Unknown while it is not saying. */
 export type TransferState = 'downloading' | 'completed' | 'failed' | 'unknown';
 
 /**
