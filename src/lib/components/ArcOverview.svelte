@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { formatResolution, pluralise } from '../format';
+	import { pluralise } from '../format';
 	import type { ArcSummary } from '../server/arcs';
+	import ArcBadges from './ArcBadges.svelte';
 	import HadOfTotal from './HadOfTotal.svelte';
 	import MonitorArc from './MonitorArc.svelte';
 
@@ -21,15 +22,7 @@
 			<div class="detail">
 				<div class="title">
 					<a href="/arcs/{arc.slug}">{arc.title}</a>
-					{#if arc.special}<span class="badge">Special</span>{/if}
-					{#if arc.unfinished}<span class="badge unfinished">Unfinished</span>{/if}
-					{#if arc.batchOnly !== null}
-						<span class="badge batch">
-							Batch only{arc.batchOnly.resolution === null
-								? ''
-								: ` ${formatResolution(arc.batchOnly.resolution)}`}
-						</span>
-					{/if}
+					<ArcBadges {arc} />
 				</div>
 				<p class="counts">
 					<span>{pluralise(arc.partCount, 'Part')}</span>
