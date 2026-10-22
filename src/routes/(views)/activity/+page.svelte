@@ -6,6 +6,8 @@
 		formatProgress,
 		formatTimestamp
 	} from '../../../lib/format';
+	import StateIcon from '../../../lib/StateIcon.svelte';
+	import { transferTreatment } from '../../../lib/state';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -31,6 +33,7 @@
 			<table class="table">
 				<thead>
 					<tr>
+						<th class="state-icon"><span class="visually-hidden">State</span></th>
 						<th>Release</th>
 						<th>Parts</th>
 						<th>Status</th>
@@ -40,6 +43,10 @@
 				<tbody>
 					{#each activity.queue as row (row.infohash)}
 						<tr>
+							<StateIcon
+								state={transferTreatment(row.state)}
+								label={formatDownloadState(row.state)}
+							/>
 							<td>
 								{row.releaseTitle}
 								{#if row.batch}<span class="badge">Batch</span>{/if}
@@ -66,6 +73,7 @@
 						<th>When</th>
 						<th>Event</th>
 						<th>Part</th>
+						<th class="state-icon"><span class="visually-hidden">State</span></th>
 						<th>Release</th>
 					</tr>
 				</thead>

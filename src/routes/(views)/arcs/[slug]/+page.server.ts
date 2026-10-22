@@ -5,7 +5,7 @@ import { getApp } from '../../../../lib/server/runtime';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
-	const arc = arcDetailView(getApp().db, params.slug);
+	const arc = await arcDetailView(getApp(), params.slug);
 	if (arc === null) error(404, 'The Catalogue lists no such Arc');
 	return { arc };
 };

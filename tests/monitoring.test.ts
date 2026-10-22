@@ -12,7 +12,7 @@ const monitoredArcs = (page: PacerrPage): string[] =>
 		)
 		.map((row) => row.querySelector('td a')?.textContent?.trim() ?? '');
 
-const wantedPartNumbers = (page: PacerrPage): string[] => page.texts('tbody td:nth-child(2)');
+const wantedPartNumbers = (page: PacerrPage): string[] => page.texts('tbody td:nth-child(3)');
 
 const arcRow = (page: PacerrPage, title: string): string =>
 	page.texts('tbody tr').find((row) => row.startsWith(title)) ?? '';
@@ -85,7 +85,7 @@ describe('a Part within a monitored Arc', () => {
 		const page = await pacerr.submit('/arcs/reverie', 'togglePartWanted', { part: 'reverie-02' });
 
 		expect(page.texts('tbody .wanted button')).toEqual(['Wanted', 'Not wanted', 'Wanted']);
-		expect((await pacerr.open('/wanted')).texts('tbody td:nth-child(2)')).toEqual(['1', '3']);
+		expect((await pacerr.open('/wanted')).texts('tbody td:nth-child(3)')).toEqual(['1', '3']);
 	});
 
 	it('is wanted again once the mark is lifted', async () => {
@@ -95,7 +95,7 @@ describe('a Part within a monitored Arc', () => {
 
 		await pacerr.submit('/arcs/reverie', 'togglePartWanted', { part: 'reverie-02' });
 
-		expect((await pacerr.open('/wanted')).texts('tbody td:nth-child(2)')).toEqual(['1', '2', '3']);
+		expect((await pacerr.open('/wanted')).texts('tbody td:nth-child(3)')).toEqual(['1', '2', '3']);
 	});
 });
 
@@ -137,7 +137,7 @@ describe('turning Monitoring off', () => {
 
 		expect(readdirSync(pacerr.paths.library)).toEqual([]);
 		expect(arcRow(await pacerr.open('/'), 'Reverie')).toContain('0 of 3');
-		expect((await pacerr.open('/arcs/reverie')).texts('tbody tr td:first-child')).toEqual([
+		expect((await pacerr.open('/arcs/reverie')).texts('tbody tr td:nth-child(2)')).toEqual([
 			'1',
 			'2',
 			'3'

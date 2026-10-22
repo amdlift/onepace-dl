@@ -250,7 +250,7 @@ describe('a Batch Release that does not expand cleanly', () => {
 		});
 
 		const reasons = (await pacerr.open('/arcs/post-enies-lobby')).texts(
-			'tbody td:nth-child(3) .none'
+			'tbody td:nth-child(4) .none'
 		);
 
 		expect(reasons[0]).toContain('neither clearly covers nor clearly excludes');
@@ -267,7 +267,7 @@ describe('a Batch Release that does not expand cleanly', () => {
 		const page = await pacerr.open('/arcs/post-enies-lobby');
 
 		expect(page.texts('tbody .grab')).toHaveLength(3);
-		expect(page.texts('tbody td:nth-child(3) .none')[0]).toContain('did not expand');
+		expect(page.texts('tbody td:nth-child(4) .none')[0]).toContain('did not expand');
 	});
 });
 
